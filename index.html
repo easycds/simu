@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulateur Routier — Easy Auto-École</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'Nunito', sans-serif;
+}
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #f0f0f0;
+}
+
+/* ── HEADER ── */
+#header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 52px;
+  background: #fff;
+  border-bottom: 2px solid #ff3131;
+  flex-shrink: 0;
+}
+.logo-easy { font-family: 'Fredoka One', cursive; font-size: 26px; color: #ff3131; }
+.logo-sep  { width: 1px; height: 20px; background: #ddd; margin: 0 12px; }
+.logo-sub  { font-size: 11px; font-weight: 800; color: #888; letter-spacing: 1px; text-transform: uppercase; line-height: 1.3; }
+.logo-wrap { display: flex; align-items: center; }
+.header-badge { background: #ff3131; color: #fff; font-size: 11px; font-weight: 800; padding: 5px 14px; border-radius: 20px; letter-spacing: .5px; }
+
+/* ── LAYOUT ── */
+#main {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── SIDEBAR ── */
+#sidebar {
+  width: 200px;
+  min-width: 200px;
+  background: #1e1e2e;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  gap: 8px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+/* Onglets catégories */
+.cat-tabs {
+  display: flex;
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+.cat-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 6px 2px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+  transition: all .15s;
+}
+.cat-tab.active { background: #ff3131; color: #fff; }
+
+/* Boutons actions */
+.btn-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  border: none;
+  width: 100%;
+  transition: all .2s;
+}
+.btn-blind {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.75);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+.btn-blind:hover { background: rgba(255,255,255,0.13); }
+.btn-blind.on { background: rgba(59,130,246,0.3); color: #93c5fd; border-color: rgba(59,130,246,0.5); }
+.btn-clear {
+  background: rgba(239,68,68,0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239,68,68,0.3);
+}
+.btn-clear:hover { background: rgba(239,68,68,0.28); }
+
+/* Séparateur */
+.sb-sep { height: 1px; background: rgba(255,255,255,0.08); }
+
+/* Scènes */
+.scene-tabs { display: flex; flex-direction: column; gap: 4px; }
+.scene-tab {
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.05);
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.5);
+  text-align: left;
+  cursor: pointer;
+  transition: all .15s;
+  width: 100%;
+}
+.scene-tab:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.scene-tab.on { background: #ff3131; color: #fff; border-color: #ff3131; box-shadow: 0 2px 10px rgba(255,49,49,0.4); }
+
+/* Grille outils */
+.tools-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  overflow-y: auto;
+}
+.tool-card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 9px;
+  height: 66px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.tool-card:hover {
+  background: rgba(255,49,49,0.2);
+  border-color: rgba(255,49,49,0.5);
+  transform: translateY(-2px);
+}
+.card-emoji { font-size: 22px; line-height: 1; }
+.card-text { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.6); white-space: nowrap; }
+
+/* ── CANVAS ── */
+#sw {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #e8e8e8;
+  padding: 12px;
+  gap: 6px;
+}
+#cw {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+#cw canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+#hint {
+  font-size: 11px;
+  color: #999;
+  text-align: center;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* Menu contextuel */
+#cm { position:absolute;background:#fff;border:1px solid #eee;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:5px;display:none;z-index:100;min-width:160px; }
+.ci { padding:9px 13px;font-size:12px;font-weight:700;color:#555;border-radius:7px;cursor:pointer;transition:background .12s;display:flex;align-items:center;gap:8px; }
+.ci:hover { background:#fee2e2;color:#ef4444; }
+.cs { height:1px;background:#f0f0f0;margin:3px 0; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div class="logo-wrap">
+    <span class="logo-easy">easy</span>
+    <div class="logo-sep"></div>
+    <span class="logo-sub">Auto-École<br>Simulateur</span>
+  </div>
+  <span class="header-badge">Outil pédagogique</span>
+</div>
+
+<div id="main">
+
+  <div id="sidebar">
+    <div class="cat-tabs">
+      <button class="cat-tab active" onclick="filterCategory('all',this)">Tout</button>
+      <button class="cat-tab" onclick="filterCategory('vehicule',this)">Véhicules</button>
+      <button class="cat-tab" onclick="filterCategory('panneau',this)">Panneaux</button>
+    </div>
+    <button class="btn-action btn-blind" id="bam" onclick="toggleBlinds()">👁️ Angles morts</button>
+    <button class="btn-action btn-clear" onclick="clearAll()">🗑️ Effacer tout</button>
+    <div class="sb-sep"></div>
+    <div class="scene-tabs">
+      <button class="scene-tab on" id="sc1" onclick="setScene(1)">⊤ En T</button>
+      <button class="scene-tab" id="sc2" onclick="setScene(2)">✛ Carrefour</button>
+      <button class="scene-tab" id="sc3" onclick="setScene(3)">◎ Giratoire</button>
+    </div>
+    <div class="sb-sep"></div>
+    <div class="tools-grid" id="tools-grid">
+      <div class="tool-card" data-cat="vehicule" onclick="add('voiture','#ff3131')"><div class="card-emoji">🚗</div><div class="card-text">Voiture Rouge</div></div>
+      <div class="tool-card" data-cat="vehicule" onclick="add('voiture','#378ADD')"><div class="card-emoji">🚙</div><div class="card-text">Voiture Bleue</div></div>
+      <div class="tool-card" data-cat="vehicule" onclick="add('moto','#f59e0b')"><div class="card-emoji">🏍️</div><div class="card-text">Moto</div></div>
+      <div class="tool-card" data-cat="vehicule" onclick="add('camion','#e67e22')"><div class="card-emoji">🚛</div><div class="card-text">Camion</div></div>
+      <div class="tool-card" data-cat="vehicule" onclick="add('pieton','#333')"><div class="card-emoji">🚶</div><div class="card-text">Piéton</div></div>
+      <div class="tool-card" data-cat="panneau" onclick="add('panneau_stop',null)"><div class="card-emoji">🛑</div><div class="card-text">Stop</div></div>
+      <div class="tool-card" data-cat="panneau" onclick="add('panneau_cedez',null)"><div class="card-emoji">⚠️</div><div class="card-text">Cédez</div></div>
+    </div>
+  </div>
+
+  <div id="sw">
+    <div id="cw">
+      <canvas id="c"></canvas>
+      <div id="cm">
+        <div class="ci" onclick="setClign('gauche')">← Clignotant gauche</div>
+        <div class="ci" onclick="setClign('droite')">→ Clignotant droit</div>
+        <div class="ci" onclick="setClign('warning')">⚠ Warnings</div>
+        <div class="ci" onclick="setClign(null)">✕ Éteindre</div>
+        <div class="cs"></div>
+        <div class="ci" onclick="toggleBlind()">👁 Angle mort</div>
+        <div class="ci" onclick="delSel()">🗑 Supprimer</div>
+      </div>
+    </div>
+    <div id="hint">🟢 Point vert = orienter · Corps = déplacer · Double-clic = angle mort · Clic droit = options</div>
+  </div>
+
+</div>
+
+<script>
+
+const C = document.getElementById('c');
+const ctx = C.getContext('2d');
+const cm = document.getElementById('cm');
+let W, H, DPR, RAF, frame = 0;
+let items = [], sel = null;
+let dragItem = null, dragMode = null, leashTarget = null;
+let dragOffX = 0, dragOffY = 0;
+
+function resize(){
+  DPR = window.devicePixelRatio||1;
+  const r = C.parentElement.getBoundingClientRect();
+  W = r.width; H = Math.max(460, C.parentElement.getBoundingClientRect().height || W*0.62);
+  C.style.height = H+'px';
+  C.width = W*DPR; C.height = H*DPR;
+  ctx.scale(DPR,DPR);
+}
+
+class Item {
+  constructor(type,x,y,color){
+    this.id = Math.random().toString(36).slice(2);
+    this.type=type; this.x=x; this.y=y;
+    this.angle = -Math.PI/2;
+    this.color=color;
+    this.clignotant=null; this.blindVisible=false;
+    const d={voiture:[28,54],moto:[16,42],camion:[34,76],pieton:[12,12],panneau_stop:[28,28],panneau_cedez:[30,30]};
+    [this.w,this.h]=d[type]||[28,54];
+    this.isPanneau=type.startsWith('panneau');
+  }
+  frontX(){ return this.x + Math.cos(this.angle) * (this.h/2); }
+  frontY(){ return this.y + Math.sin(this.angle) * (this.h/2); }
+}
+
+function add(type,color){
+  const it=new Item(type,W/2+(Math.random()-.5)*120,H/2+(Math.random()-.5)*80,color);
+  items.push(it); sel=it;
+}
+function clearAll(){ items=[]; sel=null; }
+function delSel(){ if(sel){ items=items.filter(i=>i.id!==sel.id); sel=null; } hideMenu(); }
+function setClign(v){ if(sel) sel.clignotant=v; hideMenu(); }
+function toggleBlind(){ if(sel) sel.blindVisible=!sel.blindVisible; hideMenu(); }
+function toggleBlinds(){
+  const on=!items.some(i=>i.blindVisible&&!i.isPanneau);
+  items.forEach(i=>{ if(!i.isPanneau) i.blindVisible=on; });
+  document.getElementById('bam').classList.toggle('on',on);
+}
+
+function hit(mx,my){
+  for(let i=items.length-1;i>=0;i--){
+    const it=items[i];
+    if(!it.isPanneau){
+      const fx=it.frontX(), fy=it.frontY();
+      const d2=(mx-fx)*(mx-fx)+(my-fy)*(my-fy);
+      if(d2 < 18*18) return {item:it, mode:'leash'};
+    }
+    const dx=mx-it.x, dy=my-it.y;
+    const ca=Math.cos(-it.angle - Math.PI/2), sa=Math.sin(-it.angle - Math.PI/2);
+    const lx=dx*ca-dy*sa, ly=dx*sa+dy*ca;
+    if(Math.abs(lx)<it.w/2+10 && Math.abs(ly)<it.h/2+10) return {item:it, mode:'body'};
+  }
+  return null;
+}
+
+const STIFFNESS = 0.9;
+function applyLeash(it, tx, ty){
+  const dx=tx-it.x, dy=ty-it.y;
+  if(Math.sqrt(dx*dx+dy*dy) < 1) return;
+  const targetAngle = Math.atan2(dy, dx);
+  let da = targetAngle - it.angle;
+  while(da >  Math.PI) da -= 2*Math.PI;
+  while(da < -Math.PI) da += 2*Math.PI;
+  it.angle += da * STIFFNESS;
+  it.x = tx - Math.cos(it.angle) * (it.h/2);
+  it.y = ty - Math.sin(it.angle) * (it.h/2);
+}
+
+function ptrDown(mx,my){
+  hideMenu();
+  const res=hit(mx,my);
+  if(res){
+    sel=res.item; dragItem=res.item; dragMode=res.mode;
+    items=items.filter(i=>i.id!==res.item.id); items.push(res.item);
+    dragOffX=mx-res.item.x; dragOffY=my-res.item.y;
+    leashTarget={x:mx,y:my};
+    C.classList.add('drag');
+  } else { sel=null; dragItem=null; }
+}
+
+function ptrMove(mx,my){
+  if(!dragItem) return;
+  leashTarget={x:mx,y:my};
+  if(dragMode==='leash') applyLeash(dragItem,mx,my);
+  else { dragItem.x=mx-dragOffX; dragItem.y=my-dragOffY; }
+}
+
+function ptrUp(){ dragItem=null; leashTarget=null; dragMode=null; C.classList.remove('drag'); }
+
+function getPos(e){
+  const r=C.getBoundingClientRect();
+  return {x:(e.clientX-r.left)*(W/r.width), y:(e.clientY-r.top)*(H/r.height)};
+}
+function getTPos(t){
+  const r=C.getBoundingClientRect();
+  return {x:(t.clientX-r.left)*(W/r.width), y:(t.clientY-r.top)*(H/r.height)};
+}
+
+C.addEventListener('mousedown',e=>{ if(e.button===2)return; const p=getPos(e); ptrDown(p.x,p.y); });
+C.addEventListener('mousemove',e=>{
+  const p=getPos(e); ptrMove(p.x,p.y);
+  if(!dragItem){ const r=hit(p.x,p.y); C.style.cursor=r?(r.mode==='leash'?'crosshair':'grab'):'default'; }
+});
+C.addEventListener('mouseup',ptrUp);
+C.addEventListener('mouseleave',ptrUp);
+C.addEventListener('dblclick',e=>{ const p=getPos(e); const r=hit(p.x,p.y); if(r&&!r.item.isPanneau) r.item.blindVisible=!r.item.blindVisible; });
+C.addEventListener('contextmenu',e=>{ e.preventDefault(); const p=getPos(e); const r=hit(p.x,p.y); if(r){sel=r.item;showMenu(e.clientX,e.clientY);} });
+
+let lpTimer=null;
+C.addEventListener('touchstart',e=>{ e.preventDefault(); clearTimeout(lpTimer);
+  const p=getTPos(e.touches[0]); ptrDown(p.x,p.y);
+  lpTimer=setTimeout(()=>{ if(sel) showMenu(e.touches[0].clientX,e.touches[0].clientY); },600);
+},{passive:false});
+C.addEventListener('touchmove',e=>{ e.preventDefault(); clearTimeout(lpTimer); const p=getTPos(e.touches[0]); ptrMove(p.x,p.y); },{passive:false});
+C.addEventListener('touchend',e=>{ clearTimeout(lpTimer); ptrUp(); },{passive:false});
+
+function showMenu(cx,cy){
+  const wr=document.getElementById('cw').getBoundingClientRect();
+  cm.style.left=(cx-wr.left)+'px'; cm.style.top=(cy-wr.top)+'px'; cm.style.display='block';
+}
+function hideMenu(){ cm.style.display='none'; }
+document.addEventListener('click',e=>{ if(!cm.contains(e.target)) hideMenu(); });
+
+function rr(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+
+let currentScene=1;
+function setScene(n){
+  currentScene=n;
+  for(let i=1;i<=3;i++){const b=document.getElementById('sc'+i);if(b){b.classList.remove('on');if(i===n)b.classList.add('on');}}
+}
+function filterCategory(cat,btn){
+  document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#tools-grid .tool-card').forEach(c=>{
+    c.style.display=(cat==='all'||c.dataset.cat===cat)?'flex':'none';
+  });
+}
+function drawRoad(){
+  if(currentScene===1) drawIntersectionT();
+  else if(currentScene===2) drawCarrefourPlus();
+  else if(currentScene===3) drawGiratoire4();
+}
+function drawIntersectionT(){
+  ctx.fillStyle='#2ecc71';ctx.fillRect(0,0,W,H);
+  const rw=140,cx=W/2,cy=H/2,r=25;
+  ctx.save();ctx.fillStyle='#3d3d3d';ctx.beginPath();
+  ctx.moveTo(0,cy-rw/2);ctx.lineTo(cx-rw/2-r,cy-rw/2);ctx.arcTo(cx-rw/2,cy-rw/2,cx-rw/2,cy-rw/2-r,r);
+  ctx.lineTo(cx-rw/2,0);ctx.lineTo(cx+rw/2,0);ctx.lineTo(cx+rw/2,cy-rw/2-r);
+  ctx.arcTo(cx+rw/2,cy-rw/2,cx+rw/2+r,cy-rw/2,r);ctx.lineTo(W,cy-rw/2);ctx.lineTo(W,cy+rw/2);
+  ctx.lineTo(cx+rw/2+r,cy+rw/2);ctx.arcTo(cx+rw/2,cy+rw/2,cx+rw/2,cy+rw/2+r,r);
+  ctx.lineTo(cx+rw/2,H);ctx.lineTo(cx-rw/2,H);ctx.lineTo(cx-rw/2,cy+rw/2+r);
+  ctx.arcTo(cx-rw/2,cy+rw/2,cx-rw/2-r,cy+rw/2,r);ctx.lineTo(0,cy+rw/2);
+  ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.7)';ctx.lineWidth=2;ctx.setLineDash([15,20]);
+  ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(cx-rw/2,cy);ctx.moveTo(cx+rw/2,cy);ctx.lineTo(W,cy);
+  ctx.moveTo(cx,0);ctx.lineTo(cx,cy-rw/2);ctx.moveTo(cx,cy+rw/2);ctx.lineTo(cx,H);ctx.stroke();
+  ctx.setLineDash([5,6]);ctx.lineWidth=5;ctx.strokeStyle='rgba(255,255,255,0.95)';
+  ctx.beginPath();ctx.moveTo(cx,cy+rw/2);ctx.lineTo(cx+rw/2,cy+rw/2);ctx.stroke();
+  ctx.setLineDash([]);ctx.restore();
+}
+function drawCarrefourPlus(){
+  const rw=140,cx=W/2,cy=H/2,r=25;
+  ctx.fillStyle='#3cb55a';ctx.fillRect(0,0,W,H);
+  ctx.save();ctx.fillStyle='#3d3d3d';ctx.beginPath();
+  ctx.moveTo(0,cy-rw/2);ctx.lineTo(cx-rw/2-r,cy-rw/2);ctx.arcTo(cx-rw/2,cy-rw/2,cx-rw/2,cy-rw/2-r,r);
+  ctx.lineTo(cx-rw/2,0);ctx.lineTo(cx+rw/2,0);ctx.lineTo(cx+rw/2,cy-rw/2-r);
+  ctx.arcTo(cx+rw/2,cy-rw/2,cx+rw/2+r,cy-rw/2,r);ctx.lineTo(W,cy-rw/2);ctx.lineTo(W,cy+rw/2);
+  ctx.lineTo(cx+rw/2+r,cy+rw/2);ctx.arcTo(cx+rw/2,cy+rw/2,cx+rw/2,cy+rw/2+r,r);
+  ctx.lineTo(cx+rw/2,H);ctx.lineTo(cx-rw/2,H);ctx.lineTo(cx-rw/2,cy+rw/2+r);
+  ctx.arcTo(cx-rw/2,cy+rw/2,cx-rw/2-r,cy+rw/2,r);ctx.lineTo(0,cy+rw/2);
+  ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.7)';ctx.lineWidth=2;ctx.setLineDash([15,20]);
+  ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(cx-rw/2,cy);ctx.moveTo(cx+rw/2,cy);ctx.lineTo(W,cy);
+  ctx.moveTo(cx,0);ctx.lineTo(cx,cy-rw/2);ctx.moveTo(cx,cy+rw/2);ctx.lineTo(cx,H);
+  ctx.stroke();ctx.setLineDash([]);ctx.restore();
+}
+function drawGiratoire4(){
+  const cx=W/2,cy=H/2,BW=42,Ro=115,Ri=55;
+  ctx.fillStyle='#3cb55a';ctx.fillRect(0,0,W,H);
+  ctx.save();ctx.fillStyle='#3d3d3d';
+  ctx.fillRect(cx-BW,0,BW*2,H);ctx.fillRect(0,cy-BW,W,BW*2);
+  ctx.beginPath();ctx.arc(cx,cy,Ro,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#bdc3c7';ctx.beginPath();ctx.arc(cx,cy,Ri+3,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#27ae60';ctx.beginPath();ctx.arc(cx,cy,Ri,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.7)';ctx.lineWidth=1.5;ctx.setLineDash([8,8]);
+  ctx.beginPath();ctx.arc(cx,cy,Ri+(Ro-Ri)*0.5,0,Math.PI*2);ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=2;ctx.setLineDash([12,10]);
+  ctx.beginPath();
+  ctx.moveTo(cx,0);ctx.lineTo(cx,cy-Ro);ctx.moveTo(cx,cy+Ro);ctx.lineTo(cx,H);
+  ctx.moveTo(0,cy);ctx.lineTo(cx-Ro,cy);ctx.moveTo(cx+Ro,cy);ctx.lineTo(W,cy);
+  ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#bdc3c7';const iw=6;
+  function il(x,y,v){ctx.beginPath();if(v){ctx.moveTo(x-iw,y);ctx.lineTo(x+iw,y);ctx.lineTo(x,y+(y<cy?-10:10));}else{ctx.moveTo(x,y-iw);ctx.lineTo(x,y+iw);ctx.lineTo(x+(x<cx?-10:10),y);}ctx.closePath();ctx.fill();}
+  il(cx,cy-Ro-6,true);il(cx,cy+Ro+6,true);il(cx-Ro-6,cy,false);il(cx+Ro+6,cy,false);
+  function cedez(bx,by,a){ctx.save();ctx.translate(bx,by);ctx.rotate(a);const nb=4,sz=BW*0.18,g=BW*0.12;ctx.fillStyle='rgba(255,255,255,0.95)';for(let i=0;i<nb;i++)ctx.fillRect(3+i*(sz+g),-sz/2,sz,sz);ctx.restore();}
+  cedez(cx,cy-Ro,0);cedez(cx,cy+Ro,Math.PI);cedez(cx-Ro,cy,-Math.PI/2);cedez(cx+Ro,cy,Math.PI/2);
+  ctx.restore();
+}
+function drawRoad_legacy(){
+  const cx=W/2,cy=H/2,rw=58;
+  ctx.fillStyle='#2d6a4f'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#4a5568'; ctx.fillRect(0,cy-rw,W,rw*2); ctx.fillRect(cx-rw,0,rw*2,H);
+  ctx.fillStyle='#6b7280';
+  [[0,cy-rw-7,cx-rw,7],[cx+rw,cy-rw-7,W-(cx+rw),7],[0,cy+rw,cx-rw,7],[cx+rw,cy+rw,W-(cx+rw),7],
+   [cx-rw-7,0,7,cy-rw],[cx-rw-7,cy+rw,7,H-(cy+rw)],[cx+rw,0,7,cy-rw],[cx+rw,cy+rw,7,H-(cy+rw)]]
+  .forEach(([x,y,w,h])=>ctx.fillRect(x,y,w,h));
+  ctx.setLineDash([22,14]); ctx.lineWidth=2; ctx.strokeStyle='rgba(255,255,255,0.45)';
+  ctx.beginPath();
+  ctx.moveTo(0,cy);ctx.lineTo(cx-rw,cy);ctx.moveTo(cx+rw,cy);ctx.lineTo(W,cy);
+  ctx.moveTo(cx,0);ctx.lineTo(cx,cy-rw);ctx.moveTo(cx,cy+rw);ctx.lineTo(cx,H);
+  ctx.stroke(); ctx.setLineDash([]);
+  const sw=8,sc=5;
+  for(let i=0;i<sc;i++){
+    const o=i*(sw+4)-((sc*(sw+4)-4)/2);
+    ctx.fillStyle='rgba(255,255,255,0.82)';
+    ctx.fillRect(cx+o,cy+rw,sw,28);ctx.fillRect(cx+o,cy-rw-28,sw,28);
+    ctx.fillRect(cx+rw,cy+o,28,sw);ctx.fillRect(cx-rw-28,cy+o,28,sw);
+  }
+  ctx.lineWidth=3.5; ctx.strokeStyle='rgba(255,255,255,0.85)';
+  ctx.beginPath();
+  ctx.moveTo(cx-rw,cy-rw+2);ctx.lineTo(cx-rw,cy+rw-2);
+  ctx.moveTo(cx+rw,cy-rw+2);ctx.lineTo(cx+rw,cy+rw-2);
+  ctx.moveTo(cx-rw+2,cy-rw);ctx.lineTo(cx+rw-2,cy-rw);
+  ctx.moveTo(cx-rw+2,cy+rw);ctx.lineTo(cx+rw-2,cy+rw);
+  ctx.stroke();
+}
+
+function drawItem(it){
+  if(it===dragItem && dragMode==='leash' && leashTarget){
+    ctx.save();
+    ctx.setLineDash([5,4]);
+    ctx.strokeStyle='rgba(29,158,117,0.7)'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(it.frontX(),it.frontY()); ctx.lineTo(leashTarget.x,leashTarget.y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(29,158,117,0.85)';
+    ctx.beginPath(); ctx.arc(leashTarget.x,leashTarget.y,4,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  ctx.save();
+  ctx.translate(it.x,it.y);
+  if(it===sel){
+    ctx.save();
+    ctx.shadowColor='rgba(139,90,30,0.75)'; ctx.shadowBlur=24;
+    ctx.fillStyle='rgba(139,90,30,0.28)';
+    ctx.beginPath(); ctx.arc(0,0,Math.max(it.w,it.h)*.78,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  if(it.type==='panneau_stop'){ drawStop(); ctx.restore(); return; }
+  if(it.type==='panneau_cedez'){ drawCedez(); ctx.restore(); return; }
+  ctx.rotate(it.angle+Math.PI/2);
+  const w=it.w, h=it.h;
+  if(it.blindVisible){
+    ctx.save();
+    ctx.rotate(-(it.angle+Math.PI/2));
+    [{s:0.58,e:0.95},{s:1.05,e:1.42}].forEach(z=>{
+      ctx.beginPath(); ctx.moveTo(0,0);
+      ctx.arc(0,0,125,it.angle+z.s*Math.PI-Math.PI/2,it.angle+z.e*Math.PI-Math.PI/2);
+      ctx.closePath(); ctx.fillStyle='rgba(230,57,70,0.18)'; ctx.fill();
+      ctx.strokeStyle='rgba(230,57,70,0.5)'; ctx.lineWidth=1.5; ctx.stroke();
+    });
+    ctx.restore();
+  }
+  if(it.type==='pieton'){
+    ctx.fillStyle=it.color||'#9b59b6';
+    ctx.beginPath(); ctx.arc(0,2,6,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#f5cba7'; ctx.beginPath(); ctx.arc(0,-8,5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#1D9E75'; ctx.beginPath(); ctx.arc(0,-14,4,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.8)'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.restore(); return;
+  }
+  ctx.fillStyle=it.color||'#f4d03f';
+  rr(-w/2,-h/2,w,h,it.type==='moto'?4:7); ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,0.22)'; ctx.lineWidth=1;
+  rr(-w/2,-h/2,w,h,it.type==='moto'?4:7); ctx.stroke();
+  if(it.type!=='moto'){
+    ctx.fillStyle='rgba(0,0,0,0.28)'; rr(-w/2+4,-h/2+h*.18,w-8,h*.38,4); ctx.fill();
+    ctx.fillStyle='rgba(150,200,255,0.28)'; rr(-w/2+5,-h/2+h*.2,w-10,h*.34,3); ctx.fill();
+  } else {
+    ctx.fillStyle='rgba(0,0,0,0.32)'; rr(-w/2+3,-h/2+h*.25,w-6,h*.35,3); ctx.fill();
+  }
+  ctx.fillStyle='rgba(255,255,180,0.95)';
+  ctx.fillRect(-w/2+3,-h/2+2,w/3-1,4); ctx.fillRect(w/6+1,-h/2+2,w/3-1,4);
+  ctx.fillStyle='rgba(220,30,30,0.85)';
+  ctx.fillRect(-w/2+3,h/2-6,w/3-1,4); ctx.fillRect(w/6+1,h/2-6,w/3-1,4);
+  if(it.clignotant&&frame%50<25){
+    ctx.fillStyle='rgba(255,165,0,1)';
+    if(it.clignotant==='gauche'||it.clignotant==='warning'){ ctx.fillRect(-w/2+1,-h/2+2,4,4); ctx.fillRect(-w/2+1,h/2-6,4,4); }
+    if(it.clignotant==='droite'||it.clignotant==='warning'){ ctx.fillRect(w/2-5,-h/2+2,4,4); ctx.fillRect(w/2-5,h/2-6,4,4); }
+  }
+  const dotColor=(it===dragItem&&dragMode==='leash')? '#0F6E56':'#1D9E75';
+  ctx.fillStyle=dotColor;
+  ctx.beginPath(); ctx.arc(0,-h/2,6,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.8)'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.restore();
+}
+
+function drawStop(){
+  const r=13; ctx.fillStyle='#c0392b'; ctx.beginPath();
+  for(let i=0;i<8;i++){ const a=Math.PI/8+i*Math.PI/4; i===0?ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r):ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r); }
+  ctx.closePath(); ctx.fill(); ctx.strokeStyle='white'; ctx.lineWidth=2; ctx.stroke();
+  ctx.fillStyle='white'; ctx.font='bold 7px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('STOP',0,0);
+  ctx.strokeStyle='#7f8c8d'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,r+1); ctx.lineTo(0,r+12); ctx.stroke();
+}
+function drawCedez(){
+  const s=18; ctx.fillStyle='white'; ctx.strokeStyle='#c0392b'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(0,-s); ctx.lineTo(s*.87,s*.5); ctx.lineTo(-s*.87,s*.5); ctx.closePath(); ctx.fill(); ctx.stroke();
+  const s2=s*.65; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(0,-s2); ctx.lineTo(s2*.87,s2*.5); ctx.lineTo(-s2*.87,s2*.5); ctx.closePath(); ctx.stroke();
+  ctx.fillStyle='#c0392b'; ctx.font='bold 5px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('CÉDEZ',0,5); ctx.fillText('LE PASSAGE',0,11);
+  ctx.strokeStyle='#7f8c8d'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,s+1); ctx.lineTo(0,s+10); ctx.stroke();
+}
+
+function loop(){
+  frame++;
+  ctx.clearRect(0,0,W,H);
+  drawRoad(); items.forEach(drawItem);
+  RAF=requestAnimationFrame(loop);
+}
+
+resize();
+const v1=new Item('voiture',0,0,'#f4d03f'); v1.angle=-Math.PI/2;
+const v2=new Item('voiture',0,0,'#e63946'); v2.angle=Math.PI/2;
+const v3=new Item('moto',0,0,'#378ADD'); v3.angle=0;
+const p1=new Item('panneau_cedez',0,0,null);
+const p2=new Item('panneau_stop',0,0,null);
+// Position après resize
+v1.x=W/2-70; v1.y=H/2+80;
+v2.x=W/2+90; v2.y=H/2-50;
+v3.x=W/2-130; v3.y=H/2-20;
+p1.x=W/2+105; p1.y=H/2+115;
+p2.x=W/2-115; p2.y=H/2+105;
+items.push(v1,v2,v3,p1,p2);
+loop();
+window.addEventListener('resize',()=>{ cancelAnimationFrame(RAF); resize(); loop(); });
+
+</script>
+</body>
+</html>
