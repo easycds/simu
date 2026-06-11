@@ -1,619 +1,1008 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simulateur Routier — Easy Auto-École</title>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Simulateur Sécurité Routière — v5 (marquages au sol)</title>
 <style>
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  font-family: 'Nunito', sans-serif;
-}
-body {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background: #f0f0f0;
-}
-
-/* ── HEADER ── */
-#header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  height: 52px;
-  background: #fff;
-  border-bottom: 2px solid #ff3131;
-  flex-shrink: 0;
-}
-.logo-easy { font-family: 'Fredoka One', cursive; font-size: 26px; color: #ff3131; }
-.logo-sep  { width: 1px; height: 20px; background: #ddd; margin: 0 12px; }
-.logo-sub  { font-size: 11px; font-weight: 800; color: #888; letter-spacing: 1px; text-transform: uppercase; line-height: 1.3; }
-.logo-wrap { display: flex; align-items: center; }
-.header-badge { background: #ff3131; color: #fff; font-size: 11px; font-weight: 800; padding: 5px 14px; border-radius: 20px; letter-spacing: .5px; }
-
-/* ── LAYOUT ── */
-#main {
-  display: flex;
-  flex-direction: row;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-/* ── SIDEBAR ── */
-#sidebar {
-  width: 200px;
-  min-width: 200px;
-  background: #1e1e2e;
-  display: flex;
-  flex-direction: column;
-  padding: 10px;
-  gap: 8px;
-  overflow-y: auto;
-  flex-shrink: 0;
-}
-
-/* Onglets catégories */
-.cat-tabs {
-  display: flex;
-  background: rgba(255,255,255,0.08);
-  border-radius: 8px;
-  padding: 3px;
-  gap: 2px;
-}
-.cat-tab {
-  flex: 1;
-  border: none;
-  background: transparent;
-  padding: 6px 2px;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.45);
-  border-radius: 6px;
-  cursor: pointer;
-  font-family: 'Nunito', sans-serif;
-  transition: all .15s;
-}
-.cat-tab.active { background: #ff3131; color: #fff; }
-
-/* Boutons actions */
-.btn-action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 9px 10px;
-  border-radius: 9px;
-  font-family: 'Nunito', sans-serif;
-  font-weight: 700;
-  font-size: 12px;
-  cursor: pointer;
-  border: none;
-  width: 100%;
-  transition: all .2s;
-}
-.btn-blind {
-  background: rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.75);
-  border: 1px solid rgba(255,255,255,0.12);
-}
-.btn-blind:hover { background: rgba(255,255,255,0.13); }
-.btn-blind.on { background: rgba(59,130,246,0.3); color: #93c5fd; border-color: rgba(59,130,246,0.5); }
-.btn-clear {
-  background: rgba(239,68,68,0.15);
-  color: #fca5a5;
-  border: 1px solid rgba(239,68,68,0.3);
-}
-.btn-clear:hover { background: rgba(239,68,68,0.28); }
-
-/* Séparateur */
-.sb-sep { height: 1px; background: rgba(255,255,255,0.08); }
-
-/* Scènes */
-.scene-tabs { display: flex; flex-direction: column; gap: 4px; }
-.scene-tab {
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.05);
-  padding: 8px 10px;
-  border-radius: 8px;
-  font-family: 'Nunito', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  color: rgba(255,255,255,0.5);
-  text-align: left;
-  cursor: pointer;
-  transition: all .15s;
-  width: 100%;
-}
-.scene-tab:hover { background: rgba(255,255,255,0.1); color: #fff; }
-.scene-tab.on { background: #ff3131; color: #fff; border-color: #ff3131; box-shadow: 0 2px 10px rgba(255,49,49,0.4); }
-
-/* Grille outils */
-.tools-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  overflow-y: auto;
-}
-.tool-card {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 9px;
-  height: 66px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  cursor: pointer;
-  transition: all .2s;
-}
-.tool-card:hover {
-  background: rgba(255,49,49,0.2);
-  border-color: rgba(255,49,49,0.5);
-  transform: translateY(-2px);
-}
-.card-emoji { font-size: 22px; line-height: 1; }
-.card-text { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.6); white-space: nowrap; }
-
-/* ── CANVAS ── */
-#sw {
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: #e8e8e8;
-  padding: 12px;
-  gap: 6px;
-}
-#cw {
-  flex: 1;
-  min-height: 0;
-  position: relative;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-}
-#cw canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  cursor: grab;
-  touch-action: none;
-}
-#hint {
-  font-size: 11px;
-  color: #999;
-  text-align: center;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-/* Menu contextuel */
-#cm { position:absolute;background:#fff;border:1px solid #eee;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:5px;display:none;z-index:100;min-width:160px; }
-.ci { padding:9px 13px;font-size:12px;font-weight:700;color:#555;border-radius:7px;cursor:pointer;transition:background .12s;display:flex;align-items:center;gap:8px; }
-.ci:hover { background:#fee2e2;color:#ef4444; }
-.cs { height:1px;background:#f0f0f0;margin:3px 0; }
+  :root {
+    --encre: #1c2430;
+    --papier: #eef1f4;
+    --accent: #2563eb;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--papier);
+    color: var(--encre);
+    display: flex;
+    flex-direction: column;
+  }
+  nav {
+    display: flex;
+    gap: 4px;
+    padding: 8px 14px 0;
+    background: #fff;
+  }
+  nav button {
+    border: 1px solid #d8dee6;
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    padding: 9px 20px;
+    background: #e6eaef;
+    font-weight: 500;
+  }
+  nav button.actif { background: #fff; color: var(--accent); }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: #fff;
+    border-bottom: 1px solid #d8dee6;
+    flex-wrap: wrap;
+  }
+  header .aide { font-size: 12px; color: #5b6776; width: 100%; }
+  .groupe {
+    display: flex;
+    border: 1px solid #c4cdd8;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .groupe button, .groupe select { border: none; border-radius: 0; }
+  .groupe > * + * { border-left: 1px solid #c4cdd8 !important; }
+  button, select {
+    font: inherit;
+    font-size: 13px;
+    padding: 7px 12px;
+    border: 1px solid #c4cdd8;
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  button.actif { background: var(--accent); border-color: var(--accent); color: #fff; }
+  label.controle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    padding: 0 4px;
+  }
+  input[type="range"] { width: 110px; }
+  .vue { flex: 1; position: relative; display: flex; flex-direction: column; }
+  .vue.cachee { display: none; }
+  .zone-canvas { flex: 1; position: relative; }
+  canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    cursor: grab;
+  }
+  #canvas-editeur { cursor: crosshair; }
+  canvas.dragging { cursor: grabbing; }
 </style>
 </head>
 <body>
 
-<div id="header">
-  <div class="logo-wrap">
-    <span class="logo-easy">easy</span>
-    <div class="logo-sep"></div>
-    <span class="logo-sub">Auto-École<br>Simulateur</span>
-  </div>
-  <span class="header-badge">Outil pédagogique</span>
+<nav>
+  <button id="onglet-scene" class="actif">Scène</button>
+  <button id="onglet-editeur">Éditeur de routes</button>
+</nav>
+
+<!-- ================= VUE SCÈNE ================= -->
+<div class="vue" id="vue-scene">
+  <header>
+    <div class="groupe" id="choix-decor">
+      <button data-decor="carrefour" class="actif">Carrefour</button>
+      <button data-decor="rondpoint">Rond-point</button>
+      <button data-decor="perso" id="btn-decor-perso" hidden>Perso</button>
+    </div>
+    <button id="btn-vehicule">+ Véhicule</button>
+    <button id="btn-pieton">+ Piéton</button>
+    <div class="groupe">
+      <select id="type-panneau" aria-label="Type de panneau">
+        <option value="stop">STOP</option>
+        <option value="cedez">Cédez-le-passage</option>
+        <option value="sens_interdit">Sens interdit</option>
+        <option value="passage_pieton">Passage piéton</option>
+        <option value="giratoire">Carrefour giratoire</option>
+      </select>
+      <button id="btn-panneau">+ Panneau</button>
+    </div>
+    <button id="btn-angle-mort">Angles morts</button>
+    <button id="btn-vider">Vider</button>
+    <span class="aide">Glisser : déplacer et orienter · Double-tap véhicule : clignotants · Double-tap panneau : changer le type</span>
+  </header>
+  <div class="zone-canvas"><canvas id="canvas-scene"></canvas></div>
 </div>
 
-<div id="main">
-
-  <div id="sidebar">
-    <div class="cat-tabs">
-      <button class="cat-tab active" onclick="filterCategory('all',this)">Tout</button>
-      <button class="cat-tab" onclick="filterCategory('vehicule',this)">Véhicules</button>
-      <button class="cat-tab" onclick="filterCategory('panneau',this)">Panneaux</button>
+<!-- ================= VUE ÉDITEUR ================= -->
+<div class="vue cachee" id="vue-editeur">
+  <header>
+    <div class="groupe" id="choix-mode">
+      <button data-mode="route" class="actif">Route</button>
+      <button data-mode="marquage">Marquage</button>
     </div>
-    <button class="btn-action btn-blind" id="bam" onclick="toggleBlinds()">👁️ Angles morts</button>
-    <button class="btn-action btn-clear" onclick="clearAll()">🗑️ Effacer tout</button>
-    <div class="sb-sep"></div>
-    <div class="scene-tabs">
-      <button class="scene-tab on" id="sc1" onclick="setScene(1)">⊤ En T</button>
-      <button class="scene-tab" id="sc2" onclick="setScene(2)">✛ Carrefour</button>
-      <button class="scene-tab" id="sc3" onclick="setScene(3)">◎ Giratoire</button>
+    <select id="type-marquage" aria-label="Type de marquage" disabled>
+      <option value="stop">Ligne STOP</option>
+      <option value="cedez">Ligne cédez-le-passage</option>
+      <option value="passage_pieton">Passage piéton</option>
+      <option value="ligne_discontinue">Ligne discontinue</option>
+      <option value="ligne_continue">Ligne continue</option>
+    </select>
+    <label class="controle">Largeur route
+      <input type="range" id="ed-largeur" min="50" max="150" step="10" value="90">
+      <span id="ed-largeur-val">90</span>
+    </label>
+    <label class="controle">
+      <input type="checkbox" id="ed-magnetisme" checked> Magnétisme
+    </label>
+    <button id="ed-terminer">Terminer</button>
+    <button id="ed-annuler">Annuler</button>
+    <button id="ed-effacer">Tout effacer</button>
+    <div class="groupe">
+      <button id="ed-exporter">Exporter</button>
+      <button id="ed-importer">Importer</button>
     </div>
-    <div class="sb-sep"></div>
-    <div class="tools-grid" id="tools-grid">
-      <div class="tool-card" data-cat="vehicule" onclick="add('voiture','#ff3131')"><div class="card-emoji">🚗</div><div class="card-text">Voiture Rouge</div></div>
-      <div class="tool-card" data-cat="vehicule" onclick="add('voiture','#378ADD')"><div class="card-emoji">🚙</div><div class="card-text">Voiture Bleue</div></div>
-      <div class="tool-card" data-cat="vehicule" onclick="add('moto','#f59e0b')"><div class="card-emoji">🏍️</div><div class="card-text">Moto</div></div>
-      <div class="tool-card" data-cat="vehicule" onclick="add('camion','#e67e22')"><div class="card-emoji">🚛</div><div class="card-text">Camion</div></div>
-      <div class="tool-card" data-cat="vehicule" onclick="add('pieton','#333')"><div class="card-emoji">🚶</div><div class="card-text">Piéton</div></div>
-      <div class="tool-card" data-cat="panneau" onclick="add('panneau_stop',null)"><div class="card-emoji">🛑</div><div class="card-text">Stop</div></div>
-      <div class="tool-card" data-cat="panneau" onclick="add('panneau_cedez',null)"><div class="card-emoji">⚠️</div><div class="card-text">Cédez</div></div>
-    </div>
-  </div>
-
-  <div id="sw">
-    <div id="cw">
-      <canvas id="c"></canvas>
-      <div id="cm">
-        <div class="ci" onclick="setClign('gauche')">← Clignotant gauche</div>
-        <div class="ci" onclick="setClign('droite')">→ Clignotant droit</div>
-        <div class="ci" onclick="setClign('warning')">⚠ Warnings</div>
-        <div class="ci" onclick="setClign(null)">✕ Éteindre</div>
-        <div class="cs"></div>
-        <div class="ci" onclick="toggleBlind()">👁 Angle mort</div>
-        <div class="ci" onclick="delSel()">🗑 Supprimer</div>
-      </div>
-    </div>
-    <div id="hint">🟢 Point vert = orienter · Corps = déplacer · Double-clic = angle mort · Clic droit = options</div>
-  </div>
-
+    <button id="ed-utiliser" class="actif">Utiliser dans la scène →</button>
+    <input type="file" id="ed-fichier" accept=".json,application/json" hidden>
+    <span class="aide" id="ed-aide">Mode Route : tapez pour poser les points, double-tap ou « Terminer » pour clore. Les routes sont nues : ajoutez les marquages avec le mode Marquage.</span>
+  </header>
+  <div class="zone-canvas"><canvas id="canvas-editeur"></canvas></div>
 </div>
 
 <script>
+'use strict';
 
-const C = document.getElementById('c');
-const ctx = C.getContext('2d');
-const cm = document.getElementById('cm');
-let W, H, DPR, RAF, frame = 0;
-let items = [], sel = null;
-let dragItem = null, dragMode = null, leashTarget = null;
-let dragOffX = 0, dragOffY = 0;
+/* ============================================================
+   UTILITAIRES
+   ============================================================ */
 
-function resize(){
-  DPR = window.devicePixelRatio||1;
-  const r = C.parentElement.getBoundingClientRect();
-  W = r.width; H = Math.max(460, C.parentElement.getBoundingClientRect().height || W*0.62);
-  C.style.height = H+'px';
-  C.width = W*DPR; C.height = H*DPR;
-  ctx.scale(DPR,DPR);
+function lerpAngle(a, b, t) {
+  const diff = ((b - a + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+  return a + diff * t;
 }
 
-class Item {
-  constructor(type,x,y,color){
-    this.id = Math.random().toString(36).slice(2);
-    this.type=type; this.x=x; this.y=y;
-    this.angle = -Math.PI/2;
-    this.color=color;
-    this.clignotant=null; this.blindVisible=false;
-    const d={voiture:[28,54],moto:[16,42],camion:[34,76],pieton:[12,12],panneau_stop:[28,28],panneau_cedez:[30,30]};
-    [this.w,this.h]=d[type]||[28,54];
-    this.isPanneau=type.startsWith('panneau');
-  }
-  frontX(){ return this.x + Math.cos(this.angle) * (this.h/2); }
-  frontY(){ return this.y + Math.sin(this.angle) * (this.h/2); }
-}
-
-function add(type,color){
-  const it=new Item(type,W/2+(Math.random()-.5)*120,H/2+(Math.random()-.5)*80,color);
-  items.push(it); sel=it;
-}
-function clearAll(){ items=[]; sel=null; }
-function delSel(){ if(sel){ items=items.filter(i=>i.id!==sel.id); sel=null; } hideMenu(); }
-function setClign(v){ if(sel) sel.clignotant=v; hideMenu(); }
-function toggleBlind(){ if(sel) sel.blindVisible=!sel.blindVisible; hideMenu(); }
-function toggleBlinds(){
-  const on=!items.some(i=>i.blindVisible&&!i.isPanneau);
-  items.forEach(i=>{ if(!i.isPanneau) i.blindVisible=on; });
-  document.getElementById('bam').classList.toggle('on',on);
-}
-
-function hit(mx,my){
-  for(let i=items.length-1;i>=0;i--){
-    const it=items[i];
-    if(!it.isPanneau){
-      const fx=it.frontX(), fy=it.frontY();
-      const d2=(mx-fx)*(mx-fx)+(my-fy)*(my-fy);
-      if(d2 < 18*18) return {item:it, mode:'leash'};
-    }
-    const dx=mx-it.x, dy=my-it.y;
-    const ca=Math.cos(-it.angle - Math.PI/2), sa=Math.sin(-it.angle - Math.PI/2);
-    const lx=dx*ca-dy*sa, ly=dx*sa+dy*ca;
-    if(Math.abs(lx)<it.w/2+10 && Math.abs(ly)<it.h/2+10) return {item:it, mode:'body'};
-  }
-  return null;
-}
-
-const STIFFNESS = 0.9;
-function applyLeash(it, tx, ty){
-  const dx=tx-it.x, dy=ty-it.y;
-  if(Math.sqrt(dx*dx+dy*dy) < 1) return;
-  const targetAngle = Math.atan2(dy, dx);
-  let da = targetAngle - it.angle;
-  while(da >  Math.PI) da -= 2*Math.PI;
-  while(da < -Math.PI) da += 2*Math.PI;
-  it.angle += da * STIFFNESS;
-  it.x = tx - Math.cos(it.angle) * (it.h/2);
-  it.y = ty - Math.sin(it.angle) * (it.h/2);
-}
-
-function ptrDown(mx,my){
-  hideMenu();
-  const res=hit(mx,my);
-  if(res){
-    sel=res.item; dragItem=res.item; dragMode=res.mode;
-    items=items.filter(i=>i.id!==res.item.id); items.push(res.item);
-    dragOffX=mx-res.item.x; dragOffY=my-res.item.y;
-    leashTarget={x:mx,y:my};
-    C.classList.add('drag');
-  } else { sel=null; dragItem=null; }
-}
-
-function ptrMove(mx,my){
-  if(!dragItem) return;
-  leashTarget={x:mx,y:my};
-  if(dragMode==='leash') applyLeash(dragItem,mx,my);
-  else { dragItem.x=mx-dragOffX; dragItem.y=my-dragOffY; }
-}
-
-function ptrUp(){ dragItem=null; leashTarget=null; dragMode=null; C.classList.remove('drag'); }
-
-function getPos(e){
-  const r=C.getBoundingClientRect();
-  return {x:(e.clientX-r.left)*(W/r.width), y:(e.clientY-r.top)*(H/r.height)};
-}
-function getTPos(t){
-  const r=C.getBoundingClientRect();
-  return {x:(t.clientX-r.left)*(W/r.width), y:(t.clientY-r.top)*(H/r.height)};
-}
-
-C.addEventListener('mousedown',e=>{ if(e.button===2)return; const p=getPos(e); ptrDown(p.x,p.y); });
-C.addEventListener('mousemove',e=>{
-  const p=getPos(e); ptrMove(p.x,p.y);
-  if(!dragItem){ const r=hit(p.x,p.y); C.style.cursor=r?(r.mode==='leash'?'crosshair':'grab'):'default'; }
-});
-C.addEventListener('mouseup',ptrUp);
-C.addEventListener('mouseleave',ptrUp);
-C.addEventListener('dblclick',e=>{ const p=getPos(e); const r=hit(p.x,p.y); if(r&&!r.item.isPanneau) r.item.blindVisible=!r.item.blindVisible; });
-C.addEventListener('contextmenu',e=>{ e.preventDefault(); const p=getPos(e); const r=hit(p.x,p.y); if(r){sel=r.item;showMenu(e.clientX,e.clientY);} });
-
-let lpTimer=null;
-C.addEventListener('touchstart',e=>{ e.preventDefault(); clearTimeout(lpTimer);
-  const p=getTPos(e.touches[0]); ptrDown(p.x,p.y);
-  lpTimer=setTimeout(()=>{ if(sel) showMenu(e.touches[0].clientX,e.touches[0].clientY); },600);
-},{passive:false});
-C.addEventListener('touchmove',e=>{ e.preventDefault(); clearTimeout(lpTimer); const p=getTPos(e.touches[0]); ptrMove(p.x,p.y); },{passive:false});
-C.addEventListener('touchend',e=>{ clearTimeout(lpTimer); ptrUp(); },{passive:false});
-
-function showMenu(cx,cy){
-  const wr=document.getElementById('cw').getBoundingClientRect();
-  cm.style.left=(cx-wr.left)+'px'; cm.style.top=(cy-wr.top)+'px'; cm.style.display='block';
-}
-function hideMenu(){ cm.style.display='none'; }
-document.addEventListener('click',e=>{ if(!cm.contains(e.target)) hideMenu(); });
-
-function rr(x,y,w,h,r){
+function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
-  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
 }
 
-let currentScene=1;
-function setScene(n){
-  currentScene=n;
-  for(let i=1;i<=3;i++){const b=document.getElementById('sc'+i);if(b){b.classList.remove('on');if(i===n)b.classList.add('on');}}
+/* ============================================================
+   ENTITÉS (inchangées)
+   ============================================================ */
+
+class Entity {
+  constructor(x, y) {
+    this.x = x; this.y = y;
+    this.angle = 0; this.angleCible = 0;
+    this.rotationAuDrag = true;
+    this.enDrag = false;
+    this._grabDx = 0; this._grabDy = 0;
+  }
+  contains() { return false; }
+  onDoubleTap() {}
+  update() {
+    if (this.rotationAuDrag) this.angle = lerpAngle(this.angle, this.angleCible, 0.28);
+  }
+  draw() {}
 }
-function filterCategory(cat,btn){
-  document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  document.querySelectorAll('#tools-grid .tool-card').forEach(c=>{
-    c.style.display=(cat==='all'||c.dataset.cat===cat)?'flex':'none';
+
+class Vehicule extends Entity {
+  constructor({ x, y, couleur = '#2563eb' }) {
+    super(x, y);
+    this.couleur = couleur;
+    this.longueur = 86; this.largeur = 44;
+    this.angle = this.angleCible = -Math.PI / 2;
+    this.clignotant = null;
+    this.afficherAngleMort = false;
+  }
+  contains(px, py) {
+    const dx = px - this.x, dy = py - this.y;
+    const cos = Math.cos(-this.angle), sin = Math.sin(-this.angle);
+    const lx = dx * cos - dy * sin, ly = dx * sin + dy * cos;
+    return Math.abs(lx) <= this.longueur / 2 + 8 && Math.abs(ly) <= this.largeur / 2 + 8;
+  }
+  onDoubleTap() {
+    const ordre = [null, 'droite', 'gauche', 'warning'];
+    this.clignotant = ordre[(ordre.indexOf(this.clignotant) + 1) % ordre.length];
+  }
+  draw(ctx, temps) {
+    const L = this.longueur, l = this.largeur;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle);
+    if (this.afficherAngleMort) {
+      ctx.fillStyle = 'rgba(220, 38, 38, 0.18)';
+      ctx.strokeStyle = 'rgba(220, 38, 38, 0.45)';
+      ctx.lineWidth = 1;
+      for (const c of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(-L * 0.18, c * l / 2);
+        ctx.lineTo(-L * 1.6,  c * l * 2.6);
+        ctx.lineTo(-L * 0.55, c * l * 2.9);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+      }
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    roundRect(ctx, -L/2 + 3, -l/2 + 4, L, l, 10); ctx.fill();
+    ctx.fillStyle = this.couleur;
+    roundRect(ctx, -L/2, -l/2, L, l, 10); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    roundRect(ctx, L*0.12, -l/2 + 6, L*0.16, l - 12, 4); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    roundRect(ctx, -L*0.34, -l/2 + 7, L*0.10, l - 14, 4); ctx.fill();
+    if (this.clignotant && (temps % 800) < 400) {
+      ctx.fillStyle = '#f59e0b';
+      const pos = [];
+      if (this.clignotant !== 'gauche') pos.push([L/2-6, l/2-6], [-L/2+6, l/2-6]);
+      if (this.clignotant !== 'droite') pos.push([L/2-6, -l/2+6], [-L/2+6, -l/2+6]);
+      for (const [cx, cy] of pos) {
+        ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+}
+
+class Pieton extends Entity {
+  constructor({ x, y, couleur = '#0e7490' }) {
+    super(x, y);
+    this.couleur = couleur;
+    this.rayon = 19;
+    this.angle = this.angleCible = -Math.PI / 2;
+  }
+  contains(px, py) { return Math.hypot(px - this.x, py - this.y) <= this.rayon + 12; }
+  draw(ctx) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle);
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.beginPath(); ctx.ellipse(2, 3, this.rayon*0.7, this.rayon, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = this.couleur;
+    ctx.beginPath(); ctx.ellipse(0, 0, this.rayon*0.7, this.rayon, 0, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#e8c39e';
+    for (const s of [-1, 1]) {
+      ctx.beginPath(); ctx.arc(0, s*this.rayon*0.9, 4.5, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.beginPath(); ctx.arc(4, 0, 8.5, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.restore();
+  }
+}
+
+const TYPES_PANNEAUX = ['stop', 'cedez', 'sens_interdit', 'passage_pieton', 'giratoire'];
+
+class Panneau extends Entity {
+  constructor({ x, y, type = 'stop' }) {
+    super(x, y);
+    this.type = type;
+    this.taille = 52;
+    this.rotationAuDrag = false;
+  }
+  contains(px, py) {
+    const r = this.taille / 2 + 10;
+    return Math.abs(px - this.x) <= r && Math.abs(py - this.y) <= r;
+  }
+  onDoubleTap() {
+    this.type = TYPES_PANNEAUX[(TYPES_PANNEAUX.indexOf(this.type) + 1) % TYPES_PANNEAUX.length];
+  }
+  draw(ctx) {
+    const t = this.taille, r = t / 2;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath(); ctx.ellipse(2, r*0.85, r*0.55, r*0.22, 0, 0, Math.PI*2); ctx.fill();
+    ctx.lineJoin = 'round';
+    switch (this.type) {
+      case 'stop': {
+        ctx.fillStyle = '#c1121f'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        for (let i = 0; i < 8; i++) {
+          const a = Math.PI/8 + i*Math.PI/4;
+          const px = r*Math.cos(a), py = r*Math.sin(a);
+          i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        }
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold ${Math.round(t*0.30)}px system-ui, sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('STOP', 0, 1);
+        break;
+      }
+      case 'cedez': {
+        ctx.fillStyle = '#fff'; ctx.strokeStyle = '#c1121f'; ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(0, r); ctx.lineTo(-r*0.95, -r*0.62); ctx.lineTo(r*0.95, -r*0.62);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        break;
+      }
+      case 'sens_interdit': {
+        ctx.fillStyle = '#c1121f'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#fff';
+        roundRect(ctx, -r*0.62, -r*0.16, r*1.24, r*0.32, 3); ctx.fill();
+        break;
+      }
+      case 'passage_pieton': {
+        ctx.fillStyle = '#1d4ed8'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+        roundRect(ctx, -r, -r, t, t, 6); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.moveTo(0, -r*0.72); ctx.lineTo(-r*0.74, r*0.62); ctx.lineTo(r*0.74, r*0.62);
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#1c2430'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-2, -r*0.05); ctx.lineTo(0, r*0.2);
+        ctx.moveTo(0, r*0.2); ctx.lineTo(-6, r*0.5);
+        ctx.moveTo(0, r*0.2); ctx.lineTo(6, r*0.5);
+        ctx.stroke();
+        ctx.fillStyle = '#1c2430';
+        ctx.beginPath(); ctx.arc(-2, -r*0.18, 3.4, 0, Math.PI*2); ctx.fill();
+        break;
+      }
+      case 'giratoire': {
+        ctx.fillStyle = '#fff'; ctx.strokeStyle = '#c1121f'; ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(0, -r); ctx.lineTo(-r*0.95, r*0.62); ctx.lineTo(r*0.95, r*0.62);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.strokeStyle = '#1c2430'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        const rc = r*0.32, cy0 = r*0.12;
+        for (let k = 0; k < 3; k++) {
+          const a0 = -Math.PI/2 + k*(2*Math.PI/3) + 0.35;
+          const a1 = a0 + 2*Math.PI/3 - 0.7;
+          ctx.beginPath(); ctx.arc(0, cy0, rc, a1, a0); ctx.stroke();
+          const fx = rc*Math.cos(a1), fy = cy0 + rc*Math.sin(a1);
+          ctx.save();
+          ctx.translate(fx, fy); ctx.rotate(a1 - Math.PI/2);
+          ctx.beginPath();
+          ctx.moveTo(4, 0); ctx.lineTo(-3, -3.5); ctx.lineTo(-3, 3.5);
+          ctx.closePath(); ctx.fillStyle = '#1c2430'; ctx.fill();
+          ctx.restore();
+        }
+        break;
+      }
+    }
+    ctx.restore();
+  }
+}
+
+/* ============================================================
+   DÉCORS FIXES (inchangés)
+   ============================================================ */
+
+function drawCarrefour(ctx, W, H) {
+  const ROUTE = 180, r = ROUTE / 2;
+  ctx.fillStyle = '#9ec79b'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#565d66';
+  ctx.fillRect(0, H/2 - r, W, ROUTE);
+  ctx.fillRect(W/2 - r, 0, ROUTE, H);
+  ctx.strokeStyle = '#d9dde2'; ctx.lineWidth = 5;
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(sx > 0 ? W : 0, H/2 + sy*r);
+    ctx.lineTo(W/2 + sx*r, H/2 + sy*r);
+    ctx.lineTo(W/2 + sx*r, sy > 0 ? H : 0);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = '#f3f4f6'; ctx.lineWidth = 4; ctx.setLineDash([26, 22]);
+  ctx.beginPath();
+  ctx.moveTo(0, H/2); ctx.lineTo(W/2 - r, H/2);
+  ctx.moveTo(W/2 + r, H/2); ctx.lineTo(W, H/2);
+  ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H/2 - r);
+  ctx.moveTo(W/2, H/2 + r); ctx.lineTo(W/2, H);
+  ctx.stroke(); ctx.setLineDash([]);
+}
+
+function drawRondPoint(ctx, W, H) {
+  const cx = W/2, cy = H/2;
+  const ROUTE = 170, r = ROUTE / 2;
+  const Rext = Math.min(W, H) * 0.30, Rint = Rext * 0.52, Rmil = (Rext + Rint) / 2;
+  const dx = Math.sqrt(Rext*Rext - r*r), theta = Math.asin(r / Rext);
+  ctx.fillStyle = '#9ec79b'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#565d66';
+  ctx.fillRect(0, cy - r, W, ROUTE);
+  ctx.fillRect(cx - r, 0, ROUTE, H);
+  ctx.beginPath(); ctx.arc(cx, cy, Rext, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#d9dde2'; ctx.lineWidth = 5;
+  ctx.beginPath();
+  for (const s of [-1, 1]) {
+    ctx.moveTo(0, cy + s*r); ctx.lineTo(cx - dx, cy + s*r);
+    ctx.moveTo(W, cy + s*r); ctx.lineTo(cx + dx, cy + s*r);
+    ctx.moveTo(cx + s*r, 0); ctx.lineTo(cx + s*r, cy - dx);
+    ctx.moveTo(cx + s*r, H); ctx.lineTo(cx + s*r, cy + dx);
+  }
+  ctx.stroke();
+  ctx.beginPath();
+  for (let k = 0; k < 4; k++) {
+    const a0 = k*Math.PI/2 + theta, a1 = (k+1)*Math.PI/2 - theta;
+    ctx.moveTo(cx + Rext*Math.cos(a0), cy + Rext*Math.sin(a0));
+    ctx.arc(cx, cy, Rext, a0, a1);
+  }
+  ctx.stroke();
+  ctx.fillStyle = '#9ec79b';
+  ctx.beginPath(); ctx.arc(cx, cy, Rint, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#d9dde2'; ctx.lineWidth = 5; ctx.stroke();
+  ctx.fillStyle = '#7fb37c';
+  ctx.beginPath(); ctx.arc(cx, cy, Rint*0.62, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#f3f4f6'; ctx.lineWidth = 4; ctx.setLineDash([26, 22]);
+  ctx.beginPath();
+  ctx.moveTo(0, cy); ctx.lineTo(cx - Rext, cy);
+  ctx.moveTo(W, cy); ctx.lineTo(cx + Rext, cy);
+  ctx.moveTo(cx, 0); ctx.lineTo(cx, cy - Rext);
+  ctx.moveTo(cx, H); ctx.lineTo(cx, cy + Rext);
+  ctx.stroke(); ctx.setLineDash([]);
+  ctx.strokeStyle = '#f3f4f6'; ctx.lineWidth = 7; ctx.setLineDash([14, 10]);
+  for (let k = 0; k < 4; k++) {
+    ctx.save();
+    ctx.translate(cx, cy); ctx.rotate(k*Math.PI/2);
+    ctx.beginPath(); ctx.moveTo(4, dx + 4); ctx.lineTo(r - 4, dx + 4); ctx.stroke();
+    ctx.restore();
+  }
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(243, 244, 246, 0.9)';
+  for (let k = 0; k < 4; k++) {
+    const a = k*Math.PI/2 + Math.PI/4;
+    ctx.save();
+    ctx.translate(cx + Rmil*Math.cos(a), cy + Rmil*Math.sin(a));
+    ctx.rotate(a - Math.PI/2);
+    ctx.beginPath();
+    ctx.moveTo(12, 0); ctx.lineTo(-8, -9); ctx.lineTo(-3, 0); ctx.lineTo(-8, 9);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+}
+
+/* ============================================================
+   ÉDITEUR : routes nues + marquages au sol
+   ------------------------------------------------------------
+   - routes    : [{ pts: [{x,y} normalisés], largeur }]
+   - marquages : [{ type, pts: [{x,y} normalisés] }]
+       · stop / cedez / passage_pieton : exactement 2 points
+         (posés de part et d'autre de la chaussée)
+       · ligne_continue / ligne_discontinue : polyligne libre
+   ============================================================ */
+
+const MARQUAGES_2_POINTS = ['stop', 'cedez', 'passage_pieton'];
+
+const editeur = {
+  mode: 'route',            // 'route' | 'marquage'
+  typeMarquage: 'stop',
+  routes: [],
+  marquages: [],
+  enCoursRoute: null,
+  enCoursMarquage: null,
+  largeur: 90,
+  magnetisme: true,
+  curseur: null,
+};
+const GRILLE = 20;
+
+function tracerChemin(ctx, pts, W, H) {
+  ctx.beginPath();
+  pts.forEach((p, i) => {
+    const x = p.x * W, y = p.y * H;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
   });
 }
-function drawRoad(){
-  if(currentScene===1) drawIntersectionT();
-  else if(currentScene===2) drawCarrefourPlus();
-  else if(currentScene===3) drawGiratoire4();
-}
-function drawIntersectionT(){
-  ctx.fillStyle='#2ecc71';ctx.fillRect(0,0,W,H);
-  const rw=140,cx=W/2,cy=H/2,r=25;
-  ctx.save();ctx.fillStyle='#3d3d3d';ctx.beginPath();
-  ctx.moveTo(0,cy-rw/2);ctx.lineTo(cx-rw/2-r,cy-rw/2);ctx.arcTo(cx-rw/2,cy-rw/2,cx-rw/2,cy-rw/2-r,r);
-  ctx.lineTo(cx-rw/2,0);ctx.lineTo(cx+rw/2,0);ctx.lineTo(cx+rw/2,cy-rw/2-r);
-  ctx.arcTo(cx+rw/2,cy-rw/2,cx+rw/2+r,cy-rw/2,r);ctx.lineTo(W,cy-rw/2);ctx.lineTo(W,cy+rw/2);
-  ctx.lineTo(cx+rw/2+r,cy+rw/2);ctx.arcTo(cx+rw/2,cy+rw/2,cx+rw/2,cy+rw/2+r,r);
-  ctx.lineTo(cx+rw/2,H);ctx.lineTo(cx-rw/2,H);ctx.lineTo(cx-rw/2,cy+rw/2+r);
-  ctx.arcTo(cx-rw/2,cy+rw/2,cx-rw/2-r,cy+rw/2,r);ctx.lineTo(0,cy+rw/2);
-  ctx.closePath();ctx.fill();
-  ctx.strokeStyle='rgba(255,255,255,0.7)';ctx.lineWidth=2;ctx.setLineDash([15,20]);
-  ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(cx-rw/2,cy);ctx.moveTo(cx+rw/2,cy);ctx.lineTo(W,cy);
-  ctx.moveTo(cx,0);ctx.lineTo(cx,cy-rw/2);ctx.moveTo(cx,cy+rw/2);ctx.lineTo(cx,H);ctx.stroke();
-  ctx.setLineDash([5,6]);ctx.lineWidth=5;ctx.strokeStyle='rgba(255,255,255,0.95)';
-  ctx.beginPath();ctx.moveTo(cx,cy+rw/2);ctx.lineTo(cx+rw/2,cy+rw/2);ctx.stroke();
-  ctx.setLineDash([]);ctx.restore();
-}
-function drawCarrefourPlus(){
-  const rw=140,cx=W/2,cy=H/2,r=25;
-  ctx.fillStyle='#3cb55a';ctx.fillRect(0,0,W,H);
-  ctx.save();ctx.fillStyle='#3d3d3d';ctx.beginPath();
-  ctx.moveTo(0,cy-rw/2);ctx.lineTo(cx-rw/2-r,cy-rw/2);ctx.arcTo(cx-rw/2,cy-rw/2,cx-rw/2,cy-rw/2-r,r);
-  ctx.lineTo(cx-rw/2,0);ctx.lineTo(cx+rw/2,0);ctx.lineTo(cx+rw/2,cy-rw/2-r);
-  ctx.arcTo(cx+rw/2,cy-rw/2,cx+rw/2+r,cy-rw/2,r);ctx.lineTo(W,cy-rw/2);ctx.lineTo(W,cy+rw/2);
-  ctx.lineTo(cx+rw/2+r,cy+rw/2);ctx.arcTo(cx+rw/2,cy+rw/2,cx+rw/2,cy+rw/2+r,r);
-  ctx.lineTo(cx+rw/2,H);ctx.lineTo(cx-rw/2,H);ctx.lineTo(cx-rw/2,cy+rw/2+r);
-  ctx.arcTo(cx-rw/2,cy+rw/2,cx-rw/2-r,cy+rw/2,r);ctx.lineTo(0,cy+rw/2);
-  ctx.closePath();ctx.fill();
-  ctx.strokeStyle='rgba(255,255,255,0.7)';ctx.lineWidth=2;ctx.setLineDash([15,20]);
-  ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(cx-rw/2,cy);ctx.moveTo(cx+rw/2,cy);ctx.lineTo(W,cy);
-  ctx.moveTo(cx,0);ctx.lineTo(cx,cy-rw/2);ctx.moveTo(cx,cy+rw/2);ctx.lineTo(cx,H);
-  ctx.stroke();ctx.setLineDash([]);ctx.restore();
-}
-function drawGiratoire4(){
-  const cx=W/2,cy=H/2,BW=42,Ro=115,Ri=55;
-  ctx.fillStyle='#3cb55a';ctx.fillRect(0,0,W,H);
-  ctx.save();ctx.fillStyle='#3d3d3d';
-  ctx.fillRect(cx-BW,0,BW*2,H);ctx.fillRect(0,cy-BW,W,BW*2);
-  ctx.beginPath();ctx.arc(cx,cy,Ro,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#bdc3c7';ctx.beginPath();ctx.arc(cx,cy,Ri+3,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#27ae60';ctx.beginPath();ctx.arc(cx,cy,Ri,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle='rgba(255,255,255,0.7)';ctx.lineWidth=1.5;ctx.setLineDash([8,8]);
-  ctx.beginPath();ctx.arc(cx,cy,Ri+(Ro-Ri)*0.5,0,Math.PI*2);ctx.stroke();
-  ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=2;ctx.setLineDash([12,10]);
-  ctx.beginPath();
-  ctx.moveTo(cx,0);ctx.lineTo(cx,cy-Ro);ctx.moveTo(cx,cy+Ro);ctx.lineTo(cx,H);
-  ctx.moveTo(0,cy);ctx.lineTo(cx-Ro,cy);ctx.moveTo(cx+Ro,cy);ctx.lineTo(W,cy);
-  ctx.stroke();ctx.setLineDash([]);
-  ctx.fillStyle='#bdc3c7';const iw=6;
-  function il(x,y,v){ctx.beginPath();if(v){ctx.moveTo(x-iw,y);ctx.lineTo(x+iw,y);ctx.lineTo(x,y+(y<cy?-10:10));}else{ctx.moveTo(x,y-iw);ctx.lineTo(x,y+iw);ctx.lineTo(x+(x<cx?-10:10),y);}ctx.closePath();ctx.fill();}
-  il(cx,cy-Ro-6,true);il(cx,cy+Ro+6,true);il(cx-Ro-6,cy,false);il(cx+Ro+6,cy,false);
-  function cedez(bx,by,a){ctx.save();ctx.translate(bx,by);ctx.rotate(a);const nb=4,sz=BW*0.18,g=BW*0.12;ctx.fillStyle='rgba(255,255,255,0.95)';for(let i=0;i<nb;i++)ctx.fillRect(3+i*(sz+g),-sz/2,sz,sz);ctx.restore();}
-  cedez(cx,cy-Ro,0);cedez(cx,cy+Ro,Math.PI);cedez(cx-Ro,cy,-Math.PI/2);cedez(cx+Ro,cy,Math.PI/2);
-  ctx.restore();
-}
-function drawRoad_legacy(){
-  const cx=W/2,cy=H/2,rw=58;
-  ctx.fillStyle='#2d6a4f'; ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#4a5568'; ctx.fillRect(0,cy-rw,W,rw*2); ctx.fillRect(cx-rw,0,rw*2,H);
-  ctx.fillStyle='#6b7280';
-  [[0,cy-rw-7,cx-rw,7],[cx+rw,cy-rw-7,W-(cx+rw),7],[0,cy+rw,cx-rw,7],[cx+rw,cy+rw,W-(cx+rw),7],
-   [cx-rw-7,0,7,cy-rw],[cx-rw-7,cy+rw,7,H-(cy+rw)],[cx+rw,0,7,cy-rw],[cx+rw,cy+rw,7,H-(cy+rw)]]
-  .forEach(([x,y,w,h])=>ctx.fillRect(x,y,w,h));
-  ctx.setLineDash([22,14]); ctx.lineWidth=2; ctx.strokeStyle='rgba(255,255,255,0.45)';
-  ctx.beginPath();
-  ctx.moveTo(0,cy);ctx.lineTo(cx-rw,cy);ctx.moveTo(cx+rw,cy);ctx.lineTo(W,cy);
-  ctx.moveTo(cx,0);ctx.lineTo(cx,cy-rw);ctx.moveTo(cx,cy+rw);ctx.lineTo(cx,H);
-  ctx.stroke(); ctx.setLineDash([]);
-  const sw=8,sc=5;
-  for(let i=0;i<sc;i++){
-    const o=i*(sw+4)-((sc*(sw+4)-4)/2);
-    ctx.fillStyle='rgba(255,255,255,0.82)';
-    ctx.fillRect(cx+o,cy+rw,sw,28);ctx.fillRect(cx+o,cy-rw-28,sw,28);
-    ctx.fillRect(cx+rw,cy+o,28,sw);ctx.fillRect(cx-rw-28,cy+o,28,sw);
-  }
-  ctx.lineWidth=3.5; ctx.strokeStyle='rgba(255,255,255,0.85)';
-  ctx.beginPath();
-  ctx.moveTo(cx-rw,cy-rw+2);ctx.lineTo(cx-rw,cy+rw-2);
-  ctx.moveTo(cx+rw,cy-rw+2);ctx.lineTo(cx+rw,cy+rw-2);
-  ctx.moveTo(cx-rw+2,cy-rw);ctx.lineTo(cx+rw-2,cy-rw);
-  ctx.moveTo(cx-rw+2,cy+rw);ctx.lineTo(cx+rw-2,cy+rw);
-  ctx.stroke();
-}
 
-function drawItem(it){
-  if(it===dragItem && dragMode==='leash' && leashTarget){
-    ctx.save();
-    ctx.setLineDash([5,4]);
-    ctx.strokeStyle='rgba(29,158,117,0.7)'; ctx.lineWidth=1.5;
-    ctx.beginPath(); ctx.moveTo(it.frontX(),it.frontY()); ctx.lineTo(leashTarget.x,leashTarget.y); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle='rgba(29,158,117,0.85)';
-    ctx.beginPath(); ctx.arc(leashTarget.x,leashTarget.y,4,0,Math.PI*2); ctx.fill();
-    ctx.restore();
-  }
+/* --- Rendu d'UN marquage --- */
+function drawMarquage(ctx, m, W, H, alpha = 1) {
+  if (m.pts.length < 2) return;
   ctx.save();
-  ctx.translate(it.x,it.y);
-  if(it===sel){
-    ctx.save();
-    ctx.shadowColor='rgba(139,90,30,0.75)'; ctx.shadowBlur=24;
-    ctx.fillStyle='rgba(139,90,30,0.28)';
-    ctx.beginPath(); ctx.arc(0,0,Math.max(it.w,it.h)*.78,0,Math.PI*2); ctx.fill();
-    ctx.restore();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = '#f3f4f6';
+  ctx.fillStyle = '#f3f4f6';
+  ctx.lineJoin = 'round';
+
+  switch (m.type) {
+
+    case 'stop': {            // bande continue épaisse (50 cm réels)
+      ctx.lineWidth = 12;
+      ctx.lineCap = 'butt';
+      tracerChemin(ctx, m.pts.slice(0, 2), W, H);
+      ctx.stroke();
+      break;
+    }
+
+    case 'cedez': {           // bande discontinue épaisse
+      ctx.lineWidth = 12;
+      ctx.lineCap = 'butt';
+      ctx.setLineDash([16, 12]);
+      tracerChemin(ctx, m.pts.slice(0, 2), W, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      break;
+    }
+
+    case 'passage_pieton': {  // bandes zébrées le long du trajet piéton,
+                              // chaque bande allongée dans le sens des véhicules
+      const a = { x: m.pts[0].x * W, y: m.pts[0].y * H };
+      const b = { x: m.pts[1].x * W, y: m.pts[1].y * H };
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      if (len < 4) break;
+      const angle = Math.atan2(b.y - a.y, b.x - a.x);
+      const BANDE = 16, ECART = 16, DEMI_LONG = 30;  // dimensions des zébrures
+      const pas = BANDE + ECART;
+      ctx.save();
+      ctx.translate(a.x, a.y);
+      ctx.rotate(angle);                // axe x local = trajet du piéton
+      for (let d = ECART / 2; d + BANDE <= len; d += pas) {
+        ctx.fillRect(d, -DEMI_LONG, BANDE, DEMI_LONG * 2);
+      }
+      ctx.restore();
+      break;
+    }
+
+    case 'ligne_continue': {
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      tracerChemin(ctx, m.pts, W, H);
+      ctx.stroke();
+      break;
+    }
+
+    case 'ligne_discontinue': {
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'butt';
+      ctx.setLineDash([26, 22]);
+      tracerChemin(ctx, m.pts, W, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      break;
+    }
   }
-  if(it.type==='panneau_stop'){ drawStop(); ctx.restore(); return; }
-  if(it.type==='panneau_cedez'){ drawCedez(); ctx.restore(); return; }
-  ctx.rotate(it.angle+Math.PI/2);
-  const w=it.w, h=it.h;
-  if(it.blindVisible){
-    ctx.save();
-    ctx.rotate(-(it.angle+Math.PI/2));
-    [{s:0.58,e:0.95},{s:1.05,e:1.42}].forEach(z=>{
-      ctx.beginPath(); ctx.moveTo(0,0);
-      ctx.arc(0,0,125,it.angle+z.s*Math.PI-Math.PI/2,it.angle+z.e*Math.PI-Math.PI/2);
-      ctx.closePath(); ctx.fillStyle='rgba(230,57,70,0.18)'; ctx.fill();
-      ctx.strokeStyle='rgba(230,57,70,0.5)'; ctx.lineWidth=1.5; ctx.stroke();
-    });
-    ctx.restore();
-  }
-  if(it.type==='pieton'){
-    ctx.fillStyle=it.color||'#9b59b6';
-    ctx.beginPath(); ctx.arc(0,2,6,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#f5cba7'; ctx.beginPath(); ctx.arc(0,-8,5,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#1D9E75'; ctx.beginPath(); ctx.arc(0,-14,4,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle='rgba(255,255,255,0.8)'; ctx.lineWidth=1.5; ctx.stroke();
-    ctx.restore(); return;
-  }
-  ctx.fillStyle=it.color||'#f4d03f';
-  rr(-w/2,-h/2,w,h,it.type==='moto'?4:7); ctx.fill();
-  ctx.strokeStyle='rgba(0,0,0,0.22)'; ctx.lineWidth=1;
-  rr(-w/2,-h/2,w,h,it.type==='moto'?4:7); ctx.stroke();
-  if(it.type!=='moto'){
-    ctx.fillStyle='rgba(0,0,0,0.28)'; rr(-w/2+4,-h/2+h*.18,w-8,h*.38,4); ctx.fill();
-    ctx.fillStyle='rgba(150,200,255,0.28)'; rr(-w/2+5,-h/2+h*.2,w-10,h*.34,3); ctx.fill();
-  } else {
-    ctx.fillStyle='rgba(0,0,0,0.32)'; rr(-w/2+3,-h/2+h*.25,w-6,h*.35,3); ctx.fill();
-  }
-  ctx.fillStyle='rgba(255,255,180,0.95)';
-  ctx.fillRect(-w/2+3,-h/2+2,w/3-1,4); ctx.fillRect(w/6+1,-h/2+2,w/3-1,4);
-  ctx.fillStyle='rgba(220,30,30,0.85)';
-  ctx.fillRect(-w/2+3,h/2-6,w/3-1,4); ctx.fillRect(w/6+1,h/2-6,w/3-1,4);
-  if(it.clignotant&&frame%50<25){
-    ctx.fillStyle='rgba(255,165,0,1)';
-    if(it.clignotant==='gauche'||it.clignotant==='warning'){ ctx.fillRect(-w/2+1,-h/2+2,4,4); ctx.fillRect(-w/2+1,h/2-6,4,4); }
-    if(it.clignotant==='droite'||it.clignotant==='warning'){ ctx.fillRect(w/2-5,-h/2+2,4,4); ctx.fillRect(w/2-5,h/2-6,4,4); }
-  }
-  const dotColor=(it===dragItem&&dragMode==='leash')? '#0F6E56':'#1D9E75';
-  ctx.fillStyle=dotColor;
-  ctx.beginPath(); ctx.arc(0,-h/2,6,0,Math.PI*2); ctx.fill();
-  ctx.strokeStyle='rgba(255,255,255,0.8)'; ctx.lineWidth=1.5; ctx.stroke();
   ctx.restore();
 }
 
-function drawStop(){
-  const r=13; ctx.fillStyle='#c0392b'; ctx.beginPath();
-  for(let i=0;i<8;i++){ const a=Math.PI/8+i*Math.PI/4; i===0?ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r):ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r); }
-  ctx.closePath(); ctx.fill(); ctx.strokeStyle='white'; ctx.lineWidth=2; ctx.stroke();
-  ctx.fillStyle='white'; ctx.font='bold 7px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('STOP',0,0);
-  ctx.strokeStyle='#7f8c8d'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,r+1); ctx.lineTo(0,r+12); ctx.stroke();
-}
-function drawCedez(){
-  const s=18; ctx.fillStyle='white'; ctx.strokeStyle='#c0392b'; ctx.lineWidth=3;
-  ctx.beginPath(); ctx.moveTo(0,-s); ctx.lineTo(s*.87,s*.5); ctx.lineTo(-s*.87,s*.5); ctx.closePath(); ctx.fill(); ctx.stroke();
-  const s2=s*.65; ctx.lineWidth=1.5;
-  ctx.beginPath(); ctx.moveTo(0,-s2); ctx.lineTo(s2*.87,s2*.5); ctx.lineTo(-s2*.87,s2*.5); ctx.closePath(); ctx.stroke();
-  ctx.fillStyle='#c0392b'; ctx.font='bold 5px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText('CÉDEZ',0,5); ctx.fillText('LE PASSAGE',0,11);
-  ctx.strokeStyle='#7f8c8d'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,s+1); ctx.lineTo(0,s+10); ctx.stroke();
+/* --- Rendu complet : routes NUES puis marquages par-dessus --- */
+function drawCartePerso(ctx, W, H, routes, marquages, apercu) {
+  ctx.fillStyle = '#9ec79b';
+  ctx.fillRect(0, 0, W, H);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // PASSE 1 — bordures de toutes les routes
+  ctx.strokeStyle = '#d9dde2';
+  for (const rt of routes) {
+    if (rt.pts.length < 2) continue;
+    ctx.lineWidth = rt.largeur + 10;
+    tracerChemin(ctx, rt.pts, W, H);
+    ctx.stroke();
+  }
+  // PASSE 2 — asphalte (aucun marquage automatique)
+  ctx.strokeStyle = '#565d66';
+  for (const rt of routes) {
+    if (rt.pts.length < 2) continue;
+    ctx.lineWidth = rt.largeur;
+    tracerChemin(ctx, rt.pts, W, H);
+    ctx.stroke();
+  }
+  // PASSE 3 — marquages posés par le formateur
+  for (const m of marquages) drawMarquage(ctx, m, W, H);
+
+  // --- Aperçus (éditeur uniquement) ---
+  if (!apercu) return;
+
+  if (apercu.route && apercu.route.pts.length > 0) {
+    const pts = apercu.route.pts.slice();
+    if (apercu.curseur) pts.push(apercu.curseur);
+    if (pts.length >= 2) {
+      ctx.globalAlpha = 0.55;
+      ctx.strokeStyle = '#565d66';
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.lineWidth = apercu.route.largeur;
+      tracerChemin(ctx, pts, W, H);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    ctx.fillStyle = '#2563eb';
+    for (const p of apercu.route.pts) {
+      ctx.beginPath(); ctx.arc(p.x * W, p.y * H, 6, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  if (apercu.marquage && apercu.marquage.pts.length > 0) {
+    const m = { type: apercu.marquage.type, pts: apercu.marquage.pts.slice() };
+    if (apercu.curseur) m.pts.push(apercu.curseur);
+    drawMarquage(ctx, m, W, H, 0.55);
+    ctx.fillStyle = '#16a34a';
+    for (const p of apercu.marquage.pts) {
+      ctx.beginPath(); ctx.arc(p.x * W, p.y * H, 6, 0, Math.PI * 2); ctx.fill();
+    }
+  }
 }
 
-function loop(){
-  frame++;
-  ctx.clearRect(0,0,W,H);
-  drawRoad(); items.forEach(drawItem);
-  RAF=requestAnimationFrame(loop);
+const DECORS = {
+  carrefour: drawCarrefour,
+  rondpoint: drawRondPoint,
+  perso: (ctx, W, H) => drawCartePerso(ctx, W, H, editeur.routes, editeur.marquages, null),
+};
+let decorActif = 'carrefour';
+
+/* ============================================================
+   CANVAS scène + éditeur
+   ============================================================ */
+
+function creerCanvas(id) {
+  const canvas = document.getElementById(id);
+  const ctx = canvas.getContext('2d');
+  const etat = { canvas, ctx, W: 0, H: 0 };
+  etat.resize = () => {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    if (rect.width === 0) return;
+    const dpr = window.devicePixelRatio || 1;
+    etat.W = rect.width;
+    etat.H = rect.height;
+    canvas.width  = Math.round(etat.W * dpr);
+    canvas.height = Math.round(etat.H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  etat.resize();
+  return etat;
 }
 
-resize();
-const v1=new Item('voiture',0,0,'#f4d03f'); v1.angle=-Math.PI/2;
-const v2=new Item('voiture',0,0,'#e63946'); v2.angle=Math.PI/2;
-const v3=new Item('moto',0,0,'#378ADD'); v3.angle=0;
-const p1=new Item('panneau_cedez',0,0,null);
-const p2=new Item('panneau_stop',0,0,null);
-// Position après resize
-v1.x=W/2-70; v1.y=H/2+80;
-v2.x=W/2+90; v2.y=H/2-50;
-v3.x=W/2-130; v3.y=H/2-20;
-p1.x=W/2+105; p1.y=H/2+115;
-p2.x=W/2-115; p2.y=H/2+105;
-items.push(v1,v2,v3,p1,p2);
-loop();
-window.addEventListener('resize',()=>{ cancelAnimationFrame(RAF); resize(); loop(); });
+const sc = creerCanvas('canvas-scene');
+const ed = creerCanvas('canvas-editeur');
+window.addEventListener('resize', () => { sc.resize(); ed.resize(); });
 
+/* ============================================================
+   ONGLETS
+   ============================================================ */
+
+let ongletActif = 'scene';
+const vues = { scene: document.getElementById('vue-scene'), editeur: document.getElementById('vue-editeur') };
+
+function activerOnglet(nom) {
+  ongletActif = nom;
+  vues.scene.classList.toggle('cachee', nom !== 'scene');
+  vues.editeur.classList.toggle('cachee', nom !== 'editeur');
+  document.getElementById('onglet-scene').classList.toggle('actif', nom === 'scene');
+  document.getElementById('onglet-editeur').classList.toggle('actif', nom === 'editeur');
+  requestAnimationFrame(() => { sc.resize(); ed.resize(); });
+}
+document.getElementById('onglet-scene').addEventListener('click', () => activerOnglet('scene'));
+document.getElementById('onglet-editeur').addEventListener('click', () => activerOnglet('editeur'));
+
+/* ============================================================
+   BOUCLE DE RENDU
+   ============================================================ */
+
+const couleursVehicules = ['#2563eb', '#dc2626', '#16a34a', '#7c3aed', '#ea580c'];
+const couleursPietons   = ['#0e7490', '#b45309', '#4d7c0f', '#9d174d'];
+
+let entites = [
+  new Vehicule({ x: sc.W / 2 + 46, y: sc.H * 0.82, couleur: couleursVehicules[0] }),
+  new Vehicule({ x: sc.W * 0.15,  y: sc.H / 2 + 46, couleur: couleursVehicules[1] }),
+];
+entites[1].angle = entites[1].angleCible = 0;
+let nbVehicules = 2, nbPietons = 0;
+
+function boucle(temps) {
+  if (ongletActif === 'scene') {
+    for (const e of entites) e.update();
+    DECORS[decorActif](sc.ctx, sc.W, sc.H);
+    for (const e of entites) e.draw(sc.ctx, temps);
+  } else {
+    drawCartePerso(ed.ctx, ed.W, ed.H, editeur.routes, editeur.marquages, {
+      route: editeur.mode === 'route' ? editeur.enCoursRoute : null,
+      marquage: editeur.mode === 'marquage' ? editeur.enCoursMarquage : null,
+      curseur: editeur.curseur,
+    });
+  }
+  requestAnimationFrame(boucle);
+}
+requestAnimationFrame(boucle);
+
+/* ============================================================
+   INTERACTIONS SCÈNE
+   ============================================================ */
+
+let actif = null;
+let dernierTap = { t: 0, x: 0, y: 0, cible: null };
+const SEUIL_ROTATION = 4;
+
+function pointDans(etat, e) {
+  const r = etat.canvas.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+sc.canvas.addEventListener('pointerdown', (e) => {
+  const p = pointDans(sc, e);
+  let touche = null;
+  for (let i = entites.length - 1; i >= 0; i--) {
+    if (entites[i].contains(p.x, p.y)) { touche = entites[i]; break; }
+  }
+  const maintenant = performance.now();
+  const estDoubleTap = touche && touche === dernierTap.cible &&
+    maintenant - dernierTap.t < 350 &&
+    Math.hypot(p.x - dernierTap.x, p.y - dernierTap.y) < 30;
+  if (estDoubleTap) {
+    touche.onDoubleTap();
+    dernierTap = { t: 0, x: 0, y: 0, cible: null };
+    return;
+  }
+  dernierTap = { t: maintenant, x: p.x, y: p.y, cible: touche };
+  if (!touche) return;
+  entites.splice(entites.indexOf(touche), 1);
+  entites.push(touche);
+  actif = touche;
+  actif.enDrag = true;
+  actif._grabDx = p.x - actif.x;
+  actif._grabDy = p.y - actif.y;
+  sc.canvas.setPointerCapture(e.pointerId);
+  sc.canvas.classList.add('dragging');
+});
+
+sc.canvas.addEventListener('pointermove', (e) => {
+  if (!actif) return;
+  const p = pointDans(sc, e);
+  const nx = p.x - actif._grabDx, ny = p.y - actif._grabDy;
+  if (actif.rotationAuDrag) {
+    const dx = nx - actif.x, dy = ny - actif.y;
+    if (Math.hypot(dx, dy) > SEUIL_ROTATION) {
+      actif.angleCible = Math.atan2(dy, dx);   // OPTION A
+    }
+  }
+  actif.x = nx; actif.y = ny;
+});
+
+function finDrag() {
+  if (!actif) return;
+  actif.enDrag = false;
+  actif = null;
+  sc.canvas.classList.remove('dragging');
+}
+sc.canvas.addEventListener('pointerup', finDrag);
+sc.canvas.addEventListener('pointercancel', finDrag);
+
+/* ============================================================
+   INTERACTIONS ÉDITEUR — deux modes
+   ============================================================ */
+
+let dernierTapEd = { t: 0, x: 0, y: 0 };
+
+function pointEditeur(e) {
+  let p = pointDans(ed, e);
+  if (editeur.magnetisme) {
+    p = { x: Math.round(p.x / GRILLE) * GRILLE, y: Math.round(p.y / GRILLE) * GRILLE };
+  }
+  return p;
+}
+
+function terminerTrace() {
+  if (editeur.enCoursRoute && editeur.enCoursRoute.pts.length >= 2) {
+    editeur.routes.push(editeur.enCoursRoute);
+  }
+  editeur.enCoursRoute = null;
+  if (editeur.enCoursMarquage && editeur.enCoursMarquage.pts.length >= 2) {
+    editeur.marquages.push(editeur.enCoursMarquage);
+  }
+  editeur.enCoursMarquage = null;
+  majBoutonPerso();
+}
+
+ed.canvas.addEventListener('pointerdown', (e) => {
+  const p = pointEditeur(e);
+  const pn = { x: p.x / ed.W, y: p.y / ed.H };
+  const deuxPoints = editeur.mode === 'marquage' &&
+                     MARQUAGES_2_POINTS.includes(editeur.typeMarquage);
+
+  // Double-tap = clore (uniquement pour les tracés en polyligne)
+  if (!deuxPoints) {
+    const maintenant = performance.now();
+    if (maintenant - dernierTapEd.t < 350 &&
+        Math.hypot(p.x - dernierTapEd.x, p.y - dernierTapEd.y) < 30) {
+      terminerTrace();
+      dernierTapEd = { t: 0, x: 0, y: 0 };
+      return;
+    }
+    dernierTapEd = { t: maintenant, x: p.x, y: p.y };
+  }
+
+  if (editeur.mode === 'route') {
+    if (!editeur.enCoursRoute) {
+      editeur.enCoursRoute = { pts: [], largeur: editeur.largeur };
+    }
+    editeur.enCoursRoute.pts.push(pn);
+    return;
+  }
+
+  // Mode marquage
+  if (!editeur.enCoursMarquage) {
+    editeur.enCoursMarquage = { type: editeur.typeMarquage, pts: [] };
+  }
+  editeur.enCoursMarquage.pts.push(pn);
+
+  // Les marquages transversaux se terminent d'eux-mêmes au 2e point
+  if (deuxPoints && editeur.enCoursMarquage.pts.length === 2) {
+    terminerTrace();
+  }
+});
+
+ed.canvas.addEventListener('pointermove', (e) => {
+  const p = pointEditeur(e);
+  editeur.curseur = { x: p.x / ed.W, y: p.y / ed.H };
+});
+ed.canvas.addEventListener('pointerleave', () => { editeur.curseur = null; });
+
+/* ============================================================
+   BARRE D'OUTILS ÉDITEUR
+   ============================================================ */
+
+const btnDecorPerso = document.getElementById('btn-decor-perso');
+function majBoutonPerso() {
+  btnDecorPerso.hidden = editeur.routes.length === 0 && editeur.marquages.length === 0;
+}
+
+const selectMarquage = document.getElementById('type-marquage');
+const aideEditeur = document.getElementById('ed-aide');
+
+document.getElementById('choix-mode').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-mode]');
+  if (!btn) return;
+  terminerTrace();                       // on clôt le tracé en cours avant de changer
+  editeur.mode = btn.dataset.mode;
+  for (const b of document.querySelectorAll('#choix-mode button')) {
+    b.classList.toggle('actif', b === btn);
+  }
+  selectMarquage.disabled = editeur.mode !== 'marquage';
+  aideEditeur.textContent = editeur.mode === 'route'
+    ? 'Mode Route : tapez pour poser les points, double-tap ou « Terminer » pour clore. Les routes sont nues : ajoutez les marquages avec le mode Marquage.'
+    : 'Mode Marquage : STOP, cédez et passage piéton se posent en 2 taps (un de chaque côté de la chaussée). Les lignes se tracent en polyligne, double-tap pour clore.';
+});
+
+selectMarquage.addEventListener('change', () => {
+  terminerTrace();
+  editeur.typeMarquage = selectMarquage.value;
+});
+
+const sliderLargeur = document.getElementById('ed-largeur');
+sliderLargeur.addEventListener('input', () => {
+  editeur.largeur = Number(sliderLargeur.value);
+  document.getElementById('ed-largeur-val').textContent = sliderLargeur.value;
+  if (editeur.enCoursRoute) editeur.enCoursRoute.largeur = editeur.largeur;
+});
+
+document.getElementById('ed-magnetisme').addEventListener('change', (e) => {
+  editeur.magnetisme = e.target.checked;
+});
+
+document.getElementById('ed-terminer').addEventListener('click', terminerTrace);
+
+document.getElementById('ed-annuler').addEventListener('click', () => {
+  // Annulation contextuelle : tracé en cours, sinon dernier élément du mode actif
+  if (editeur.mode === 'route') {
+    if (editeur.enCoursRoute && editeur.enCoursRoute.pts.length > 0) {
+      editeur.enCoursRoute.pts.pop();
+      if (editeur.enCoursRoute.pts.length === 0) editeur.enCoursRoute = null;
+    } else if (editeur.routes.length > 0) {
+      editeur.routes.pop();
+    }
+  } else {
+    if (editeur.enCoursMarquage && editeur.enCoursMarquage.pts.length > 0) {
+      editeur.enCoursMarquage.pts.pop();
+      if (editeur.enCoursMarquage.pts.length === 0) editeur.enCoursMarquage = null;
+    } else if (editeur.marquages.length > 0) {
+      editeur.marquages.pop();
+    }
+  }
+  majBoutonPerso();
+});
+
+document.getElementById('ed-effacer').addEventListener('click', () => {
+  editeur.routes = [];
+  editeur.marquages = [];
+  editeur.enCoursRoute = null;
+  editeur.enCoursMarquage = null;
+  majBoutonPerso();
+  if (decorActif === 'perso') choisirDecor('carrefour');
+});
+
+document.getElementById('ed-exporter').addEventListener('click', () => {
+  terminerTrace();
+  const blob = new Blob(
+    [JSON.stringify({ version: 2, routes: editeur.routes, marquages: editeur.marquages }, null, 2)],
+    { type: 'application/json' }
+  );
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ma-carte.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+const inputFichier = document.getElementById('ed-fichier');
+document.getElementById('ed-importer').addEventListener('click', () => inputFichier.click());
+inputFichier.addEventListener('change', async () => {
+  const fichier = inputFichier.files[0];
+  if (!fichier) return;
+  try {
+    const data = JSON.parse(await fichier.text());
+    if (Array.isArray(data.routes)) {
+      editeur.routes = data.routes;
+      editeur.marquages = Array.isArray(data.marquages) ? data.marquages : [];
+      majBoutonPerso();
+    }
+  } catch {
+    alert('Fichier invalide : choisissez un export JSON du simulateur.');
+  }
+  inputFichier.value = '';
+});
+
+document.getElementById('ed-utiliser').addEventListener('click', () => {
+  terminerTrace();
+  if (editeur.routes.length === 0 && editeur.marquages.length === 0) return;
+  choisirDecor('perso');
+  activerOnglet('scene');
+});
+
+/* ============================================================
+   BARRE D'OUTILS SCÈNE
+   ============================================================ */
+
+function choisirDecor(nom) {
+  decorActif = nom;
+  for (const b of document.querySelectorAll('#choix-decor button')) {
+    b.classList.toggle('actif', b.dataset.decor === nom);
+  }
+}
+
+document.getElementById('choix-decor').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-decor]');
+  if (btn) choisirDecor(btn.dataset.decor);
+});
+
+document.getElementById('btn-vehicule').addEventListener('click', () => {
+  entites.push(new Vehicule({
+    x: sc.W / 2 + (Math.random() - 0.5) * 120,
+    y: sc.H * 0.85,
+    couleur: couleursVehicules[nbVehicules++ % couleursVehicules.length],
+  }));
+});
+
+document.getElementById('btn-pieton').addEventListener('click', () => {
+  entites.push(new Pieton({
+    x: sc.W * 0.5 + (Math.random() - 0.5) * 160,
+    y: sc.H * 0.18,
+    couleur: couleursPietons[nbPietons++ % couleursPietons.length],
+  }));
+});
+
+document.getElementById('btn-panneau').addEventListener('click', () => {
+  entites.push(new Panneau({
+    x: sc.W * 0.5 + (Math.random() - 0.5) * 160,
+    y: sc.H * 0.3,
+    type: document.getElementById('type-panneau').value,
+  }));
+});
+
+const btnAngleMort = document.getElementById('btn-angle-mort');
+btnAngleMort.addEventListener('click', () => {
+  const cibles = entites.filter(e => e instanceof Vehicule);
+  const etat = !cibles.some(v => v.afficherAngleMort);
+  for (const v of cibles) v.afficherAngleMort = etat;
+  btnAngleMort.classList.toggle('actif', etat);
+});
+
+document.getElementById('btn-vider').addEventListener('click', () => {
+  entites = [];
+  nbVehicules = 0;
+  nbPietons = 0;
+  btnAngleMort.classList.remove('actif');
+});
 </script>
 </body>
 </html>
