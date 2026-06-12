@@ -229,6 +229,8 @@
       <button id="btn-effacer-traces">Effacer</button>
     </div>
     <button id="btn-numeros">N°</button>
+    <button id="btn-nuit">🌙 Nuit</button>
+    <button id="btn-vision">👁 Vision</button>
     <div class="groupe">
       <button id="btn-zoom-moins">−</button>
       <button id="btn-zoom-reset">100 %</button>
@@ -237,7 +239,7 @@
     <button id="btn-plein-ecran">Plein écran</button>
     <button id="btn-info-scene" title="Afficher les astuces">ℹ Infos</button>
     <button id="btn-vider">Vider</button>
-    <span class="aide">Tirer le point devant le capot (la « laisse ») : conduite fluide · Glisser la carrosserie : déplacer et orienter · Double-tap : clignotants / type de panneau / couleur du feu · Trace : les véhicules déplacés laissent leur trajectoire (Effacer pour nettoyer) · N° : numéroter les véhicules · Molette ou pincer (2 doigts sur le vide) : zoom et déplacement de la vue · 2ᵉ doigt posé pendant qu'on tient un objet : rotation fine · pincer un panneau tenu : le redimensionner · ✏ Stylo : dessiner par-dessus la scène (Effacer pour nettoyer)</span>
+    <span class="aide">Tirer le point devant le capot (la « laisse ») : conduite fluide · Glisser la carrosserie : déplacer et orienter · Double-tap : clignotants / type de panneau / couleur du feu · Trace : les véhicules déplacés laissent leur trajectoire (Effacer pour nettoyer) · N° : numéroter les véhicules · Molette ou pincer (2 doigts sur le vide) : zoom et déplacement de la vue · 2ᵉ doigt posé pendant qu'on tient un objet : rotation fine · pincer un panneau tenu : le redimensionner · ✏ Stylo : dessiner par-dessus la scène (Effacer pour nettoyer) · 🌙 Nuit : voile nocturne et faisceaux de phares · 👁 Vision : champ de vision réel du véhicule au premier plan (montants et ombres des autres usagers)</span>
   </header>
   <div class="zone-canvas">
     <canvas id="canvas-scene"></canvas>
@@ -1623,6 +1625,8 @@ const OPTIONS = {
   trace: false,      // enregistrer la trajectoire pendant le drag
   numeros: false,    // afficher les pastilles de numéro
   stylo: false,      // mode annotation à main levée
+  nuit: false,       // voile nocturne + faisceaux de phares
+  vision: false,     // champ de vision du conducteur (véhicule au 1er plan)
 };
 const TRACE_PAS = 6;        // distance mini (px) entre deux points
 const TRACE_MAX = 900;      // nb max de points par trace
@@ -1647,6 +1651,178 @@ function drawAnnotations(ctx) {
     ctx.stroke();
   }
   ctx.restore();
+}
+
+/* ----- Mode nuit : voile sombre percé par les faisceaux de phares ----- */
+const calqueNuit = document.createElement('canvas');
+
+function drawNuit(ctxMain) {
+  const dpr = window.devicePixelRatio || 1;
+  if (calqueNuit.width !== sc.canvas.width || calqueNuit.height !== sc.canvas.height) {
+    calqueNuit.width = sc.canvas.width;
+    calqueNuit.height = sc.canvas.height;
+  }
+  const nc = calqueNuit.getContext('2d');
+  nc.setTransform(1, 0, 0, 1, 0, 0);
+  nc.clearRect(0, 0, calqueNuit.width, calqueNuit.height);
+  nc.setTransform(dpr, 0, 0, dpr, 0, 0);
+  nc.fillStyle = 'rgba(7, 11, 26, 0.7)';
+  nc.fillRect(0, 0, sc.W, sc.H);
+  nc.translate(vue.ox, vue.oy);
+  nc.scale(vue.zoom, vue.zoom);
+  nc.globalCompositeOperation = 'destination-out';
+  for (const e of entites) {
+    if (!(e instanceof Vehicule)) continue;
+    const L = e.longueur, l = e.largeur;
+    const portee = L * 2.3;                  // portée des feux de croisement
+    nc.save();
+    nc.translate(e.x, e.y);
+    nc.rotate(e.angle);
+    const g = nc.createLinearGradient(L / 2, 0, L / 2 + portee, 0);
+    g.addColorStop(0, 'rgba(0,0,0,0.95)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    nc.fillStyle = g;
+    nc.beginPath();
+    nc.moveTo(L / 2 - 4, -l * 0.42);
+    nc.lineTo(L / 2 + portee, -l * 1.6);
+    nc.lineTo(L / 2 + portee,  l * 1.6);
+    nc.lineTo(L / 2 - 4,  l * 0.42);
+    nc.closePath();
+    nc.fill();
+    const gh = nc.createRadialGradient(0, 0, 6, 0, 0, L * 0.9);
+    gh.addColorStop(0, 'rgba(0,0,0,0.5)');
+    gh.addColorStop(1, 'rgba(0,0,0,0)');
+    nc.fillStyle = gh;
+    nc.beginPath();
+    nc.arc(0, 0, L * 0.9, 0, Math.PI * 2);
+    nc.fill();
+    nc.restore();
+  }
+  nc.globalCompositeOperation = 'source-over';
+  ctxMain.save();
+  ctxMain.setTransform(1, 0, 0, 1, 0, 0);
+  ctxMain.drawImage(calqueNuit, 0, 0);
+  ctxMain.restore();
+}
+
+function drawPhares(ctx) {
+  for (const e of entites) {
+    if (!(e instanceof Vehicule)) continue;
+    const L = e.longueur, l = e.largeur;
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    ctx.rotate(e.angle);
+    ctx.fillStyle = '#ffe9a8';
+    for (const c of [-1, 1]) {
+      ctx.beginPath();
+      ctx.arc(L / 2 - 5, c * (l / 2 - 8), 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+/* ----- Vision du conducteur : champ de vision réel, masqué par les
+   montants du pare-brise et par les ombres portées des autres usagers.
+   S'applique au véhicule au premier plan (le dernier touché). ----- */
+const calqueVision = document.createElement('canvas');
+
+function drawVision(ctxMain) {
+  let v = null;
+  for (let i = entites.length - 1; i >= 0; i--) {
+    if (entites[i] instanceof Vehicule) { v = entites[i]; break; }
+  }
+  if (!v) return;
+  const dpr = window.devicePixelRatio || 1;
+  if (calqueVision.width !== sc.canvas.width || calqueVision.height !== sc.canvas.height) {
+    calqueVision.width = sc.canvas.width;
+    calqueVision.height = sc.canvas.height;
+  }
+  const nc = calqueVision.getContext('2d');
+  nc.setTransform(1, 0, 0, 1, 0, 0);
+  nc.clearRect(0, 0, calqueVision.width, calqueVision.height);
+  nc.setTransform(dpr, 0, 0, dpr, 0, 0);
+  nc.translate(vue.ox, vue.oy);
+  nc.scale(vue.zoom, vue.zoom);
+
+  const L = v.longueur, l = v.largeur;
+  const cos = Math.cos(v.angle), sin = Math.sin(v.angle);
+  const loc = (lx, ly) => ({ x: v.x + lx * cos - ly * sin, y: v.y + lx * sin + ly * cos });
+  const oeil = loc(L * 0.02, -l * 0.18);     // siège conducteur (à gauche)
+  const R = L * 4.5;
+  const DEMI = Math.PI * 0.42;               // ~150° de champ visuel
+
+  nc.fillStyle = 'rgba(255, 233, 120, 0.22)';
+  nc.beginPath();
+  nc.moveTo(oeil.x, oeil.y);
+  nc.arc(oeil.x, oeil.y, R, v.angle - DEMI, v.angle + DEMI);
+  nc.closePath();
+  nc.fill();
+
+  nc.globalCompositeOperation = 'destination-out';
+  nc.fillStyle = 'rgba(0,0,0,1)';
+
+  // Montants A du pare-brise : deux coins d'ombre fins
+  for (const c of [-1, 1]) {
+    const pil = loc(L * 0.13, c * (l / 2 - 5));
+    const a = Math.atan2(pil.y - oeil.y, pil.x - oeil.x);
+    const W2 = 0.035;
+    nc.beginPath();
+    nc.moveTo(pil.x, pil.y);
+    nc.lineTo(pil.x + Math.cos(a - W2) * R, pil.y + Math.sin(a - W2) * R);
+    nc.lineTo(pil.x + Math.cos(a + W2) * R, pil.y + Math.sin(a + W2) * R);
+    nc.closePath();
+    nc.fill();
+  }
+
+  // Ombres portées par les autres véhicules et les piétons
+  for (const e of entites) {
+    if (e === v) continue;
+    let coins = null;
+    if (e instanceof Vehicule) {
+      const c2 = Math.cos(e.angle), s2 = Math.sin(e.angle);
+      const hx = e.longueur / 2, hy = e.largeur / 2;
+      coins = [[hx, hy], [hx, -hy], [-hx, hy], [-hx, -hy]].map(([lx, ly]) =>
+        ({ x: e.x + lx * c2 - ly * s2, y: e.y + lx * s2 + ly * c2 }));
+    } else if (e instanceof Pieton) {
+      const d = Math.hypot(e.x - oeil.x, e.y - oeil.y);
+      if (d < e.rayon + 2) continue;
+      const a0 = Math.atan2(e.y - oeil.y, e.x - oeil.x);
+      coins = [
+        { x: e.x + Math.cos(a0 + Math.PI / 2) * e.rayon, y: e.y + Math.sin(a0 + Math.PI / 2) * e.rayon },
+        { x: e.x + Math.cos(a0 - Math.PI / 2) * e.rayon, y: e.y + Math.sin(a0 - Math.PI / 2) * e.rayon },
+      ];
+    } else {
+      continue;
+    }
+
+    // Silhouette : coins aux angles extrêmes vus de l'œil
+    const ref = Math.atan2(
+      coins.reduce((s, c) => s + c.y, 0) / coins.length - oeil.y,
+      coins.reduce((s, c) => s + c.x, 0) / coins.length - oeil.x);
+    let mn = Infinity, mx = -Infinity, cmn = null, cmx = null;
+    for (const c of coins) {
+      let a = Math.atan2(c.y - oeil.y, c.x - oeil.x) - ref;
+      a = ((a + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+      if (a < mn) { mn = a; cmn = c; }
+      if (a > mx) { mx = a; cmx = c; }
+    }
+    if (!cmn || !cmx) continue;
+    const amn = ref + mn, amx = ref + mx;
+    nc.beginPath();
+    nc.moveTo(cmn.x, cmn.y);
+    nc.lineTo(cmn.x + Math.cos(amn) * R * 1.2, cmn.y + Math.sin(amn) * R * 1.2);
+    nc.lineTo(cmx.x + Math.cos(amx) * R * 1.2, cmx.y + Math.sin(amx) * R * 1.2);
+    nc.lineTo(cmx.x, cmx.y);
+    nc.closePath();
+    nc.fill();
+  }
+
+  nc.globalCompositeOperation = 'source-over';
+  ctxMain.save();
+  ctxMain.setTransform(1, 0, 0, 1, 0, 0);
+  ctxMain.drawImage(calqueVision, 0, 0);
+  ctxMain.restore();
 }
 
 /* Échantillonnage d'une trace pendant un déplacement */
@@ -1737,6 +1913,11 @@ function boucle(temps) {
     DECORS[decorActif](sc.ctx, sc.W, sc.H);
     drawTraces(sc.ctx);
     for (const e of entites) e.draw(sc.ctx, temps);
+    if (OPTIONS.nuit) {
+      drawNuit(sc.ctx);
+      drawPhares(sc.ctx);
+    }
+    if (OPTIONS.vision) drawVision(sc.ctx);
     drawAnnotations(sc.ctx);
     sc.ctx.restore();
     dessinerCorbeille(sc.ctx);
@@ -2850,6 +3031,18 @@ const btnNumeros = document.getElementById('btn-numeros');
 btnNumeros.addEventListener('click', () => {
   OPTIONS.numeros = !OPTIONS.numeros;
   btnNumeros.classList.toggle('actif', OPTIONS.numeros);
+});
+
+const btnNuit = document.getElementById('btn-nuit');
+btnNuit.addEventListener('click', () => {
+  OPTIONS.nuit = !OPTIONS.nuit;
+  btnNuit.classList.toggle('actif', OPTIONS.nuit);
+});
+
+const btnVision = document.getElementById('btn-vision');
+btnVision.addEventListener('click', () => {
+  OPTIONS.vision = !OPTIONS.vision;
+  btnVision.classList.toggle('actif', OPTIONS.vision);
 });
 
 for (const [btnId, selecteur] of [
