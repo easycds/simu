@@ -74,7 +74,10 @@
     border-bottom: 1px solid var(--bordure);
     flex-wrap: wrap;
   }
-  header .aide { font-size: 12.5px; color: var(--gris); width: 100%; }
+  header.replie > *:not(.btn-replier) { display: none !important; }
+  .btn-replier { font-size: 13px; padding: 7px 12px; }
+  header .aide { font-size: 12.5px; color: var(--gris); width: 100%; display: none; }
+  body.avec-aide header .aide { display: block; }
 
   .groupe {
     display: flex;
@@ -138,6 +141,26 @@
     background: rgba(255,255,255,0.92);
   }
 
+  #menu-ctx {
+    position: fixed;
+    z-index: 50;
+    display: none;
+    background: #fff;
+    border: 1.5px solid var(--bordure);
+    border-radius: 12px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+    overflow: hidden;
+    min-width: 150px;
+  }
+  #menu-ctx button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: none;
+    border-radius: 0;
+  }
+  #menu-ctx button:disabled { color: #b9b3b1; }
+
   .vue { flex: 1; position: relative; display: flex; flex-direction: column; }
   .vue.cachee { display: none; }
   .zone-canvas { flex: 1; position: relative; }
@@ -151,6 +174,7 @@
   }
   #canvas-editeur { cursor: crosshair; }
   canvas.dragging { cursor: grabbing; }
+  canvas.stylo { cursor: crosshair; }
 </style>
 </head>
 <body>
@@ -168,15 +192,18 @@
 <!-- ================= VUE SCÈNE ================= -->
 <div class="vue" id="vue-scene">
   <header>
+    <button class="btn-replier" id="replier-scene" title="Replier / déplier la barre">▴ Menu</button>
     <div class="groupe" id="choix-decor">
       <button data-decor="carrefour" class="actif">Carrefour</button>
       <button data-decor="rondpoint">Rond-point</button>
+      <button data-decor="voierapide">Voie rapide</button>
       <button data-decor="perso" id="btn-decor-perso" hidden>Perso</button>
     </div>
     <label class="controle">Giratoire
       <input type="range" id="taille-giratoire" min="28" max="55" step="1" value="42">
     </label>
     <button id="btn-vehicule">+ Véhicule</button>
+    <button id="btn-camion">+ Poids lourd</button>
     <button id="btn-pieton">+ Piéton</button>
     <div class="groupe">
       <select id="type-panneau" aria-label="Type de panneau">
@@ -185,6 +212,10 @@
         <option value="sens_interdit">Sens interdit</option>
         <option value="passage_pieton">Passage piéton</option>
         <option value="giratoire">Carrefour giratoire</option>
+        <option value="priorite_droite">Priorité à droite</option>
+        <option value="obligation_droit">Obligation tout droit</option>
+        <option value="obligation_droite">Obligation à droite</option>
+        <option value="obligation_gauche">Obligation à gauche</option>
         <option value="feu">Feu tricolore</option>
       </select>
       <button id="btn-panneau">+ Panneau</button>
@@ -192,6 +223,7 @@
     <button id="btn-angle-mort">Angles morts</button>
     <div class="groupe">
       <button id="btn-trace">Trace</button>
+      <button id="btn-stylo">✏ Stylo</button>
       <button id="btn-effacer-traces">Effacer</button>
     </div>
     <button id="btn-numeros">N°</button>
@@ -201,8 +233,9 @@
       <button id="btn-zoom-plus">+</button>
     </div>
     <button id="btn-plein-ecran">Plein écran</button>
+    <button id="btn-info-scene" title="Afficher les astuces">ℹ Infos</button>
     <button id="btn-vider">Vider</button>
-    <span class="aide">Tirer le point devant le capot (la « laisse ») : conduite fluide · Glisser la carrosserie : déplacer et orienter · Double-tap : clignotants / type de panneau / couleur du feu · Trace : les véhicules déplacés laissent leur trajectoire (Effacer pour nettoyer) · N° : numéroter les véhicules · Molette ou pincer (2 doigts sur le vide) : zoom et déplacement de la vue · 2ᵉ doigt posé pendant qu'on tient un véhicule : rotation fine</span>
+    <span class="aide">Tirer le point devant le capot (la « laisse ») : conduite fluide · Glisser la carrosserie : déplacer et orienter · Double-tap : clignotants / type de panneau / couleur du feu · Trace : les véhicules déplacés laissent leur trajectoire (Effacer pour nettoyer) · N° : numéroter les véhicules · Molette ou pincer (2 doigts sur le vide) : zoom et déplacement de la vue · 2ᵉ doigt posé pendant qu'on tient un objet : rotation fine · pincer un panneau tenu : le redimensionner · ✏ Stylo : dessiner par-dessus la scène (Effacer pour nettoyer)</span>
   </header>
   <div class="zone-canvas">
     <canvas id="canvas-scene"></canvas>
@@ -213,8 +246,14 @@
 <!-- ================= VUE ÉDITEUR ================= -->
 <div class="vue cachee" id="vue-editeur">
   <header>
+    <button class="btn-replier" id="replier-editeur" title="Replier / déplier la barre">▴ Menu</button>
+    <div class="groupe">
+      <select id="choix-carte" aria-label="Scène en cours"></select>
+      <button id="btn-nouvelle-carte">+ Scène</button>
+    </div>
     <div class="groupe" id="choix-mode">
       <button data-mode="route" class="actif">Route</button>
+      <button data-mode="trottoir">Trottoir</button>
       <button data-mode="marquage">Marquage</button>
       <button data-mode="panneau">Panneau</button>
       <button data-mode="selection">Sélection</button>
@@ -236,6 +275,10 @@
       <option value="sens_interdit">Sens interdit</option>
       <option value="passage_pieton">Passage piéton</option>
       <option value="giratoire">Carrefour giratoire</option>
+      <option value="priorite_droite">Priorité à droite</option>
+      <option value="obligation_droit">Obligation tout droit</option>
+      <option value="obligation_droite">Obligation à droite</option>
+      <option value="obligation_gauche">Obligation à gauche</option>
       <option value="feu">Feu tricolore</option>
     </select>
     <label class="controle">Largeur route
@@ -251,6 +294,9 @@
       <label class="controle" id="sel-taille-zone" hidden>Taille %
         <input type="range" id="sel-taille" min="30" max="220" step="5" value="100">
       </label>
+      <label class="controle" id="sel-rot-zone" hidden>Rotation
+        <input type="range" id="sel-rot" min="-180" max="180" step="5" value="0">
+      </label>
     </span>
     <button id="ed-terminer">Terminer</button>
     <button id="ed-annuler">Annuler</button>
@@ -259,11 +305,18 @@
       <button id="ed-exporter">Exporter</button>
       <button id="ed-importer">Importer</button>
     </div>
+    <button id="btn-info-ed" title="Afficher les astuces">ℹ Infos</button>
     <button id="ed-utiliser" class="actif">Utiliser dans la scène →</button>
     <input type="file" id="ed-fichier" accept=".json,application/json" hidden>
     <span class="aide" id="ed-aide">Mode Route : tapez pour poser les points, double-tap ou « Terminer » pour clore. Les routes sont nues : marquages et panneaux s'ajoutent avec les autres modes.</span>
   </header>
   <div class="zone-canvas"><canvas id="canvas-editeur"></canvas></div>
+</div>
+
+<div id="menu-ctx">
+  <button id="ctx-copier">Copier</button>
+  <button id="ctx-coller">Coller</button>
+  <button id="ctx-supprimer" class="danger">Supprimer</button>
 </div>
 
 <script>
@@ -386,6 +439,68 @@ function dessinerPictogramme(ctx, type, taille, etatFeu) {
       break;
     }
 
+    case 'obligation_droit':
+    case 'obligation_droite':
+    case 'obligation_gauche': { // B21 — disque bleu, flèche blanche
+      ctx.fillStyle = '#1d4ed8';
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = Math.max(2, t * 0.06);
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = '#fff';
+      ctx.fillStyle = '#fff';
+      ctx.lineWidth = Math.max(4, t * 0.14);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      if (type === 'obligation_droit') {
+        ctx.beginPath();
+        ctx.moveTo(0, r * 0.52);
+        ctx.lineTo(0, -r * 0.10);
+        ctx.stroke();
+        ctx.beginPath();                       // pointe vers le haut
+        ctx.moveTo(0, -r * 0.55);
+        ctx.lineTo(-r * 0.26, -r * 0.08);
+        ctx.lineTo( r * 0.26, -r * 0.08);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        const s = type === 'obligation_droite' ? 1 : -1;
+        ctx.beginPath();                       // tige + coude
+        ctx.moveTo(-s * r * 0.15, r * 0.52);
+        ctx.lineTo(-s * r * 0.15, -r * 0.05);
+        ctx.lineTo( s * r * 0.18, -r * 0.05);
+        ctx.stroke();
+        ctx.beginPath();                       // pointe latérale
+        ctx.moveTo(s * r * 0.52, -r * 0.05);
+        ctx.lineTo(s * r * 0.15, -r * 0.30);
+        ctx.lineTo(s * r * 0.15,  r * 0.20);
+        ctx.closePath();
+        ctx.fill();
+      }
+      break;
+    }
+
+    case 'priorite_droite': { // AB1 — triangle danger, croix noire
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = '#c1121f';
+      ctx.lineWidth = Math.max(3.5, t * 0.115);
+      ctx.beginPath();
+      ctx.moveTo(0, -r);
+      ctx.lineTo(-r * 0.95, r * 0.62);
+      ctx.lineTo( r * 0.95, r * 0.62);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = '#1c2430';
+      ctx.lineWidth = Math.max(3, t * 0.09);
+      ctx.lineCap = 'round';
+      const k = r * 0.26, cy1 = r * 0.12;
+      ctx.beginPath();
+      ctx.moveTo(-k, cy1 - k); ctx.lineTo(k, cy1 + k);
+      ctx.moveTo(-k, cy1 + k); ctx.lineTo(k, cy1 - k);
+      ctx.stroke();
+      break;
+    }
+
     case 'feu': {
       // Boîtier vertical + 3 lampes ; seule la lampe `etatFeu` est vive
       const bw = t * 0.52, bh = t * 1.12;
@@ -442,7 +557,7 @@ class Entity {
   contains() { return false; }
   onDoubleTap() {}
   update() {
-    if (this.rotationAuDrag) this.angle = lerpAngle(this.angle, this.angleCible, 0.28);
+    this.angle = lerpAngle(this.angle, this.angleCible, 0.28);
   }
   draw() {}
 }
@@ -462,7 +577,7 @@ class Vehicule extends Entity {
   }
 
   /* Longueur de la "laisse" : centre du véhicule -> poignée */
-  get longueurLaisse() { return this.longueur / 2 + 34; }
+  get longueurLaisse() { return this.longueur / 2 + 14; }
 
   /* Position de repos de la poignée, dans l'axe du capot */
   poigneeRepos() {
@@ -526,6 +641,12 @@ class Vehicule extends Entity {
       }
     }
     ctx.restore();
+    this.drawAccessoires(ctx);
+  }
+
+  /* Laisse + pastille de numéro : partagés avec le poids lourd */
+  drawAccessoires(ctx) {
+    const L = this.longueur;
 
     // Poignée de traction ("laisse") : pointillé capot -> poignée
     {
@@ -574,6 +695,73 @@ class Vehicule extends Entity {
   }
 }
 
+/* Poids lourd : 3× la longueur d'une voiture, cabine + remorque,
+   angles morts latéraux étendus et cône arrière aveugle. */
+class Camion extends Vehicule {
+  constructor(opts) {
+    super(opts);
+    this.longueur = 258;
+    this.largeur = 62;
+  }
+  draw(ctx, temps) {
+    const L = this.longueur, l = this.largeur;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle);
+
+    if (this.afficherAngleMort) {
+      ctx.fillStyle = 'rgba(220, 38, 38, 0.18)';
+      ctx.strokeStyle = 'rgba(220, 38, 38, 0.45)';
+      ctx.lineWidth = 1;
+      for (const c of [-1, 1]) {              // latéraux, très étendus
+        ctx.beginPath();
+        ctx.moveTo(L * 0.32, c * l / 2);
+        ctx.lineTo(-L * 1.0,  c * l * 3.1);
+        ctx.lineTo(L * 0.02,  c * l * 3.3);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+      }
+      ctx.beginPath();                        // arrière totalement aveugle
+      ctx.moveTo(-L / 2, -l / 2);
+      ctx.lineTo(-L * 1.12, -l * 0.95);
+      ctx.lineTo(-L * 1.12,  l * 0.95);
+      ctx.lineTo(-L / 2,  l / 2);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    roundRect(ctx, -L/2 + 3, -l/2 + 4, L, l, 8); ctx.fill();
+    // Remorque
+    ctx.fillStyle = '#e3e6ea';
+    roundRect(ctx, -L/2, -l/2, L * 0.70, l, 6); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1.5; ctx.stroke();
+    // Cabine
+    ctx.fillStyle = this.couleur;
+    roundRect(ctx, L * 0.22, -l/2, L * 0.28, l, 8); ctx.fill();
+    ctx.stroke();
+    // Pare-brise
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    roundRect(ctx, L * 0.40, -l/2 + 7, L * 0.07, l - 14, 4); ctx.fill();
+    // Rétroviseurs longue portée
+    ctx.fillStyle = this.couleur;
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1;
+    for (const c of [-1, 1]) {
+      roundRect(ctx, L * 0.36, c === -1 ? -l/2 - 11 : l/2 + 2, 14, 9, 2);
+      ctx.fill(); ctx.stroke();
+    }
+    if (this.clignotant && (temps % 800) < 400) {
+      ctx.fillStyle = '#f59e0b';
+      const pos = [];
+      if (this.clignotant !== 'gauche') pos.push([L/2-7, l/2-7], [-L/2+7, l/2-7]);
+      if (this.clignotant !== 'droite') pos.push([L/2-7, -l/2+7], [-L/2+7, -l/2+7]);
+      for (const [px, py] of pos) {
+        ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.restore();
+    this.drawAccessoires(ctx);
+  }
+}
+
 class Pieton extends Entity {
   constructor({ x, y, couleur = '#0e7490' }) {
     super(x, y);
@@ -602,7 +790,7 @@ class Pieton extends Entity {
   }
 }
 
-const TYPES_PANNEAUX_CYCLE = ['stop', 'cedez', 'sens_interdit', 'passage_pieton', 'giratoire'];
+const TYPES_PANNEAUX_CYCLE = ['stop', 'cedez', 'sens_interdit', 'passage_pieton', 'giratoire', 'priorite_droite', 'obligation_droit', 'obligation_droite', 'obligation_gauche'];
 
 class Panneau extends Entity {
   constructor({ x, y, type = 'stop', taille = 52 }) {
@@ -613,8 +801,11 @@ class Panneau extends Entity {
     this.rotationAuDrag = false;
   }
   contains(px, py) {
+    const dx = px - this.x, dy = py - this.y;
+    const cos = Math.cos(-this.angle), sin = Math.sin(-this.angle);
+    const lx = dx * cos - dy * sin, ly = dx * sin + dy * cos;
     const r = this.taille / 2 + 10;
-    return Math.abs(px - this.x) <= r && Math.abs(py - this.y) <= r;
+    return Math.abs(lx) <= r && Math.abs(ly) <= r;
   }
   onDoubleTap() {
     if (this.type === 'feu') {
@@ -629,6 +820,7 @@ class Panneau extends Entity {
   draw(ctx) {
     ctx.save();
     ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle);
     dessinerOmbrePanneau(ctx, this.taille);
     dessinerPictogramme(ctx, this.type, this.taille, this.etatFeu);
     ctx.restore();
@@ -763,6 +955,110 @@ function drawRondPoint(ctx, W, H, taille = 0.42) {
 }
 
 /* ============================================================
+   DÉCOR : insertion sur voie rapide
+   ------------------------------------------------------------
+   2×2 voies séparées par un terre-plein central, bandes d'arrêt
+   d'urgence, bretelle d'accès débouchant sur une voie
+   d'accélération avec biseau et flèche de rabattement.
+   ============================================================ */
+
+function drawVoieRapide(ctx, W, H) {
+  const LANE = 66, BAU = 36, MED = 38;
+  const yMed  = H * 0.34;
+  const yHaut = yMed - MED / 2 - 2 * LANE - BAU;   // chaussée opposée (vers la gauche)
+  const yBas  = yMed + MED / 2;                    // chaussée étudiée (vers la droite)
+  const yIns  = yBas + 2 * LANE;                   // niveau insertion / BAU
+  const xA = W * 0.30, xB = W * 0.72, xC = W * 0.88;
+
+  ctx.fillStyle = '#9ec79b';
+  ctx.fillRect(0, 0, W, H);
+
+  // BAU basse, pleine largeur (recouverte localement par l'insertion)
+  ctx.fillStyle = '#565d66';
+  ctx.fillRect(0, yIns, W, BAU);
+
+  // Bretelle d'accès : courbe épaisse montant du bas de l'écran
+  ctx.strokeStyle = '#565d66';
+  ctx.lineWidth = LANE;
+  ctx.lineCap = 'butt';
+  ctx.beginPath();
+  ctx.moveTo(W * 0.08, H + LANE);
+  ctx.quadraticCurveTo(W * 0.13, yIns + LANE * 2.1, xA + LANE, yIns + LANE / 2);
+  ctx.stroke();
+
+  // Voie d'accélération avec biseau de rabattement
+  ctx.fillStyle = '#565d66';
+  ctx.beginPath();
+  ctx.moveTo(xA - LANE, yIns);
+  ctx.lineTo(xC, yIns);
+  ctx.lineTo(xB, yIns + LANE);
+  ctx.lineTo(xA - LANE, yIns + LANE);
+  ctx.closePath();
+  ctx.fill();
+
+  // Chaussées principales
+  ctx.fillRect(0, yBas, W, 2 * LANE);
+  ctx.fillRect(0, yHaut, W, BAU + 2 * LANE);
+
+  // Terre-plein central + glissières
+  ctx.fillStyle = '#7fb37c';
+  ctx.fillRect(0, yMed - MED / 2, W, MED);
+  ctx.strokeStyle = '#9aa1a9';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(0, yMed - 8); ctx.lineTo(W, yMed - 8);
+  ctx.moveTo(0, yMed + 8); ctx.lineTo(W, yMed + 8);
+  ctx.stroke();
+
+  // ---- Marquages ----
+  ctx.strokeStyle = '#f3f4f6';
+
+  // Rives continues
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(0, yHaut + 3);          ctx.lineTo(W, yHaut + 3);
+  ctx.moveTo(0, yHaut + BAU);        ctx.lineTo(W, yHaut + BAU);   // BAU opposée
+  ctx.moveTo(0, yMed - MED / 2 - 3); ctx.lineTo(W, yMed - MED / 2 - 3);
+  ctx.moveTo(0, yBas + 3);           ctx.lineTo(W, yBas + 3);
+  ctx.stroke();
+  // Rive basse : continue SAUF le long de la zone d'insertion
+  ctx.beginPath();
+  ctx.moveTo(0, yIns);  ctx.lineTo(xA - LANE, yIns);
+  ctx.moveTo(xC, yIns); ctx.lineTo(W, yIns);
+  ctx.stroke();
+
+  // Ligne d'insertion : discontinue LARGE entre voie d'accélération et chaussée
+  ctx.lineWidth = 9;
+  ctx.setLineDash([30, 18]);
+  ctx.beginPath();
+  ctx.moveTo(xA - LANE, yIns);
+  ctx.lineTo(xC, yIns);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Axes discontinus entre les voies de chaque chaussée
+  ctx.lineWidth = 4;
+  ctx.setLineDash([34, 26]);
+  ctx.beginPath();
+  ctx.moveTo(0, yHaut + BAU + LANE); ctx.lineTo(W, yHaut + BAU + LANE);
+  ctx.moveTo(0, yBas + LANE);        ctx.lineTo(W, yBas + LANE);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Flèche de rabattement sur la voie d'accélération
+  ctx.save();
+  ctx.translate(xB - 30, yIns + LANE * 0.55);
+  ctx.rotate(-0.35);
+  ctx.fillStyle = '#f3f4f6';
+  ctx.fillRect(-34, -5, 52, 10);
+  ctx.beginPath();
+  ctx.moveTo(18, -16); ctx.lineTo(44, 0); ctx.lineTo(18, 16);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+/* ============================================================
    ÉDITEUR DE SCÈNES
    ------------------------------------------------------------
    - routes    : [{ pts: [{x,y} normalisés], largeur }]
@@ -788,6 +1084,23 @@ const editeur = {
   dragSelection: null,    // état du déplacement en cours
 };
 const GRILLE = 20;
+
+/* Plusieurs scènes : les tableaux de `editeur` SONT ceux de la carte
+   active (mêmes références) ; changer de carte = permuter les références. */
+editeur.cartes = [{
+  nom: 'Scène 1',
+  routes: editeur.routes,
+  marquages: editeur.marquages,
+  panneaux: editeur.panneaux,
+}];
+editeur.idx = 0;
+
+function synchroniserCarte() {
+  const c = editeur.cartes[editeur.idx];
+  c.routes = editeur.routes;
+  c.marquages = editeur.marquages;
+  c.panneaux = editeur.panneaux;
+}
 
 function tracerChemin(ctx, pts, W, H) {
   ctx.beginPath();
@@ -898,10 +1211,23 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  // PASSE 1 — trottoirs (bandes grises de part et d'autre)
+  // PASSE 0 — trottoirs libres (tracés avec l'outil Trottoir),
+  // dessinés SOUS les routes : une route qui les croise les recouvre
+  for (const rt of ed.routes) {
+    if (!rt.trottoir || rt.pts.length < 2) continue;
+    ctx.strokeStyle = '#eef0f3';
+    ctx.lineWidth = rt.largeur + 6;
+    tracerChemin(ctx, rt.pts, W, H);
+    ctx.stroke();
+    ctx.strokeStyle = '#c9cdd2';
+    ctx.lineWidth = rt.largeur;
+    tracerChemin(ctx, rt.pts, W, H);
+    ctx.stroke();
+  }
+  // PASSE 1 — trottoirs des routes (bandes grises de part et d'autre)
   ctx.strokeStyle = '#c9cdd2';
   for (const rt of ed.routes) {
-    if (rt.pts.length < 2) continue;
+    if (rt.trottoir || rt.pts.length < 2) continue;
     ctx.lineWidth = rt.largeur + 30;
     tracerChemin(ctx, rt.pts, W, H);
     ctx.stroke();
@@ -909,7 +1235,7 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
   // PASSE 2 — asphalte nu
   ctx.strokeStyle = '#565d66';
   for (const rt of ed.routes) {
-    if (rt.pts.length < 2) continue;
+    if (rt.trottoir || rt.pts.length < 2) continue;
     ctx.lineWidth = rt.largeur;
     tracerChemin(ctx, rt.pts, W, H);
     ctx.stroke();
@@ -920,6 +1246,7 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
   for (const p of ed.panneaux) {
     ctx.save();
     ctx.translate(p.x * W, p.y * H);
+    ctx.rotate(p.angle || 0);
     dessinerOmbrePanneau(ctx, p.taille);
     dessinerPictogramme(ctx, p.type, p.taille, p.etatFeu);
     ctx.restore();
@@ -933,7 +1260,7 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
     if (apercu.curseur) pts.push(apercu.curseur);
     if (pts.length >= 2) {
       ctx.globalAlpha = 0.55;
-      ctx.strokeStyle = '#565d66';
+      ctx.strokeStyle = apercu.route.trottoir ? '#c9cdd2' : '#565d66';
       ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       ctx.lineWidth = apercu.route.largeur;
       tracerChemin(ctx, pts, W, H);
@@ -986,6 +1313,7 @@ const REGLAGES = {
 const DECORS = {
   carrefour: drawCarrefour,
   rondpoint: (ctx, W, H) => drawRondPoint(ctx, W, H, REGLAGES.giratoire),
+  voierapide: drawVoieRapide,
   perso: (ctx, W, H) => drawCartePerso(ctx, W, H, editeur, null),
 };
 let decorActif = 'carrefour';
@@ -1057,11 +1385,15 @@ function creerCanvas(id) {
     const rect = canvas.parentElement.getBoundingClientRect();
     if (rect.width === 0) return;
     const dpr = window.devicePixelRatio || 1;
+    const oldW = etat.W, oldH = etat.H;
     etat.W = rect.width;
     etat.H = rect.height;
     canvas.width  = Math.round(etat.W * dpr);
     canvas.height = Math.round(etat.H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (etat.onResize && oldW > 0 && (oldW !== etat.W || oldH !== etat.H)) {
+      etat.onResize(oldW, oldH, etat.W, etat.H);
+    }
   };
   etat.resize();
   return etat;
@@ -1105,13 +1437,50 @@ entites[0].numero = 1;
 entites[1].numero = 2;
 let nbVehicules = 2, nbPietons = 0;
 
+/* Plein écran / redimensionnement : la composition est conservée en
+   remettant toutes les positions à l'échelle du nouveau format. */
+sc.onResize = (oW, oH, nW, nH) => {
+  const kx = nW / oW, ky = nH / oH;
+  for (const e of entites) {
+    e.x *= kx; e.y *= ky;
+    if (e.trace) for (const p of e.trace) { p.x *= kx; p.y *= ky; }
+  }
+  for (const a of annotations) {
+    for (const p of a.pts) { p.x *= kx; p.y *= ky; }
+  }
+  vue.ox *= kx; vue.oy *= ky;
+};
+
 /* Options d'affichage de la Scène */
 const OPTIONS = {
   trace: false,      // enregistrer la trajectoire pendant le drag
   numeros: false,    // afficher les pastilles de numéro
+  stylo: false,      // mode annotation à main levée
 };
 const TRACE_PAS = 6;        // distance mini (px) entre deux points
 const TRACE_MAX = 900;      // nb max de points par trace
+
+/* ----- Stylo d'annotation : traits libres par-dessus la scène -----
+   Les points sont en coordonnées MONDE : les annotations suivent le
+   zoom, le panoramique et le redimensionnement. */
+const annotations = [];
+let traitEnCours = null;
+function drawAnnotations(ctx) {
+  const tous = traitEnCours ? annotations.concat([traitEnCours]) : annotations;
+  if (!tous.length) return;
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 5;
+  for (const a of tous) {
+    if (a.pts.length < 2) continue;
+    ctx.strokeStyle = a.couleur;
+    ctx.beginPath();
+    a.pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+    ctx.stroke();
+  }
+  ctx.restore();
+}
 
 /* Échantillonnage d'une trace pendant un déplacement */
 function enregistrerTrace(e) {
@@ -1121,6 +1490,41 @@ function enregistrerTrace(e) {
     e.trace.push({ x: e.x, y: e.y });
     if (e.trace.length > TRACE_MAX) e.trace.shift();
   }
+}
+
+/* Corbeille : visible pendant un drag, l'élément lâché dessus est jeté */
+const CORBEILLE = { r: 40, marge: 26 };
+let corbeilleSurvol = false;
+function centreCorbeille() {
+  return { x: sc.W - CORBEILLE.marge - CORBEILLE.r,
+           y: sc.H - CORBEILLE.marge - CORBEILLE.r };
+}
+function dansCorbeille(px, py) {
+  const c = centreCorbeille();
+  return Math.hypot(px - c.x, py - c.y) <= CORBEILLE.r + 6;
+}
+function dessinerCorbeille(ctx) {
+  if (!actif) { corbeilleSurvol = false; return; }
+  const c = centreCorbeille();
+  ctx.save();
+  ctx.fillStyle = corbeilleSurvol ? '#FF3030' : 'rgba(255,255,255,0.92)';
+  ctx.strokeStyle = '#FF3030';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(c.x, c.y, CORBEILLE.r, 0, Math.PI * 2);
+  ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = corbeilleSurvol ? '#fff' : '#FF3030';
+  ctx.lineCap = 'round';
+  ctx.beginPath();                              // cuve
+  ctx.moveTo(c.x - 11, c.y - 6); ctx.lineTo(c.x - 8, c.y + 14);
+  ctx.lineTo(c.x + 8, c.y + 14); ctx.lineTo(c.x + 11, c.y - 6);
+  ctx.closePath(); ctx.stroke();
+  ctx.beginPath();                              // couvercle + poignée
+  ctx.moveTo(c.x - 14, c.y - 6); ctx.lineTo(c.x + 14, c.y - 6);
+  ctx.moveTo(c.x - 5, c.y - 6); ctx.lineTo(c.x - 3, c.y - 12);
+  ctx.lineTo(c.x + 3, c.y - 12); ctx.lineTo(c.x + 5, c.y - 6);
+  ctx.stroke();
+  ctx.restore();
 }
 
 /* Rubans de trajectoire : sous les entités, au-dessus du décor.
@@ -1166,10 +1570,13 @@ function boucle(temps) {
     DECORS[decorActif](sc.ctx, sc.W, sc.H);
     drawTraces(sc.ctx);
     for (const e of entites) e.draw(sc.ctx, temps);
+    drawAnnotations(sc.ctx);
     sc.ctx.restore();
+    dessinerCorbeille(sc.ctx);
   } else {
     drawCartePerso(ed.ctx, ed.W, ed.H, editeur, {
-      route: editeur.mode === 'route' ? editeur.enCoursRoute : null,
+      route: (editeur.mode === 'route' || editeur.mode === 'trottoir')
+        ? editeur.enCoursRoute : null,
       marquage: editeur.mode === 'marquage' ? editeur.enCoursMarquage : null,
       panneauFantome: editeur.mode === 'panneau'
         ? { type: editeur.typePanneau, taille: 52 } : null,
@@ -1240,12 +1647,18 @@ sc.canvas.addEventListener('pointerdown', (e) => {
 
   // --- Arrivée d'un 2ᵉ doigt : rotation fine ou pincement ---
   if (pointeurs.size === 2) {
-    if ((geste === 'drag' || geste === 'laisse') && actif && actif.rotationAuDrag) {
+    if ((geste === 'drag' || geste === 'laisse') && actif) {
       actif.enLaisse = false;
       geste = 'rotation';
-      rotationRef = { doigts: angleEntreDoigts(), entite: actif.angleCible };
+      rotationRef = {
+        doigts: angleEntreDoigts(),
+        entite: actif.angleCible,
+        dist: distanceEntreDoigts(),
+        taille: actif instanceof Panneau ? actif.taille : null,
+      };
     } else {
       geste = 'pinch';
+      traitEnCours = null;              // trait accidentel annulé
       if (actif) { actif.enDrag = false; actif.enLaisse = false; actif = null; }
       pinchRef = {
         dist: distanceEntreDoigts(),
@@ -1256,6 +1669,13 @@ sc.canvas.addEventListener('pointerdown', (e) => {
     return;
   }
   if (pointeurs.size > 2) return;
+
+  // --- Stylo d'annotation : prioritaire sur toute manipulation ---
+  if (OPTIONS.stylo) {
+    traitEnCours = { pts: [versMonde(pe)], couleur: '#FF3030' };
+    geste = 'stylo';
+    return;
+  }
 
   // --- 1ᵉʳ doigt : logique habituelle, en coordonnées MONDE ---
   const p = versMonde(pe);
@@ -1325,6 +1745,16 @@ sc.canvas.addEventListener('pointermove', (e) => {
   if (!pointeurs.has(e.pointerId)) return;
   pointeurs.set(e.pointerId, pointDans(sc, e));
 
+  // --- Stylo : on prolonge le trait en cours ---
+  if (geste === 'stylo' && traitEnCours) {
+    const p = versMonde(pointDans(sc, e));
+    const der = traitEnCours.pts[traitEnCours.pts.length - 1];
+    if (Math.hypot(p.x - der.x, p.y - der.y) >= 3 / vue.zoom) {
+      traitEnCours.pts.push(p);
+    }
+    return;
+  }
+
   // --- Pincement : zoom + panoramique, point d'ancrage sous les doigts ---
   if (geste === 'pinch' && pointeurs.size === 2) {
     const m = milieuDoigts();
@@ -1339,12 +1769,19 @@ sc.canvas.addEventListener('pointermove', (e) => {
   // --- Rotation fine à deux doigts ---
   if (geste === 'rotation' && actif && pointeurs.size === 2) {
     actif.angleCible = rotationRef.entite + (angleEntreDoigts() - rotationRef.doigts);
+    // Pincer un PANNEAU tenu : l'écartement des doigts le redimensionne
+    if (rotationRef.taille != null) {
+      const k = distanceEntreDoigts() / rotationRef.dist;
+      actif.taille = Math.max(24, Math.min(150, rotationRef.taille * k));
+    }
     return;
   }
 
   // --- Traction par la laisse : la voiture suit la poignée ---
   if (geste === 'laisse' && actif) {
-    const p = versMonde(pointDans(sc, e));
+    const pe2 = pointDans(sc, e);
+    corbeilleSurvol = dansCorbeille(pe2.x, pe2.y);
+    const p = versMonde(pe2);
     actif.poignee = { x: p.x, y: p.y };
     const dx = p.x - actif.x, dy = p.y - actif.y;
     const d = Math.hypot(dx, dy);
@@ -1360,7 +1797,9 @@ sc.canvas.addEventListener('pointermove', (e) => {
 
   // --- Drag classique (1 doigt) ---
   if (geste === 'drag' && actif) {
-    const p = versMonde(pointDans(sc, e));
+    const pe2 = pointDans(sc, e);
+    corbeilleSurvol = dansCorbeille(pe2.x, pe2.y);
+    const p = versMonde(pe2);
     const nx = p.x - actif._grabDx, ny = p.y - actif._grabDy;
     if (actif.rotationAuDrag) {
       const dx = nx - actif.x, dy = ny - actif.y;
@@ -1377,7 +1816,19 @@ sc.canvas.addEventListener('pointermove', (e) => {
 function finPointeurScene(e) {
   pointeurs.delete(e.pointerId);
   if (pointeurs.size === 0) {
-    if (actif) { actif.enDrag = false; actif.enLaisse = false; }
+    if (geste === 'stylo' && traitEnCours) {
+      if (traitEnCours.pts.length > 1) annotations.push(traitEnCours);
+      traitEnCours = null;
+    }
+    if (actif) {
+      const pe = pointDans(sc, e);
+      if (dansCorbeille(pe.x, pe.y)) {
+        entites.splice(entites.indexOf(actif), 1);   // jeté à la corbeille
+      }
+      actif.enDrag = false;
+      actif.enLaisse = false;
+    }
+    corbeilleSurvol = false;
     actif = null;
     geste = null;
     sc.canvas.classList.remove('dragging');
@@ -1412,6 +1863,25 @@ sc.canvas.addEventListener('wheel', (e) => {
 
 let dernierTapEd = { t: 0, x: 0, y: 0 };
 
+/* Aimantation au bord : un point posé près d'un bord est projeté
+   HORS cadre, pour que la route arrive à ras du bord (sinon son
+   extrémité arrondie reste visible à l'écran). */
+const BORD_SEUIL = 28, BORD_DEPASSE = 60;
+function aimanterBord(p) {
+  let x = p.x, y = p.y;
+  if (x < BORD_SEUIL) x = -BORD_DEPASSE;
+  else if (x > ed.W - BORD_SEUIL) x = ed.W + BORD_DEPASSE;
+  if (y < BORD_SEUIL) y = -BORD_DEPASSE;
+  else if (y > ed.H - BORD_SEUIL) y = ed.H + BORD_DEPASSE;
+  return { x, y };
+}
+function modeAimanteBord() {
+  return editeur.mode === 'route' || editeur.mode === 'trottoir' ||
+         (editeur.mode === 'marquage' &&
+          (editeur.typeMarquage === 'ligne_continue' ||
+           editeur.typeMarquage === 'ligne_discontinue'));
+}
+
 function pointEditeur(e) {
   let p = pointDans(ed, e);
   if (editeur.magnetisme) {
@@ -1444,12 +1914,13 @@ function rafraichirBaseSelection() {
   const sel = editeur.selection;
   if (!sel) return;
   if (sel.kind === 'panneau') {
-    sel.base = { taille: sel.ref.taille };
+    sel.base = { taille: sel.ref.taille, angle: sel.ref.angle || 0 };
   } else {
     const c = centroide(sel.ref.pts);
     sel.base = { pts: sel.ref.pts.map(p => ({ x: p.x, y: p.y })), cx: c.x, cy: c.y };
   }
   selTaille.value = 100;
+  selRot.value = 0;
 }
 
 function selectionner(sel) {
@@ -1462,10 +1933,32 @@ ed.canvas.addEventListener('pointerdown', (e) => {
   const pRaw = pointDans(ed, e);
   const p = pointEditeur(e);
   const pn = { x: p.x / ed.W, y: p.y / ed.H };
+  const pb = aimanterBord(p);
+  const pnB = { x: pb.x / ed.W, y: pb.y / ed.H };
+
+  // Appui long (550 ms sans bouger) -> menu contextuel
+  appuiOrigine = { cx: e.clientX, cy: e.clientY, x: pRaw.x, y: pRaw.y };
+  clearTimeout(timerAppui);
+  timerAppui = setTimeout(() => {
+    // Si cet appui vient de poser un point de tracé, on le retire
+    if ((editeur.mode === 'route' || editeur.mode === 'trottoir') &&
+        editeur.enCoursRoute && editeur.enCoursRoute.pts.length > 0) {
+      editeur.enCoursRoute.pts.pop();
+      if (!editeur.enCoursRoute.pts.length) editeur.enCoursRoute = null;
+    } else if (editeur.mode === 'marquage' &&
+               editeur.enCoursMarquage && editeur.enCoursMarquage.pts.length > 0) {
+      editeur.enCoursMarquage.pts.pop();
+      if (!editeur.enCoursMarquage.pts.length) editeur.enCoursMarquage = null;
+    }
+    editeur.dragSelection = null;
+    ouvrirMenuCtx(appuiOrigine.cx, appuiOrigine.cy,
+                  { x: appuiOrigine.x, y: appuiOrigine.y });
+  }, 550);
 
   switch (editeur.mode) {
 
-    case 'route': {
+    case 'route':
+    case 'trottoir': {
       const maintenant = performance.now();
       if (maintenant - dernierTapEd.t < 350 &&
           Math.hypot(p.x - dernierTapEd.x, p.y - dernierTapEd.y) < 30) {
@@ -1475,9 +1968,13 @@ ed.canvas.addEventListener('pointerdown', (e) => {
       }
       dernierTapEd = { t: maintenant, x: p.x, y: p.y };
       if (!editeur.enCoursRoute) {
-        editeur.enCoursRoute = { pts: [], largeur: editeur.largeur };
+        editeur.enCoursRoute = {
+          pts: [],
+          largeur: editeur.largeur,
+          trottoir: editeur.mode === 'trottoir',
+        };
       }
-      editeur.enCoursRoute.pts.push(pn);
+      editeur.enCoursRoute.pts.push(pnB);   // aimanté au bord
       break;
     }
 
@@ -1496,7 +1993,7 @@ ed.canvas.addEventListener('pointerdown', (e) => {
       if (!editeur.enCoursMarquage) {
         editeur.enCoursMarquage = { type: editeur.typeMarquage, pts: [] };
       }
-      editeur.enCoursMarquage.pts.push(pn);
+      editeur.enCoursMarquage.pts.push(modeAimanteBord() ? pnB : pn);
       if (deuxPoints && editeur.enCoursMarquage.pts.length === 2) {
         terminerTrace();
       }
@@ -1546,8 +2043,14 @@ ed.canvas.addEventListener('pointerdown', (e) => {
 });
 
 ed.canvas.addEventListener('pointermove', (e) => {
+  if (timerAppui && appuiOrigine &&
+      Math.hypot(e.clientX - appuiOrigine.cx, e.clientY - appuiOrigine.cy) > 10) {
+    clearTimeout(timerAppui);
+    timerAppui = null;
+  }
   const p = pointEditeur(e);
-  editeur.curseur = { x: p.x / ed.W, y: p.y / ed.H };
+  const pc = modeAimanteBord() ? aimanterBord(p) : p;
+  editeur.curseur = { x: pc.x / ed.W, y: pc.y / ed.H };
 
   // Déplacement de la sélection
   if (editeur.mode === 'selection' && editeur.dragSelection && editeur.selection) {
@@ -1568,10 +2071,82 @@ ed.canvas.addEventListener('pointermove', (e) => {
 });
 ed.canvas.addEventListener('pointerleave', () => { editeur.curseur = null; });
 ed.canvas.addEventListener('pointerup', () => {
+  clearTimeout(timerAppui);
+  timerAppui = null;
   if (editeur.dragSelection) rafraichirBaseSelection();
   editeur.dragSelection = null;
 });
-ed.canvas.addEventListener('pointercancel', () => { editeur.dragSelection = null; });
+ed.canvas.addEventListener('pointercancel', () => {
+  clearTimeout(timerAppui);
+  timerAppui = null;
+  editeur.dragSelection = null;
+});
+
+/* ----- Menu contextuel de l'éditeur : Copier / Coller / Supprimer ----- */
+const menuCtx = document.getElementById('menu-ctx');
+let ctxCible = null;
+let ctxPoint = null;
+let pressePapier = null;
+let timerAppui = null;
+let appuiOrigine = null;
+
+function ouvrirMenuCtx(clientX, clientY, pCanvas) {
+  ctxCible = trouverElement(pCanvas.x, pCanvas.y, ed.W, ed.H, false);
+  ctxPoint = { x: pCanvas.x / ed.W, y: pCanvas.y / ed.H };
+  document.getElementById('ctx-copier').disabled = !ctxCible;
+  document.getElementById('ctx-supprimer').disabled = !ctxCible;
+  document.getElementById('ctx-coller').disabled = !pressePapier;
+  menuCtx.style.left = Math.min(clientX, window.innerWidth - 170) + 'px';
+  menuCtx.style.top  = Math.min(clientY, window.innerHeight - 150) + 'px';
+  menuCtx.style.display = 'block';
+}
+function fermerMenuCtx() { menuCtx.style.display = 'none'; }
+document.addEventListener('pointerdown', (e) => {
+  if (!menuCtx.contains(e.target)) fermerMenuCtx();
+}, true);
+
+ed.canvas.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  ouvrirMenuCtx(e.clientX, e.clientY, pointDans(ed, e));
+});
+
+document.getElementById('ctx-copier').addEventListener('click', () => {
+  if (ctxCible) {
+    pressePapier = {
+      kind: ctxCible.kind,
+      data: JSON.parse(JSON.stringify(ctxCible.ref)),
+    };
+  }
+  fermerMenuCtx();
+});
+document.getElementById('ctx-supprimer').addEventListener('click', () => {
+  if (ctxCible) {
+    const tab = ctxCible.kind === 'panneau' ? editeur.panneaux : editeur.marquages;
+    tab.splice(tab.indexOf(ctxCible.ref), 1);
+    if (editeur.selection && editeur.selection.ref === ctxCible.ref) selectionner(null);
+    majBoutonPerso();
+  }
+  fermerMenuCtx();
+});
+document.getElementById('ctx-coller').addEventListener('click', () => {
+  if (pressePapier && ctxPoint) {
+    const copie = JSON.parse(JSON.stringify(pressePapier.data));
+    if (pressePapier.kind === 'panneau') {
+      copie.x = ctxPoint.x;
+      copie.y = ctxPoint.y;
+      editeur.panneaux.push(copie);
+    } else {
+      const c = centroide(copie.pts);
+      for (const pt of copie.pts) {
+        pt.x += ctxPoint.x - c.x;
+        pt.y += ctxPoint.y - c.y;
+      }
+      editeur.marquages.push(copie);
+    }
+    majBoutonPerso();
+  }
+  fermerMenuCtx();
+});
 
 /* ============================================================
    BARRE D'OUTILS ÉDITEUR
@@ -1590,8 +2165,11 @@ const aideEditeur     = document.getElementById('ed-aide');
 const selActions      = document.getElementById('sel-actions');
 const selTailleZone   = document.getElementById('sel-taille-zone');
 const selTaille       = document.getElementById('sel-taille');
+const selRotZone      = document.getElementById('sel-rot-zone');
+const selRot          = document.getElementById('sel-rot');
 
 const AIDES = {
+  trottoir: 'Mode Trottoir : tracez des surfaces piétonnes indépendantes (cheminements, parvis), comme une route : tapez les points, double-tap ou « Terminer » pour clore. Les routes les recouvrent au croisement.',
   route: 'Mode Route : tapez pour poser les points, double-tap ou « Terminer » pour clore. Les routes sont nues : marquages et panneaux s\u2019ajoutent avec les autres modes.',
   marquage: 'Mode Marquage : STOP, cédez et passage piéton se posent en 2 taps (un de chaque côté de la chaussée). Flèches : 1ᵉʳ tap = position, 2ᵉ tap = direction et taille. Les lignes se tracent en polyligne, double-tap pour clore.',
   panneau: 'Mode Panneau : choisissez le type puis tapez pour poser. Les feux tricolores resteront pilotables dans la Scène (double-tap pour changer la couleur).',
@@ -1602,7 +2180,8 @@ const AIDES = {
 function majSelectionUI() {
   const sel = editeur.selection;
   selActions.hidden = !sel;
-  selTailleZone.hidden = !sel;        // la taille s'applique à tout type
+  selTailleZone.hidden = !sel;
+  selRotZone.hidden = !sel;
 }
 
 document.getElementById('choix-mode').addEventListener('click', (e) => {
@@ -1655,20 +2234,29 @@ document.getElementById('sel-supprimer').addEventListener('click', () => {
   majBoutonPerso();
 });
 
-selTaille.addEventListener('input', () => {
+/* Taille + Rotation : transformation combinée à partir de l'état de
+   référence. La rotation des marquages se fait en pixels (et non en
+   coordonnées normalisées) pour ne pas déformer sur écran non carré. */
+function appliquerTransformSelection() {
   const sel = editeur.selection;
   if (!sel || !sel.base) return;
   const k = Number(selTaille.value) / 100;
+  const th = Number(selRot.value) * Math.PI / 180;
   if (sel.kind === 'panneau') {
     sel.ref.taille = Math.max(20, Math.min(140, Math.round(sel.base.taille * k)));
+    sel.ref.angle = sel.base.angle + th;
   } else {
-    // Homothétie du marquage autour de son centre
+    const cos = Math.cos(th), sin = Math.sin(th);
     sel.ref.pts.forEach((p, i) => {
-      p.x = sel.base.cx + (sel.base.pts[i].x - sel.base.cx) * k;
-      p.y = sel.base.cy + (sel.base.pts[i].y - sel.base.cy) * k;
+      const dx = (sel.base.pts[i].x - sel.base.cx) * ed.W * k;
+      const dy = (sel.base.pts[i].y - sel.base.cy) * ed.H * k;
+      p.x = sel.base.cx + (dx * cos - dy * sin) / ed.W;
+      p.y = sel.base.cy + (dx * sin + dy * cos) / ed.H;
     });
   }
-});
+}
+selTaille.addEventListener('input', appliquerTransformSelection);
+selRot.addEventListener('input', appliquerTransformSelection);
 
 const sliderLargeur = document.getElementById('ed-largeur');
 sliderLargeur.addEventListener('input', () => {
@@ -1684,7 +2272,7 @@ document.getElementById('ed-magnetisme').addEventListener('change', (e) => {
 document.getElementById('ed-terminer').addEventListener('click', terminerTrace);
 
 document.getElementById('ed-annuler').addEventListener('click', () => {
-  if (editeur.mode === 'route') {
+  if (editeur.mode === 'route' || editeur.mode === 'trottoir') {
     if (editeur.enCoursRoute && editeur.enCoursRoute.pts.length > 0) {
       editeur.enCoursRoute.pts.pop();
       if (editeur.enCoursRoute.pts.length === 0) editeur.enCoursRoute = null;
@@ -1713,6 +2301,7 @@ document.getElementById('ed-effacer').addEventListener('click', () => {
   editeur.routes = [];
   editeur.marquages = [];
   editeur.panneaux = [];
+  synchroniserCarte();
   editeur.enCoursRoute = null;
   editeur.enCoursMarquage = null;
   selectionner(null);
@@ -1754,6 +2343,7 @@ inputFichier.addEventListener('change', async () => {
         if (p.taille == null) p.taille = 52;
         if (p.etatFeu == null) p.etatFeu = 'rouge';
       }
+      synchroniserCarte();
       selectionner(null);
       majBoutonPerso();
     }
@@ -1771,6 +2361,41 @@ document.getElementById('ed-utiliser').addEventListener('click', () => {
   choisirDecor('perso');
   activerOnglet('scene');
 });
+
+/* ----- Gestion des scènes multiples ----- */
+const selectCarte = document.getElementById('choix-carte');
+function majListeCartes() {
+  selectCarte.innerHTML = '';
+  editeur.cartes.forEach((c, i) => {
+    const o = document.createElement('option');
+    o.value = i;
+    o.textContent = c.nom;
+    selectCarte.appendChild(o);
+  });
+  selectCarte.value = editeur.idx;
+}
+function activerCarte(i) {
+  terminerTrace();
+  selectionner(null);
+  synchroniserCarte();
+  editeur.idx = i;
+  const c = editeur.cartes[i];
+  editeur.routes = c.routes;
+  editeur.marquages = c.marquages;
+  editeur.panneaux = c.panneaux;
+  majListeCartes();
+  majBoutonPerso();
+}
+selectCarte.addEventListener('change', () => activerCarte(Number(selectCarte.value)));
+document.getElementById('btn-nouvelle-carte').addEventListener('click', () => {
+  synchroniserCarte();
+  editeur.cartes.push({
+    nom: 'Scène ' + (editeur.cartes.length + 1),
+    routes: [], marquages: [], panneaux: [],
+  });
+  activerCarte(editeur.cartes.length - 1);
+});
+majListeCartes();
 
 /* ============================================================
    BARRE D'OUTILS SCÈNE
@@ -1804,6 +2429,17 @@ document.getElementById('btn-vehicule').addEventListener('click', () => {
   entites.push(v);
 });
 
+document.getElementById('btn-camion').addEventListener('click', () => {
+  const c = new Camion({
+    x: sc.W / 2 - 160,
+    y: sc.H * 0.8,
+    couleur: couleursVehicules[nbVehicules % couleursVehicules.length],
+  });
+  nbVehicules++;
+  c.numero = nbVehicules;
+  entites.push(c);
+});
+
 document.getElementById('btn-pieton').addEventListener('click', () => {
   entites.push(new Pieton({
     x: sc.W * 0.5 + (Math.random() - 0.5) * 160,
@@ -1834,8 +2470,16 @@ btnTrace.addEventListener('click', () => {
   btnTrace.classList.toggle('actif', OPTIONS.trace);
 });
 
+const btnStylo = document.getElementById('btn-stylo');
+btnStylo.addEventListener('click', () => {
+  OPTIONS.stylo = !OPTIONS.stylo;
+  btnStylo.classList.toggle('actif', OPTIONS.stylo);
+  sc.canvas.classList.toggle('stylo', OPTIONS.stylo);
+});
+
 document.getElementById('btn-effacer-traces').addEventListener('click', () => {
   for (const e of entites) if (e.trace) e.trace = [];
+  annotations.length = 0;
 });
 
 const btnNumeros = document.getElementById('btn-numeros');
@@ -1843,6 +2487,27 @@ btnNumeros.addEventListener('click', () => {
   OPTIONS.numeros = !OPTIONS.numeros;
   btnNumeros.classList.toggle('actif', OPTIONS.numeros);
 });
+
+for (const [btnId, selecteur] of [
+  ['replier-scene', '#vue-scene header'],
+  ['replier-editeur', '#vue-editeur header'],
+]) {
+  const btn = document.getElementById(btnId);
+  const hdr = document.querySelector(selecteur);
+  btn.addEventListener('click', () => {
+    const replie = hdr.classList.toggle('replie');
+    btn.textContent = replie ? '▾ Menu' : '▴ Menu';
+    requestAnimationFrame(() => { sc.resize(); ed.resize(); });
+  });
+}
+
+function basculerAide() {
+  const on = document.body.classList.toggle('avec-aide');
+  document.getElementById('btn-info-scene').classList.toggle('actif', on);
+  document.getElementById('btn-info-ed').classList.toggle('actif', on);
+}
+document.getElementById('btn-info-scene').addEventListener('click', basculerAide);
+document.getElementById('btn-info-ed').addEventListener('click', basculerAide);
 
 document.getElementById('btn-zoom-plus').addEventListener('click', () =>
   zoomerVers(sc.W / 2, sc.H / 2, 1.25));
