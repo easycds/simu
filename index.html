@@ -363,6 +363,8 @@
       <button id="btn-vehicule">+ Véhicule</button>
       <button id="btn-camion">+ Poids lourd</button>
       <button id="btn-moto">+ Moto</button>
+      <button id="btn-cycliste">+ Cycliste</button>
+      <button id="btn-edpm">+ Trottinette</button>
       <button id="btn-pieton">+ Piéton</button>
       <select id="type-panneau" aria-label="Type de panneau">
         <option value="stop">STOP</option>
@@ -393,6 +395,7 @@
       <button id="btn-beta" title="Fonctions expérimentales">🧪 Bêta</button>
       <span class="beta-zone" id="beta-zone">
         <button id="btn-nuit">🌙 Nuit</button>
+        <button id="btn-feux-route" title="Basculer feux de croisement / feux de route">🔦 Feux route</button>
         <button id="btn-vision">👁 Vision</button>
         <label class="controle" id="vision-vitesse-zone" hidden>
           <input type="range" id="vision-vitesse" min="0" max="130" step="10" value="0">
@@ -450,6 +453,7 @@
         <button data-mode="panneau">Panneau</button>
         <button data-mode="selection">Sélection</button>
         <button data-mode="gomme">Gomme</button>
+        <button data-mode="main">✋ Main</button>
       </div>
     </div>
 
@@ -470,7 +474,15 @@
         <option value="zebra">Zébra (zone hachurée)</option>
         <option value="ligne_effet">Ligne d'effet des feux</option>
         <option value="sas_velo">Sas vélo</option>
+        <option value="piste_cyclable">Piste cyclable (séparée)</option>
+        <option value="bande_cyclable">Bande cyclable (sur chaussée)</option>
+        <option value="ligne_mixte">Ligne mixte (continue + discontinue)</option>
+        <option value="double_continue">Double ligne continue</option>
+        <option value="ligne_guidage">Ligne de guidage (carrefour)</option>
       </select>
+      <label class="controle" style="flex-direction:row;align-items:center;gap:6px" id="zone-jaune">
+        <input type="checkbox" id="ed-jaune"> Jaune temporaire (chantier)
+      </label>
       <select id="type-panneau-ed" aria-label="Type de panneau (éditeur)" hidden>
         <option value="stop">STOP</option>
         <option value="cedez">Cédez-le-passage</option>
@@ -787,7 +799,7 @@ class Vehicule extends Entity {
   constructor({ x, y, couleur = '#2563eb' }) {
     super(x, y);
     this.couleur = couleur;
-    this.longueur = 74; this.largeur = 38;
+    this._L = 74; this._l = 38;          // dimensions de base (monde)
     this.angle = this.angleCible = -Math.PI / 2;
     this.clignotant = null;
     this.afficherAngleMort = false;
@@ -797,8 +809,11 @@ class Vehicule extends Entity {
     this.poignee = null;      // position du doigt pendant la traction
   }
 
+  get longueur() { return this._L * VEH.echelle; }
+  get largeur()  { return this._l * VEH.echelle; }
+
   /* Longueur de la "laisse" : centre du véhicule -> poignée */
-  get longueurLaisse() { return this.longueur / 2 + 14; }
+  get longueurLaisse() { return this.longueur / 2 + 14 * VEH.echelle; }
 
   /* Position de repos de la poignée, dans l'axe du capot */
   poigneeRepos() {
@@ -921,8 +936,8 @@ class Vehicule extends Entity {
 class Camion extends Vehicule {
   constructor(opts) {
     super(opts);
-    this.longueur = 220;
-    this.largeur = 54;
+    this._L = 220;
+    this._l = 54;
   }
   draw(ctx, temps) {
     const L = this.longueur, l = this.largeur;
@@ -946,6 +961,12 @@ class Camion extends Vehicule {
       ctx.lineTo(-L * 1.12, -l * 0.95);
       ctx.lineTo(-L * 1.12,  l * 0.95);
       ctx.lineTo(-L / 2,  l / 2);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath();                        // AVANT : zone aveugle devant la cabine
+      ctx.moveTo(L / 2, -l / 2);
+      ctx.lineTo(L * 0.5 + L * 0.34, -l * 0.78);
+      ctx.lineTo(L * 0.5 + L * 0.34,  l * 0.78);
+      ctx.lineTo(L / 2,  l / 2);
       ctx.closePath(); ctx.fill(); ctx.stroke();
     }
 
@@ -988,8 +1009,8 @@ class Camion extends Vehicule {
 class Moto extends Vehicule {
   constructor(opts) {
     super(opts);
-    this.longueur = 38;
-    this.largeur = 16;
+    this._L = 38;
+    this._l = 16;
   }
   draw(ctx, temps) {
     const L = this.longueur, l = this.largeur;
@@ -1045,6 +1066,75 @@ class Moto extends Vehicule {
         ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
       }
     }
+    ctx.restore();
+    this.drawAccessoires(ctx);
+  }
+}
+
+/* Cycliste : vélo vu de dessus + silhouette. Étroit et vulnérable —
+   pour les angles morts, les dépassements et les aménagements cyclables. */
+class Cycliste extends Vehicule {
+  constructor(opts) {
+    super(opts);
+    this._L = 36;
+    this._l = 14;
+    this.couleur = opts.couleur || '#0ea5e9';
+  }
+  draw(ctx, temps) {
+    const L = this.longueur, l = this.largeur;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle);
+    ctx.fillStyle = 'rgba(0,0,0,0.16)';
+    roundRect(ctx, -L/2 + 2, -l/2 + 3, L, l, l/2); ctx.fill();
+    // Deux roues
+    ctx.strokeStyle = '#1c2430';
+    ctx.lineWidth = Math.max(2, l * 0.16);
+    for (const rx of [L * 0.34, -L * 0.34]) {
+      ctx.beginPath(); ctx.ellipse(rx, 0, L * 0.13, l * 0.42, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    // Cadre
+    ctx.beginPath();
+    ctx.moveTo(L * 0.34, 0); ctx.lineTo(-L * 0.34, 0);
+    ctx.stroke();
+    // Cycliste (corps + casque)
+    ctx.fillStyle = this.couleur;
+    roundRect(ctx, -L * 0.16, -l * 0.34, L * 0.34, l * 0.68, 4); ctx.fill();
+    ctx.fillStyle = '#11151c';
+    ctx.beginPath(); ctx.arc(L * 0.06, 0, l * 0.30, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    this.drawAccessoires(ctx);
+  }
+}
+
+/* EDPM : engin de déplacement personnel motorisé (trottinette). Très
+   petit et discret — l'usager urbain à surveiller. */
+class EDPM extends Vehicule {
+  constructor(opts) {
+    super(opts);
+    this._L = 28;
+    this._l = 11;
+    this.couleur = opts.couleur || '#f59e0b';
+  }
+  draw(ctx, temps) {
+    const L = this.longueur, l = this.largeur;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle);
+    ctx.fillStyle = 'rgba(0,0,0,0.16)';
+    roundRect(ctx, -L/2 + 2, -l/2 + 2, L, l, l/2); ctx.fill();
+    // Plateau de la trottinette
+    ctx.fillStyle = '#2b2b2b';
+    roundRect(ctx, -L * 0.30, -l * 0.20, L * 0.55, l * 0.40, 2); ctx.fill();
+    // Roues
+    ctx.fillStyle = '#1c2430';
+    roundRect(ctx, L * 0.30, -l * 0.18, L * 0.12, l * 0.36, 2); ctx.fill();
+    roundRect(ctx, -L * 0.42, -l * 0.18, L * 0.12, l * 0.36, 2); ctx.fill();
+    // Usager (corps + casque), debout au centre
+    ctx.fillStyle = this.couleur;
+    roundRect(ctx, -L * 0.06, -l * 0.30, L * 0.22, l * 0.60, 3); ctx.fill();
+    ctx.fillStyle = '#11151c';
+    ctx.beginPath(); ctx.arc(L * 0.05, 0, l * 0.30, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
     this.drawAccessoires(ctx);
   }
@@ -1421,12 +1511,14 @@ const editeur = {
   magnetisme: true,
   arrondi: false,         // routes lissées en courbes
   boutsDroits: false,     // extrémités coupées net (collent au bord)
+  jaune: false,           // marquage temporaire jaune (chantier)
   curseur: null,
   selection: null,        // { kind: 'panneau'|'marquage', ref } ou { kind: 'groupe', refs }
   dragSelection: null,    // état du déplacement en cours
   zoneSelection: null,    // rectangle de sélection en cours
   vehiculesTest: [],      // silhouettes pour tester la largeur des voies
   dragTest: null,
+  panDrag: null,          // déplacement de la vue (outil Main)
 };
 /* ===== MONDE DE RÉFÉRENCE FIXE (16:9 paysage) =====
    Toutes les coordonnées pixel de la carte vivent dans ce monde
@@ -1563,8 +1655,10 @@ function drawMarquage(ctx, m, W, H, alpha = 1) {
   if (m.pts.length < 2) return;
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.strokeStyle = '#f3f4f6';
-  ctx.fillStyle = '#f3f4f6';
+  // Marquage jaune = temporaire (chantier) ; il prime sur le blanc permanent.
+  const couleurM = m.jaune ? '#f5c518' : '#f3f4f6';
+  ctx.strokeStyle = couleurM;
+  ctx.fillStyle = couleurM;
   ctx.lineJoin = 'round';
   switch (m.type) {
     case 'stop':
@@ -1704,7 +1798,7 @@ function drawMarquage(ctx, m, W, H, alpha = 1) {
       ctx.save();
       ctx.translate(a.x, a.y);
       ctx.rotate(ang);
-      ctx.strokeStyle = '#f3f4f6';
+      ctx.strokeStyle = couleurM;
       ctx.lineWidth = 5;
       ctx.lineCap = 'butt';
       ctx.lineJoin = 'miter';
@@ -1822,6 +1916,108 @@ function drawMarquage(ctx, m, W, H, alpha = 1) {
       ctx.restore();
       break;
     }
+
+    case 'piste_cyclable': {
+      // Piste cyclable : bande verte large séparée de la chaussée,
+      // bordée de blanc, avec figurines vélo réparties le long.
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = m.jaune ? '#f5c518' : '#1f7a4d';
+      ctx.lineWidth = 30;
+      (m.arrondi ? tracerCheminLisse : tracerChemin)(ctx, m.pts, W, H);
+      ctx.stroke();
+      ctx.strokeStyle = couleurM;
+      ctx.lineWidth = 3;
+      (m.arrondi ? tracerCheminLisse : tracerChemin)(ctx, m.pts, W, H);
+      ctx.stroke();
+      // Pictogrammes vélo le long du tracé
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < m.pts.length - 1; i++) {
+        const a = { x: m.pts[i].x * W, y: m.pts[i].y * H };
+        const b = { x: m.pts[i + 1].x * W, y: m.pts[i + 1].y * H };
+        const seg = Math.hypot(b.x - a.x, b.y - a.y);
+        const ang = Math.atan2(b.y - a.y, b.x - a.x);
+        const pas = 90;
+        for (let d = pas / 2; d < seg; d += pas) {
+          const cx = a.x + Math.cos(ang) * d, cy = a.y + Math.sin(ang) * d;
+          ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang + Math.PI / 2);
+          ctx.beginPath();
+          ctx.arc(0, 5, 4, 0, Math.PI * 2); ctx.arc(0, -5, 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+      break;
+    }
+
+    case 'bande_cyclable': {
+      // Bande cyclable : sur la chaussée, délimitée par une ligne
+      // discontinue, avec pictogrammes vélo.
+      ctx.lineCap = 'butt';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([26, 18]);
+      (m.arrondi ? tracerCheminLisse : tracerChemin)(ctx, m.pts, W, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = couleurM;
+      for (let i = 0; i < m.pts.length - 1; i++) {
+        const a = { x: m.pts[i].x * W, y: m.pts[i].y * H };
+        const b = { x: m.pts[i + 1].x * W, y: m.pts[i + 1].y * H };
+        const seg = Math.hypot(b.x - a.x, b.y - a.y);
+        const ang = Math.atan2(b.y - a.y, b.x - a.x);
+        for (let d = 60; d < seg; d += 120) {
+          const cx = a.x + Math.cos(ang) * d, cy = a.y + Math.sin(ang) * d;
+          ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang + Math.PI / 2);
+          ctx.beginPath();
+          ctx.arc(0, 6, 4.5, 0, Math.PI * 2); ctx.arc(0, -6, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+      break;
+    }
+
+    case 'ligne_mixte': {
+      // Ligne mixte : une continue + une discontinue accolées
+      // (dépassement permis du seul côté discontinu).
+      ctx.lineCap = 'butt';
+      ctx.lineWidth = 3.5;
+      const dec = 3.5;
+      // continue
+      ctx.save();
+      tracerChemin(ctx, m.pts.map(p => ({ x: p.x, y: p.y - dec / H })), W, H);
+      ctx.stroke();
+      ctx.restore();
+      // discontinue
+      ctx.setLineDash([26, 22]);
+      tracerChemin(ctx, m.pts.map(p => ({ x: p.x, y: p.y + dec / H })), W, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      break;
+    }
+
+    case 'ligne_guidage': {
+      // Ligne de guidage en carrefour : petits pointillés de trajectoire.
+      ctx.lineCap = 'butt';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([12, 14]);
+      (m.arrondi ? tracerCheminLisse : tracerChemin)(ctx, m.pts, W, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      break;
+    }
+
+    case 'double_continue': {
+      // Double ligne continue : interdiction de franchir des deux côtés.
+      ctx.lineCap = 'round';
+      ctx.lineWidth = 3.5;
+      const dec = 3.5;
+      tracerChemin(ctx, m.pts.map(p => ({ x: p.x, y: p.y - dec / H })), W, H);
+      ctx.stroke();
+      tracerChemin(ctx, m.pts.map(p => ({ x: p.x, y: p.y + dec / H })), W, H);
+      ctx.stroke();
+      break;
+    }
   }
   ctx.restore();
 }
@@ -1837,6 +2033,7 @@ function bboxMarquage(m, W, H) {
               : m.type === 'ralentisseur' ? 38
               : m.type === 'stationnement' ? 56
               : m.type === 'sas_velo' ? 44
+              : m.type === 'piste_cyclable' ? 20
               : m.type === 'velo' ? 30 : 12;
   return { x: x0 - marge, y: y0 - marge, w: x1 - x0 + 2 * marge, h: y1 - y0 + 2 * marge };
 }
@@ -2110,6 +2307,7 @@ let nbVehicules = 2, nbPietons = 0;
    remettant toutes les positions à l'échelle du nouveau format. */
 sc.onResize = (oW, oH, nW, nH) => {
   const kx = nW / oW, ky = nH / oH;
+  majEchelleVehicules();
   for (const e of entites) {
     e.x *= kx; e.y *= ky;
     if (e.trace) for (const p of e.trace) { p.x *= kx; p.y *= ky; }
@@ -2120,6 +2318,10 @@ sc.onResize = (oW, oH, nW, nH) => {
   vue.ox *= kx; vue.oy *= ky;
 };
 
+/* Échelle des véhicules : facteur "cover" du décor, pour une taille
+   relative constante sur tout écran (objet partagé entre modules). */
+const VEH = { echelle: 1 };
+
 /* Options d'affichage de la Scène */
 const OPTIONS = {
   trace: false,      // enregistrer la trajectoire pendant le drag
@@ -2128,6 +2330,7 @@ const OPTIONS = {
   nuit: false,       // voile nocturne + faisceaux de phares
   vision: false,     // champ de vision du conducteur (véhicule au 1er plan)
   laisseSeule: false, // les véhicules ne bougent que par leur poignée
+  feuxRoute: false,   // false = feux de croisement, true = feux de route (longue portée)
 };
 const TRACE_PAS = 6;        // distance mini (px) entre deux points
 const TRACE_MAX = 900;      // nb max de points par trace
@@ -2175,7 +2378,8 @@ function drawNuit(ctxMain) {
   for (const e of entites) {
     if (!(e instanceof Vehicule)) continue;
     const L = e.longueur, l = e.largeur;
-    const portee = L * 2.3;                  // portée des feux de croisement
+    const portee = OPTIONS.feuxRoute ? L * 4.2 : L * 2.3;  // route vs croisement
+    const evas = OPTIONS.feuxRoute ? 2.4 : 1.6;            // évasement du faisceau
     nc.save();
     nc.translate(e.x, e.y);
     nc.rotate(e.angle);
@@ -2185,8 +2389,8 @@ function drawNuit(ctxMain) {
     nc.fillStyle = g;
     nc.beginPath();
     nc.moveTo(L / 2 - 4, -l * 0.42);
-    nc.lineTo(L / 2 + portee, -l * 1.6);
-    nc.lineTo(L / 2 + portee,  l * 1.6);
+    nc.lineTo(L / 2 + portee, -l * evas);
+    nc.lineTo(L / 2 + portee,  l * evas);
     nc.lineTo(L / 2 - 4,  l * 0.42);
     nc.closePath();
     nc.fill();
@@ -2229,11 +2433,11 @@ function drawPhares(ctx) {
 const calqueVision = document.createElement('canvas');
 let vitesseVision = 0;               // km/h simulés pour l'effet tunnel
 
-/* Champ de vision NET (en degrés) selon la vitesse — points d'appui
-   pédagogiques : 0 km/h → 150° · 40 → 100° · 100 → 45° · 130 → 30° */
+/* Champ de vision NET (en degrés) selon la vitesse — valeurs métier :
+   arrêt → 180° · 30 km/h → 120° · 100 → 45° · 130 → 30° */
 function champVision(v) {
-  const pts = [[0, 150], [40, 100], [100, 45], [130, 30]];
-  if (v <= 0) return 150;
+  const pts = [[0, 180], [30, 120], [100, 45], [130, 30]];
+  if (v <= 0) return 180;
   for (let i = 1; i < pts.length; i++) {
     if (v <= pts[i][0]) {
       const [v0, a0] = pts[i - 1], [v1, a1] = pts[i];
@@ -2444,8 +2648,12 @@ function drawTraces(ctx) {
   }
 }
 
+function majEchelleVehicules() {
+  VEH.echelle = Math.max(sc.W / MONDE.W, sc.H / MONDE.H);
+}
 function boucle(temps) {
   if (ongletActif === 'scene') {
+    majEchelleVehicules();
     for (const e of entites) e.update();
     sc.ctx.fillStyle = '#9ec79b';              // herbe partout (hors-monde au dézoom)
     sc.ctx.fillRect(0, 0, sc.W, sc.H);
@@ -2620,9 +2828,13 @@ sc.canvas.addEventListener('pointerdown', (e) => {
   }
   let feuDecor = null;
   if (!touche && decorActif === 'perso') {
+    // Le décor perso est dessiné via la transform "cover" : on convertit
+    // le point du tap (repère vue) vers le MONDE fixe pour viser le feu.
+    const t = transformContain(sc.W, sc.H);
+    const mx = (p.x - t.ox) / t.s, my = (p.y - t.oy) / t.s;
     for (let i = editeur.panneaux.length - 1; i >= 0; i--) {
       const pa = editeur.panneaux[i];
-      if (pa.type === 'feu' && hitPanneauEd(pa, p.x, p.y, sc.W, sc.H)) {
+      if (pa.type === 'feu' && hitPanneauEd(pa, mx, my, MONDE.W, MONDE.H)) {
         feuDecor = pa;
         break;
       }
@@ -2784,6 +2996,13 @@ sc.canvas.addEventListener('wheel', (e) => {
 // --- Zoom de l'éditeur : molette + pincement deux doigts ---
 ed.canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
+  // Alt + molette : fait pivoter la sélection (élément ou groupe)
+  if (e.altKey && editeur.selection) {
+    const pas = e.deltaY < 0 ? 5 : -5;
+    selRot.value = Math.max(-180, Math.min(180, Number(selRot.value) + pas));
+    appliquerTransformSelection();
+    return;
+  }
   const r = ed.canvas.getBoundingClientRect();
   zoomerEditeur(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0015));
 }, { passive: false });
@@ -2902,7 +3121,22 @@ function centroide(pts) {
 function rafraichirBaseSelection() {
   const sel = editeur.selection;
   if (!sel) return;
-  if (sel.kind === 'groupe') { sel.base = null; return; }
+  if (sel.kind === 'groupe') {
+    // Centre commun (moyenne des centres) + état de chaque membre
+    const centres = sel.refs.map(r => r.kind === 'panneau'
+      ? { x: r.ref.x, y: r.ref.y } : centroide(r.ref.pts));
+    const cx = centres.reduce((s, c) => s + c.x, 0) / centres.length;
+    const cy = centres.reduce((s, c) => s + c.y, 0) / centres.length;
+    sel.base = {
+      cx, cy,
+      membres: sel.refs.map(r => r.kind === 'panneau'
+        ? { x: r.ref.x, y: r.ref.y, taille: r.ref.taille, angle: r.ref.angle || 0 }
+        : { pts: r.ref.pts.map(p => ({ x: p.x, y: p.y })) }),
+    };
+    selTaille.value = 100;
+    selRot.value = 0;
+    return;
+  }
   if (sel.kind === 'panneau') {
     sel.base = { taille: sel.ref.taille, angle: sel.ref.angle || 0 };
   } else {
@@ -2927,6 +3161,13 @@ ed.canvas.addEventListener('pointerdown', (e) => {
   const pnB = { x: pb.x / MONDE.W, y: pb.y / MONDE.H };
 
   // Véhicule test : attrapable dans tous les modes (sauf Gomme, qui le supprime)
+  // Mode Main : glisser pour déplacer la vue (panoramique), rien d'autre
+  if (editeur.mode === 'main') {
+    editeur.panDrag = { sx: e.clientX, sy: e.clientY, ox: vueEd.panx, oy: vueEd.pany };
+    ed.canvas.setPointerCapture(e.pointerId);
+    return;
+  }
+
   if (editeur.mode !== 'gomme') {
     for (let i = editeur.vehiculesTest.length - 1; i >= 0; i--) {
       const v = editeur.vehiculesTest[i];
@@ -3007,6 +3248,7 @@ ed.canvas.addEventListener('pointerdown', (e) => {
           type: editeur.typeMarquage,
           pts: [],
           arrondi: editeur.arrondi,
+          jaune: editeur.jaune,
         };
       }
       editeur.enCoursMarquage.pts.push(modeAimanteBord() ? pnB : pn);
@@ -3094,6 +3336,11 @@ ed.canvas.addEventListener('pointermove', (e) => {
     clearTimeout(timerAppui);
     timerAppui = null;
   }
+  if (editeur.panDrag) {
+    vueEd.panx = editeur.panDrag.ox + (e.clientX - editeur.panDrag.sx);
+    vueEd.pany = editeur.panDrag.oy + (e.clientY - editeur.panDrag.sy);
+    return;
+  }
   if (editeur.dragTest) {
     const pr = pointEd(e);
     const v = editeur.dragTest.ref;
@@ -3148,6 +3395,7 @@ ed.canvas.addEventListener('pointerup', () => {
   clearTimeout(timerAppui);
   timerAppui = null;
   editeur.dragTest = null;
+  editeur.panDrag = null;
   if (editeur.zoneSelection) {
     const z = editeur.zoneSelection;
     const x0 = Math.min(z.x0, z.x1), x1 = Math.max(z.x0, z.x1);
@@ -3179,6 +3427,7 @@ ed.canvas.addEventListener('pointercancel', () => {
   clearTimeout(timerAppui);
   timerAppui = null;
   editeur.dragTest = null;
+  editeur.panDrag = null;
   editeur.zoneSelection = null;
   editeur.dragSelection = null;
 });
@@ -3271,6 +3520,7 @@ const selRotZone      = document.getElementById('sel-rot-zone');
 const selRot          = document.getElementById('sel-rot');
 
 const AIDES = {
+  main: 'Mode Main : glissez pour déplacer la vue. Aucun élément n\'est modifié.',
   trottoir: 'Mode Trottoir : tracez des surfaces piétonnes indépendantes (cheminements, parvis), comme une route : tapez les points, double-tap ou « Terminer » pour clore. Les routes les recouvrent au croisement.',
   route: 'Mode Route : tapez pour poser les points, double-tap ou « Terminer » pour clore. Les routes sont nues : marquages et panneaux s\u2019ajoutent avec les autres modes.',
   marquage: 'Mode Marquage : STOP, cédez et passage piéton se posent en 2 taps (un de chaque côté de la chaussée). Flèches : 1ᵉʳ tap = position, 2ᵉ tap = direction et taille. Les lignes se tracent en polyligne, double-tap pour clore.',
@@ -3283,8 +3533,8 @@ function majSelectionUI() {
   const sel = editeur.selection;
   const groupe = sel && sel.kind === 'groupe';
   selActions.hidden = !sel;
-  selTailleZone.hidden = !sel || groupe;   // taille/rotation : élément seul
-  selRotZone.hidden = !sel || groupe;
+  selTailleZone.hidden = !sel;             // taille/rotation : élément seul OU groupe
+  selRotZone.hidden = !sel;
 }
 
 document.getElementById('choix-mode').addEventListener('click', (e) => {
@@ -3298,6 +3548,7 @@ document.getElementById('choix-mode').addEventListener('click', (e) => {
   }
   // Réglages contextuels : seuls ceux du mode actif sont visibles
   selectMarquage.hidden  = editeur.mode !== 'marquage';
+  document.getElementById('zone-jaune').hidden = editeur.mode !== 'marquage';
   selectPanneauEd.hidden = editeur.mode !== 'panneau';
   document.getElementById('zone-largeur').hidden =
     editeur.mode !== 'route' && editeur.mode !== 'trottoir';
@@ -3307,6 +3558,10 @@ document.getElementById('choix-mode').addEventListener('click', (e) => {
 selectMarquage.addEventListener('change', () => {
   terminerTrace();
   editeur.typeMarquage = selectMarquage.value;
+});
+document.getElementById('ed-jaune').addEventListener('change', (e) => {
+  editeur.jaune = e.target.checked;
+  if (editeur.enCoursMarquage) editeur.enCoursMarquage.jaune = editeur.jaune;
 });
 selectPanneauEd.addEventListener('change', () => {
   editeur.typePanneau = selectPanneauEd.value;
@@ -3376,6 +3631,34 @@ function appliquerTransformSelection() {
   if (!sel || !sel.base) return;
   const k = Number(selTaille.value) / 100;
   const th = Number(selRot.value) * Math.PI / 180;
+  if (sel.kind === 'groupe') {
+    const cos = Math.cos(th), sin = Math.sin(th);
+    const b = sel.base;
+    // Faire pivoter/échelonner un point (normalisé) autour du centre commun
+    const transfP = (bx, by) => {
+      const dx = (bx - b.cx) * MONDE.W * k;
+      const dy = (by - b.cy) * MONDE.H * k;
+      return {
+        x: b.cx + (dx * cos - dy * sin) / MONDE.W,
+        y: b.cy + (dx * sin + dy * cos) / MONDE.H,
+      };
+    };
+    sel.refs.forEach((r, i) => {
+      const mb = b.membres[i];
+      if (r.kind === 'panneau') {
+        const np = transfP(mb.x, mb.y);
+        r.ref.x = np.x; r.ref.y = np.y;
+        r.ref.taille = Math.max(20, Math.min(140, Math.round(mb.taille * k)));
+        r.ref.angle = mb.angle + th;
+      } else {
+        r.ref.pts.forEach((p, j) => {
+          const np = transfP(mb.pts[j].x, mb.pts[j].y);
+          p.x = np.x; p.y = np.y;
+        });
+      }
+    });
+    return;
+  }
   if (sel.kind === 'panneau') {
     sel.ref.taille = Math.max(20, Math.min(140, Math.round(sel.base.taille * k)));
     sel.ref.angle = sel.base.angle + th;
@@ -3687,6 +3970,17 @@ document.getElementById('btn-moto').addEventListener('click', () => {
   entites.push(m);
 });
 
+document.getElementById('btn-cycliste').addEventListener('click', () => {
+  const c = new Cycliste({ x: sc.W / 2 - 100, y: sc.H * 0.82 });
+  nbVehicules++; c.numero = nbVehicules;
+  entites.push(c);
+});
+document.getElementById('btn-edpm').addEventListener('click', () => {
+  const c = new EDPM({ x: sc.W / 2 - 130, y: sc.H * 0.82 });
+  nbVehicules++; c.numero = nbVehicules;
+  entites.push(c);
+});
+
 document.getElementById('btn-pieton').addEventListener('click', () => {
   entites.push(new Pieton({
     x: sc.W * 0.5 + (Math.random() - 0.5) * 160,
@@ -3757,6 +4051,12 @@ const btnNuit = document.getElementById('btn-nuit');
 btnNuit.addEventListener('click', () => {
   OPTIONS.nuit = !OPTIONS.nuit;
   btnNuit.classList.toggle('actif', OPTIONS.nuit);
+});
+const btnFeuxRoute = document.getElementById('btn-feux-route');
+btnFeuxRoute.addEventListener('click', () => {
+  OPTIONS.feuxRoute = !OPTIONS.feuxRoute;
+  btnFeuxRoute.classList.toggle('actif', OPTIONS.feuxRoute);
+  btnFeuxRoute.textContent = OPTIONS.feuxRoute ? '🔦 Feux croisement' : '🔦 Feux route';
 });
 
 const btnLaisseSeule = document.getElementById('btn-laisse-seule');
