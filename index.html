@@ -5,8 +5,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Simulateur — Easy auto-école</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  /* ===== Charte typographique Easy =====
+     Titre        → Fredoka (en attendant la police exacte du logo)
+     Sous-titre   → Stölzl Medium  | interlettrage 20  | ×1,1
+     Texte        → Stölzl Light   | interlettrage 10  | ×1,1
+     Texte (fort) → Stölzl Regular | interlettrage 10  | ×1,1
+     Stölzl étant une police commerciale, Fredoka la remplace
+     provisoirement dans toutes les graisses. Tout en minuscules. */
   :root {
+    --police-titre: "Fredoka", "Segoe UI", system-ui, sans-serif;
+    --police-texte: "Fredoka", "Segoe UI", system-ui, sans-serif;
     --rouge: #FF3030;          /* rouge de marque Easy (theme-color du site) */
     --rouge-fonce: #d92121;
     --rouge-pale: #fff0f0;
@@ -18,7 +30,11 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; overflow: hidden; }
   body {
-    font-family: "Nunito", "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-family: var(--police-texte);
+    font-weight: 300;                 /* ≈ Stölzl Light */
+    letter-spacing: 0.01em;           /* interlettrage 10 */
+    line-height: 1.1;
+    text-transform: lowercase;        /* charte : tout en minuscules */
     background: var(--papier);
     color: var(--encre);
     display: flex;
@@ -42,8 +58,10 @@
   }
   .marque img { height: 34px; display: block; }
   .marque .nom-outil {
-    font-weight: 800;
-    font-size: 16px;
+    font-family: var(--police-titre);
+    font-weight: 600;
+    font-size: 19px;
+    letter-spacing: 0;
     color: var(--encre);
   }
   .marque .nom-outil em {
@@ -56,7 +74,8 @@
     padding: 9px 22px;
     background: transparent;
     color: var(--encre);
-    font-weight: 700;
+    font-family: var(--police-texte);
+    font-weight: 500;
     font-size: 14px;
     cursor: pointer;
     transition: background .15s, color .15s;
@@ -92,14 +111,92 @@
     position: absolute;
     top: 3px;
     left: 10px;
+    font-family: var(--police-texte);
     font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.09em;
+    font-weight: 500;                 /* ≈ Stölzl Medium */
+    letter-spacing: 0.12em;           /* interlettrage 20 */
     text-transform: uppercase;
     color: var(--gris);
     white-space: nowrap;
   }
   .pousse-droite { margin-left: auto; }
+
+  /* ===== Palette flottante (Scène) ===== */
+  #vue-scene header { display: none; }        /* la barre classique est remplacée */
+  .palette {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 30;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    touch-action: none;
+  }
+  .palette-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(255,255,255,0.96);
+    border: 1px solid var(--bordure);
+    border-radius: 16px;
+    padding: 6px;
+    box-shadow: 0 6px 22px rgba(0,0,0,0.13);
+    backdrop-filter: blur(4px);
+  }
+  .palette-grip {
+    height: 18px;
+    border-radius: 8px;
+    background:
+      radial-gradient(circle 1.3px at 6px 6px, var(--gris) 99%, transparent),
+      radial-gradient(circle 1.3px at 12px 6px, var(--gris) 99%, transparent),
+      radial-gradient(circle 1.3px at 6px 12px, var(--gris) 99%, transparent),
+      radial-gradient(circle 1.3px at 12px 12px, var(--gris) 99%, transparent);
+    background-repeat: no-repeat;
+    cursor: grab;
+    margin: 0 2px 2px;
+  }
+  .palette-grip:active { cursor: grabbing; }
+  .pal-ico {
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; border-radius: 11px;
+    background: transparent; color: var(--encre);
+    font-size: 20px; cursor: pointer;
+    position: relative;
+    transition: background 0.12s;
+  }
+  .pal-ico:hover { background: var(--papier); }
+  .pal-ico.actif { background: var(--rouge); color: #fff; }
+  .pal-ico .pastille {
+    position: absolute; top: 4px; right: 4px;
+    width: 8px; height: 8px; border-radius: 50%;
+    border: 1.5px solid #fff;
+  }
+  .palette-panneau {
+    min-width: 150px;
+    background: rgba(255,255,255,0.98);
+    border: 1px solid var(--bordure);
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 6px 22px rgba(0,0,0,0.13);
+    display: none;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .palette-panneau.ouvert { display: flex; }
+  .palette-panneau h4 {
+    font-family: var(--police-texte);
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--gris); margin-bottom: 2px;
+  }
+  .palette-panneau button,
+  .palette-panneau select { width: 100%; }
+  .palette-panneau .ligne {
+    display: flex; gap: 6px; align-items: center;
+  }
+  .palette-panneau .ligne button { flex: 1; }
   .beta-zone {
     display: none;
     align-items: center;
@@ -227,18 +324,34 @@
 <!-- ================= VUE SCÈNE ================= -->
 <div class="vue" id="vue-scene">
   <header>
-    <button class="btn-replier" id="replier-scene" title="Replier / déplier la barre">▴ Menu</button>
-    <div class="groupe" data-titre="Décor" id="choix-decor">
-      <button data-decor="carrefour" class="actif">Carrefour</button>
-      <button data-decor="interT">Inter. en T</button>
-      <button data-decor="rondpoint">Rond-point</button>
-      <button data-decor="voierapide">Voie rapide</button>
-      <button data-decor="perso" id="btn-decor-perso" hidden>Perso</button>
+    <span class="aide">Tirer le point devant le capot (la « laisse ») : conduite fluide · Glisser la carrosserie : déplacer et orienter · Double-tap : clignotants / type de panneau / couleur du feu · Trace : les véhicules déplacés laissent leur trajectoire (Effacer pour nettoyer) · N° : numéroter les véhicules · Molette ou pincer (2 doigts sur le vide) : zoom et déplacement de la vue · 2ᵉ doigt posé pendant qu'on tient un objet : rotation fine · pincer un panneau tenu : le redimensionner · ✏ Stylo : dessiner par-dessus la scène (Effacer pour nettoyer) · 🌙 Nuit : voile nocturne et faisceaux de phares · 👁 Vision : champ de vision réel du véhicule au premier plan (montants et ombres des autres usagers) · curseur Vitesse : le champ se rétrécit avec la vitesse (effet tunnel : 40 km/h → 100°, 100 → 45°, 130 → 30°)</span>
+  </header>
+  <div class="palette" id="palette-scene">
+    <div class="palette-rail" id="palette-rail">
+      <div class="palette-grip" id="palette-grip" title="Déplacer la palette"></div>
+      <button class="pal-ico" data-pal="decor" title="Décor">🛣️</button>
+      <button class="pal-ico" data-pal="ajouter" title="Ajouter">➕</button>
+      <button class="pal-ico" data-pal="pedago" title="Pédagogie">🎓</button>
+      <button class="pal-ico" data-pal="affichage" title="Affichage / zoom">🔍</button>
+      <button class="pal-ico" data-pal="autres" title="Infos / vider">⋯</button>
+    </div>
+
+    <div class="palette-panneau" id="pal-decor" data-pour="decor">
+      <h4>Décor</h4>
+      <div id="choix-decor">
+        <button data-decor="carrefour" class="actif">Carrefour</button>
+        <button data-decor="interT">Inter. en T</button>
+        <button data-decor="rondpoint">Rond-point</button>
+        <button data-decor="voierapide">Voie rapide</button>
+        <button data-decor="perso" id="btn-decor-perso" hidden>Perso</button>
+      </div>
       <label class="controle" id="zone-giratoire" hidden>Giratoire
         <input type="range" id="taille-giratoire" min="28" max="55" step="1" value="42">
       </label>
     </div>
-    <div class="groupe" data-titre="Ajouter">
+
+    <div class="palette-panneau" id="pal-ajouter" data-pour="ajouter">
+      <h4>Ajouter</h4>
       <button id="btn-vehicule">+ Véhicule</button>
       <button id="btn-camion">+ Poids lourd</button>
       <button id="btn-moto">+ Moto</button>
@@ -257,14 +370,18 @@
       </select>
       <button id="btn-panneau">+ Panneau</button>
     </div>
-    <div class="groupe" data-titre="Pédagogie">
+
+    <div class="palette-panneau" id="pal-pedago" data-pour="pedago">
+      <h4>Pédagogie</h4>
       <button id="btn-angle-mort">Angles morts</button>
       <button id="btn-trace">Trace</button>
-      <button id="btn-stylo">✏ Stylo</button>
-      <button id="btn-stylo-couleur" title="Couleur du stylo">●</button>
+      <div class="ligne">
+        <button id="btn-stylo">✏ Stylo</button>
+        <button id="btn-stylo-couleur" title="Couleur du stylo" style="flex:0 0 40px">●</button>
+      </div>
       <button id="btn-numeros">N°</button>
       <button id="btn-laisse-seule" title="Les véhicules ne se déplacent que par leur poignée de traction">Laisse seule</button>
-      <button id="btn-effacer-traces">Effacer</button>
+      <button id="btn-effacer-traces">Effacer traces</button>
       <button id="btn-beta" title="Fonctions expérimentales">🧪 Bêta</button>
       <span class="beta-zone" id="beta-zone">
         <button id="btn-nuit">🌙 Nuit</button>
@@ -275,18 +392,23 @@
         </label>
       </span>
     </div>
-    <div class="groupe" data-titre="Affichage">
-      <button id="btn-zoom-moins">−</button>
-      <button id="btn-zoom-reset">100 %</button>
-      <button id="btn-zoom-plus">+</button>
+
+    <div class="palette-panneau" id="pal-affichage" data-pour="affichage">
+      <h4>Affichage</h4>
+      <div class="ligne">
+        <button id="btn-zoom-moins">−</button>
+        <button id="btn-zoom-reset">100 %</button>
+        <button id="btn-zoom-plus">+</button>
+      </div>
       <button id="btn-plein-ecran">Plein écran</button>
     </div>
-    <div class="groupe pousse-droite">
+
+    <div class="palette-panneau" id="pal-autres" data-pour="autres">
+      <h4>Autres</h4>
       <button id="btn-info-scene" title="Afficher les astuces">ℹ Infos</button>
-      <button id="btn-vider" class="danger">Vider</button>
+      <button id="btn-vider" class="danger">Vider la scène</button>
     </div>
-    <span class="aide">Tirer le point devant le capot (la « laisse ») : conduite fluide · Glisser la carrosserie : déplacer et orienter · Double-tap : clignotants / type de panneau / couleur du feu · Trace : les véhicules déplacés laissent leur trajectoire (Effacer pour nettoyer) · N° : numéroter les véhicules · Molette ou pincer (2 doigts sur le vide) : zoom et déplacement de la vue · 2ᵉ doigt posé pendant qu'on tient un objet : rotation fine · pincer un panneau tenu : le redimensionner · ✏ Stylo : dessiner par-dessus la scène (Effacer pour nettoyer) · 🌙 Nuit : voile nocturne et faisceaux de phares · 👁 Vision : champ de vision réel du véhicule au premier plan (montants et ombres des autres usagers) · curseur Vitesse : le champ se rétrécit avec la vitesse (effet tunnel : 40 km/h → 100°, 100 → 45°, 130 → 30°)</span>
-  </header>
+  </div>
   <div class="zone-canvas">
     <canvas id="canvas-scene"></canvas>
     <button id="btn-sortie-pe" hidden>✕ Quitter</button>
@@ -632,7 +754,7 @@ class Vehicule extends Entity {
   constructor({ x, y, couleur = '#2563eb' }) {
     super(x, y);
     this.couleur = couleur;
-    this.longueur = 86; this.largeur = 44;
+    this.longueur = 74; this.largeur = 38;
     this.angle = this.angleCible = -Math.PI / 2;
     this.clignotant = null;
     this.afficherAngleMort = false;
@@ -766,8 +888,8 @@ class Vehicule extends Entity {
 class Camion extends Vehicule {
   constructor(opts) {
     super(opts);
-    this.longueur = 258;
-    this.largeur = 62;
+    this.longueur = 220;
+    this.largeur = 54;
   }
   draw(ctx, temps) {
     const L = this.longueur, l = this.largeur;
@@ -833,8 +955,8 @@ class Camion extends Vehicule {
 class Moto extends Vehicule {
   constructor(opts) {
     super(opts);
-    this.longueur = 44;
-    this.largeur = 18;
+    this.longueur = 38;
+    this.largeur = 16;
   }
   draw(ctx, temps) {
     const L = this.longueur, l = this.largeur;
@@ -2169,7 +2291,7 @@ function drawVision(ctxMain) {
   // Étiquette pédagogique : vitesse simulée et champ net correspondant
   ctxMain.setTransform(dpr, 0, 0, dpr, 0, 0);
   const txt = vitesseVision + ' km/h · champ net ≈ ' + Math.round(deg) + '°';
-  ctxMain.font = '600 13px Nunito, system-ui, sans-serif';
+  ctxMain.font = '500 13px Fredoka, system-ui, sans-serif';
   const lTxt = ctxMain.measureText(txt).width;
   ctxMain.fillStyle = 'rgba(255,255,255,0.92)';
   roundRect(ctxMain, 12, sc.H - 40, lTxt + 22, 28, 14);
@@ -3466,18 +3588,67 @@ visionVitesseInput.addEventListener('input', () => {
   visionKmh.textContent = vitesseVision + ' km/h';
 });
 
-for (const [btnId, selecteur] of [
-  ['replier-scene', '#vue-scene header'],
-  ['replier-editeur', '#vue-editeur header'],
-]) {
-  const btn = document.getElementById(btnId);
-  const hdr = document.querySelector(selecteur);
+// Barre repliable de l'éditeur (la Scène utilise la palette flottante)
+{
+  const btn = document.getElementById('replier-editeur');
+  const hdr = document.querySelector('#vue-editeur header');
   btn.addEventListener('click', () => {
     const replie = hdr.classList.toggle('replie');
     btn.textContent = replie ? '▾ Menu' : '▴ Menu';
     requestAnimationFrame(() => { sc.resize(); ed.resize(); });
   });
 }
+
+/* ===== Palette flottante de la Scène ===== */
+(function initPalette() {
+  const palette = document.getElementById('palette-scene');
+  const rail = document.getElementById('palette-rail');
+  const icones = [...rail.querySelectorAll('.pal-ico')];
+  const panneaux = [...palette.querySelectorAll('.palette-panneau')];
+  let ouvert = null;
+
+  function fermer() {
+    ouvert = null;
+    for (const p of panneaux) p.classList.remove('ouvert');
+    for (const i of icones) i.classList.remove('actif');
+  }
+  for (const ico of icones) {
+    ico.addEventListener('click', () => {
+      const cle = ico.dataset.pal;
+      if (ouvert === cle) { fermer(); return; }
+      fermer();
+      ouvert = cle;
+      ico.classList.add('actif');
+      const pan = palette.querySelector('.palette-panneau[data-pour="' + cle + '"]');
+      if (pan) pan.classList.add('ouvert');
+    });
+  }
+  // Refermer si on clique ailleurs (hors palette)
+  document.addEventListener('pointerdown', (e) => {
+    if (!palette.contains(e.target)) fermer();
+  }, true);
+
+  // Déplacement de la palette par la poignée
+  const grip = document.getElementById('palette-grip');
+  let drag = null;
+  grip.addEventListener('pointerdown', (e) => {
+    const r = palette.getBoundingClientRect();
+    drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+    grip.setPointerCapture(e.pointerId);
+  });
+  grip.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const par = palette.parentElement.getBoundingClientRect();
+    let x = e.clientX - par.left - drag.dx;
+    let y = e.clientY - par.top - drag.dy;
+    x = Math.max(4, Math.min(par.width - 60, x));
+    y = Math.max(4, Math.min(par.height - 60, y));
+    palette.style.left = x + 'px';
+    palette.style.top = y + 'px';
+  });
+  grip.addEventListener('pointerup', () => { drag = null; });
+  grip.addEventListener('pointercancel', () => { drag = null; });
+})();
 
 function basculerAide() {
   const on = document.body.classList.toggle('avec-aide');
