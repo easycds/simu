@@ -121,6 +121,39 @@
   }
   .pousse-droite { margin-left: auto; }
 
+  /* Bandeau d'aide au tracé (apparaît pendant un tracé en cours) */
+  #bandeau-trace {
+    position: absolute;
+    left: 50%; bottom: 20px; transform: translateX(-50%);
+    z-index: 28;
+    display: none;
+    align-items: center;
+    gap: 12px;
+    background: rgba(28, 36, 48, 0.92);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 14px;
+    box-shadow: 0 6px 22px rgba(0,0,0,0.25);
+    font-size: 13px;
+    backdrop-filter: blur(4px);
+    max-width: 90%;
+  }
+  #bandeau-trace.visible { display: flex; }
+  #bandeau-trace .compte {
+    background: var(--rouge); color: #fff;
+    font-weight: 700; font-size: 12px;
+    padding: 3px 9px; border-radius: 20px;
+    white-space: nowrap;
+  }
+  #bandeau-trace .txt { line-height: 1.25; }
+  #bandeau-trace button {
+    border: none; border-radius: 10px;
+    padding: 7px 13px; font-size: 13px; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+  }
+  #bt-terminer { background: #16a34a; color: #fff; }
+  #bt-annuler-pt { background: rgba(255,255,255,0.18); color: #fff; }
+
   /* ===== Palette flottante (Scène) ===== */
   #vue-scene header { display: none; }        /* la barre classique est remplacée */
   .palette {
@@ -158,16 +191,30 @@
   }
   .palette-grip:active { cursor: grabbing; }
   .pal-ico {
-    width: 44px; height: 44px;
-    display: flex; align-items: center; justify-content: center;
-    border: none; border-radius: 11px;
+    width: 56px; min-height: 50px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px;
+    border: none; border-radius: 12px;
     background: transparent; color: var(--encre);
-    font-size: 20px; cursor: pointer;
+    font-size: 21px; cursor: pointer;
     position: relative;
     transition: background 0.12s;
   }
+  .pal-ico .lib {
+    font-size: 9px; font-weight: 500; line-height: 1;
+    text-transform: lowercase; letter-spacing: 0.02em;
+  }
   .pal-ico:hover { background: var(--papier); }
   .pal-ico.actif { background: var(--rouge); color: #fff; }
+  /* Pastille indiquant l'outil de tracé actif sous l'icône Outils */
+  .pal-ico .mode-actif {
+    position: absolute; bottom: -3px; left: 50%; transform: translateX(-50%);
+    font-size: 8px; font-weight: 700; white-space: nowrap;
+    background: var(--rouge); color: #fff;
+    padding: 1px 5px; border-radius: 7px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .pal-ico.actif .mode-actif { background: #fff; color: var(--rouge); }
   .pal-ico .pastille {
     position: absolute; top: 4px; right: 4px;
     width: 8px; height: 8px; border-radius: 50%;
@@ -337,11 +384,11 @@
   <div class="palette" id="palette-scene">
     <div class="palette-rail" id="palette-rail">
       <div class="palette-grip" id="palette-grip" title="Déplacer la palette"></div>
-      <button class="pal-ico" data-pal="decor" title="Décor">🛣️</button>
-      <button class="pal-ico" data-pal="ajouter" title="Ajouter">➕</button>
-      <button class="pal-ico" data-pal="pedago" title="Pédagogie">🎓</button>
-      <button class="pal-ico" data-pal="affichage" title="Affichage / zoom">🔍</button>
-      <button class="pal-ico" data-pal="autres" title="Infos / vider">⋯</button>
+      <button class="pal-ico" data-pal="decor" title="Décor">🛣️<span class="lib">décor</span></button>
+      <button class="pal-ico" data-pal="ajouter" title="Ajouter">➕<span class="lib">ajouter</span></button>
+      <button class="pal-ico" data-pal="pedago" title="Pédagogie">🎓<span class="lib">pédago</span></button>
+      <button class="pal-ico" data-pal="affichage" title="Affichage / zoom">🔍<span class="lib">vue</span></button>
+      <button class="pal-ico" data-pal="autres" title="Infos / vider">⋯<span class="lib">autres</span></button>
     </div>
 
     <div class="palette-panneau" id="pal-decor" data-pour="decor">
@@ -431,11 +478,11 @@
   <div class="palette" id="palette-editeur">
     <div class="palette-rail" id="palette-rail-ed">
       <div class="palette-grip" id="palette-grip-ed" title="Déplacer la palette"></div>
-      <button class="pal-ico" data-paled="scenes" title="Scènes">🗂️</button>
-      <button class="pal-ico" data-paled="outils" title="Outils">🛠️</button>
-      <button class="pal-ico" data-paled="reglages" title="Réglages de l'outil">⚙️</button>
-      <button class="pal-ico" data-paled="carte" title="Carte">💾</button>
-      <button class="pal-ico" data-paled="utiliser" title="Utiliser dans la scène">➡️</button>
+      <button class="pal-ico" data-paled="scenes" title="Scènes">🗂️<span class="lib">scènes</span></button>
+      <button class="pal-ico" data-paled="outils" title="Outils">🛠️<span class="lib">outils</span><span class="mode-actif" id="mode-actif-pastille">route</span></button>
+      <button class="pal-ico" data-paled="reglages" title="Réglages de l'outil">⚙️<span class="lib">réglages</span></button>
+      <button class="pal-ico" data-paled="carte" title="Carte">💾<span class="lib">carte</span></button>
+      <button class="pal-ico" data-paled="utiliser" title="Utiliser">➡️<span class="lib">utiliser</span></button>
     </div>
 
     <div class="palette-panneau" id="paled-scenes" data-pour="scenes">
@@ -543,7 +590,14 @@
   </div>
   <input type="file" id="ed-fichier" accept=".json,application/json" hidden>
   <span class="aide" id="ed-aide" hidden>Mode Route : tapez pour poser les points, double-tap ou « Terminer » pour clore. Les routes sont nues : marquages et panneaux s'ajoutent avec les autres modes.</span>
-  <div class="zone-canvas"><canvas id="canvas-editeur"></canvas></div>
+  <div class="zone-canvas"><canvas id="canvas-editeur"></canvas>
+    <div id="bandeau-trace">
+      <span class="compte" id="bt-compte">0 point</span>
+      <span class="txt" id="bt-txt">Tapez pour poser le premier point</span>
+      <button id="bt-annuler-pt" title="Retirer le dernier point">↩ Annuler pt</button>
+      <button id="bt-terminer">✓ Terminer</button>
+    </div>
+  </div>
 </div>
 
 <div id="menu-ctx">
@@ -1604,6 +1658,7 @@ function appliquerInstantane(snap) {
   btnDecorPerso.hidden = editeur.routes.length === 0 &&
     editeur.marquages.length === 0 && editeur.panneaux.length === 0;
 }
+function _redrawApres(fn) { return fn; }
 function annulerEditeur() {
   const c = histCourante();
   if (c._undo.length <= 1) return;
@@ -2250,7 +2305,7 @@ function creerCanvas(id) {
   etat.resize = () => {
     const rect = canvas.parentElement.getBoundingClientRect();
     if (rect.width === 0) return;
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);   // plafond DPR = 2
     const oldW = etat.W, oldH = etat.H;
     etat.W = rect.width;
     etat.H = rect.height;
@@ -2267,7 +2322,31 @@ function creerCanvas(id) {
 
 const sc = creerCanvas('canvas-scene');
 const ed = creerCanvas('canvas-editeur');
-window.addEventListener('resize', () => { sc.resize(); ed.resize(); });
+window.addEventListener('resize', () => {
+  sc.resize(); ed.resize();
+  if (typeof demanderRenduEditeur === 'function') demanderRenduEditeur();
+});
+// Rendu de l'éditeur à la demande : on le redessine après toute interaction.
+for (const evt of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'wheel']) {
+  ed.canvas.addEventListener(evt, () => {
+    if (typeof demanderRenduEditeur === 'function') demanderRenduEditeur();
+  });
+}
+// Tout clic / saisie dans la palette de l'éditeur force aussi un redraw
+// (boutons, curseurs, listes), avec un léger délai pour l'après-action.
+window.addEventListener('DOMContentLoaded', () => {
+  const pal = document.getElementById('palette-editeur');
+  if (pal) {
+    for (const evt of ['click', 'input', 'change']) {
+      pal.addEventListener(evt, () => setTimeout(demanderRenduEditeur, 0));
+    }
+  }
+});
+// Au clavier (undo/redo, suppr, coller…) aussi
+window.addEventListener('keydown', () => setTimeout(() => {
+  if (typeof demanderRenduEditeur === 'function' && !vues.editeur.classList.contains('cachee'))
+    demanderRenduEditeur();
+}, 0));
 
 /* ============================================================
    ONGLETS
@@ -2282,7 +2361,7 @@ function activerOnglet(nom) {
   vues.editeur.classList.toggle('cachee', nom !== 'editeur');
   document.getElementById('onglet-scene').classList.toggle('actif', nom === 'scene');
   document.getElementById('onglet-editeur').classList.toggle('actif', nom === 'editeur');
-  requestAnimationFrame(() => { sc.resize(); ed.resize(); });
+  requestAnimationFrame(() => { sc.resize(); ed.resize(); demanderRenduEditeur(); });
 }
 document.getElementById('onglet-scene').addEventListener('click', () => activerOnglet('scene'));
 document.getElementById('onglet-editeur').addEventListener('click', () => activerOnglet('editeur'));
@@ -2672,7 +2751,22 @@ function boucle(temps) {
     sc.ctx.restore();
     dessinerCorbeille(sc.ctx);
   } else {
-    ed.ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
+    dessinerEditeur();
+  }
+  requestAnimationFrame(boucle);
+}
+
+let renduEditeurDemande = false;
+function demanderRenduEditeur() {
+  if (renduEditeurDemande) return;
+  renduEditeurDemande = true;
+  requestAnimationFrame(() => { renduEditeurDemande = false; dessinerEditeur(); });
+}
+
+function dessinerEditeur() {
+  const DPR = Math.min(2, window.devicePixelRatio || 1);
+  {
+    ed.ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ed.ctx.fillStyle = '#9ec79b';              // herbe partout
     ed.ctx.fillRect(0, 0, ed.W, ed.H);
     const tEd = transformContain(ed.W, ed.H);
@@ -2693,7 +2787,28 @@ function boucle(temps) {
       curseur: editeur.curseur,
       selection: editeur.mode === 'selection' ? editeur.selection : null,
     });
+    // Aides de tracé : numéroter chaque point posé, marquer le départ.
+    const tracEnCours = editeur.enCoursRoute || editeur.enCoursMarquage;
+    if (tracEnCours && tracEnCours.pts.length) {
+      const inv = 1 / (vueEd.zoom * tEd.s);
+      ed.ctx.save();
+      ed.ctx.font = `700 ${13 * inv}px Fredoka, sans-serif`;
+      ed.ctx.textAlign = 'center';
+      ed.ctx.textBaseline = 'middle';
+      tracEnCours.pts.forEach((pt, i) => {
+        const x = pt.x * MONDE.W, y = pt.y * MONDE.H;
+        ed.ctx.beginPath();
+        ed.ctx.arc(x, y, 11 * inv, 0, Math.PI * 2);
+        ed.ctx.fillStyle = i === 0 ? '#16a34a' : '#FF3030';  // départ en vert
+        ed.ctx.fill();
+        ed.ctx.lineWidth = 2 * inv; ed.ctx.strokeStyle = '#fff'; ed.ctx.stroke();
+        ed.ctx.fillStyle = '#fff';
+        ed.ctx.fillText(String(i + 1), x, y);
+      });
+      ed.ctx.restore();
+    }
     drawVehiculesTest(ed.ctx, MONDE.W, MONDE.H);
+    majBandeauTrace();
     if (editeur.zoneSelection) {
       const z = editeur.zoneSelection;     // coordonnées MONDE
       ed.ctx.save();
@@ -2708,9 +2823,9 @@ function boucle(temps) {
     }
     ed.ctx.restore();
   }
-  requestAnimationFrame(boucle);
 }
 requestAnimationFrame(boucle);
+dessinerEditeur();
 
 /* ============================================================
    VUE DE LA SCÈNE : zoom + panoramique
@@ -3094,6 +3209,32 @@ function pointEditeur(e) {
   return p;
 }
 
+function majBandeauTrace() {
+  const b = document.getElementById('bandeau-trace');
+  if (!b) return;
+  const tr = editeur.enCoursRoute || editeur.enCoursMarquage;
+  const actif = !!tr && (editeur.mode === 'route' || editeur.mode === 'trottoir' || editeur.mode === 'marquage');
+  b.classList.toggle('visible', actif);
+  if (!actif) return;
+  const nb = tr.pts.length;
+  document.getElementById('bt-compte').textContent = nb + (nb > 1 ? ' points' : ' point');
+  const txt = document.getElementById('bt-txt');
+  if (nb < 2) txt.textContent = 'Tapez pour poser le point suivant';
+  else txt.textContent = 'Continuez, ou Terminer pour valider (double-tap aussi)';
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const t = document.getElementById('bt-terminer');
+  const a = document.getElementById('bt-annuler-pt');
+  if (t) t.addEventListener('click', () => { terminerTrace(); });
+  if (a) a.addEventListener('click', () => {
+    const tr = editeur.enCoursRoute || editeur.enCoursMarquage;
+    if (tr && tr.pts.length) {
+      tr.pts.pop();
+      if (!tr.pts.length) { editeur.enCoursRoute = null; editeur.enCoursMarquage = null; }
+    }
+  });
+});
+
 function terminerTrace() {
   if (editeur.enCoursRoute && editeur.enCoursRoute.pts.length >= 2) {
     editeur.routes.push(editeur.enCoursRoute);
@@ -3104,6 +3245,7 @@ function terminerTrace() {
   }
   editeur.enCoursMarquage = null;
   majBoutonPerso();
+  if (typeof demanderRenduEditeur === 'function') demanderRenduEditeur();
 }
 
 
@@ -3148,6 +3290,7 @@ function selectionner(sel) {
   editeur.selection = sel;
   rafraichirBaseSelection();
   majSelectionUI();
+  if (typeof demanderRenduEditeur === 'function') demanderRenduEditeur();
 }
 
 ed.canvas.addEventListener('pointerdown', (e) => {
@@ -3505,6 +3648,7 @@ function majBoutonPerso() {
                          editeur.marquages.length === 0 &&
                          editeur.panneaux.length === 0;
   pousserHistorique();
+  if (typeof demanderRenduEditeur === 'function') demanderRenduEditeur();
 }
 
 const selectMarquage  = document.getElementById('type-marquage');
@@ -3526,6 +3670,15 @@ const AIDES = {
   gomme: 'Mode Gomme : tapez un élément pour le supprimer (panneau, puis marquage, puis route).',
 };
 
+const LIBELLES_MODE = {
+  route: 'route', trottoir: 'trottoir', marquage: 'marqu.', panneau: 'panneau',
+  selection: 'sélect.', gomme: 'gomme', main: 'main',
+};
+function majPastilleMode() {
+  const p = document.getElementById('mode-actif-pastille');
+  if (p) p.textContent = LIBELLES_MODE[editeur.mode] || editeur.mode;
+}
+
 function majSelectionUI() {
   const sel = editeur.selection;
   const groupe = sel && sel.kind === 'groupe';
@@ -3537,12 +3690,14 @@ function majSelectionUI() {
 document.getElementById('choix-mode').addEventListener('click', (e) => {
   const btn = e.target.closest('button[data-mode]');
   if (!btn) return;
+  setTimeout(demanderRenduEditeur, 0);
   terminerTrace();
   if (btn.dataset.mode !== 'selection') selectionner(null);
   editeur.mode = btn.dataset.mode;
   for (const b of document.querySelectorAll('#choix-mode button')) {
     b.classList.toggle('actif', b === btn);
   }
+  majPastilleMode();
   // Réglages contextuels : seuls ceux du mode actif sont visibles
   selectMarquage.hidden  = editeur.mode !== 'marquage';
   document.getElementById('zone-jaune').hidden = editeur.mode !== 'marquage';
@@ -3626,6 +3781,7 @@ document.getElementById('sel-supprimer').addEventListener('click', () => {
 function appliquerTransformSelection() {
   const sel = editeur.selection;
   if (!sel || !sel.base) return;
+  demanderRenduEditeur();
   const k = Number(selTaille.value) / 100;
   const th = Number(selRot.value) * Math.PI / 180;
   if (sel.kind === 'groupe') {
