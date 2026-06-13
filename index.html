@@ -508,9 +508,6 @@
       <label class="controle" style="flex-direction:row;align-items:center;gap:6px">
         <input type="checkbox" id="ed-bouts-droits"> Bouts droits
       </label>
-      <label class="controle" style="flex-direction:row;align-items:center;gap:6px">
-        <input type="checkbox" id="ed-poser-relacher"> Poser au relâcher
-      </label>
       <button id="ed-vehicule-test">🚗 Véhicule test</button>
       <span id="sel-actions" hidden>
         <button id="sel-dupliquer">Dupliquer</button>
@@ -1515,8 +1512,6 @@ const editeur = {
   arrondi: false,         // routes lissées en courbes
   boutsDroits: false,     // extrémités coupées net (collent au bord)
   jaune: false,           // marquage temporaire jaune (chantier)
-  poserRelacher: false,   // poser le point au lever du doigt plutôt qu'à l'appui
-  poseEnAttente: false,   // un appui constructif attend son relâcher
   curseur: null,
   selection: null,        // { kind: 'panneau'|'marquage', ref } ou { kind: 'groupe', refs }
   dragSelection: null,    // état du déplacement en cours
@@ -3208,13 +3203,6 @@ ed.canvas.addEventListener('pointerdown', (e) => {
   }, 550);
   }
 
-  const outilConstructif = ['route', 'trottoir', 'marquage', 'panneau'].includes(editeur.mode);
-  if (editeur.poserRelacher && outilConstructif) {
-    editeur.poseEnAttente = true;       // on posera au pointerup
-    appuiOrigine = { cx: e.clientX, cy: e.clientY, x: p.x, y: p.y };
-    return;
-  }
-
   switch (editeur.mode) {
 
     case 'route':
@@ -3339,63 +3327,6 @@ ed.canvas.addEventListener('pointerdown', (e) => {
   }
 });
 
-/* Pose d'un élément constructif au point donné (utilisé par l'option
-   « poser au relâcher »). Reprend la logique des cas route/marquage/panneau. */
-function poserConstructif(p, pn, pnB) {
-  switch (editeur.mode) {
-    case 'route':
-    case 'trottoir': {
-      const maintenant = performance.now();
-      if (maintenant - dernierTapEd.t < 350 &&
-          Math.hypot(p.x - dernierTapEd.x, p.y - dernierTapEd.y) < 30) {
-        terminerTrace();
-        dernierTapEd = { t: 0, x: 0, y: 0 };
-        return;
-      }
-      dernierTapEd = { t: maintenant, x: p.x, y: p.y };
-      if (!editeur.enCoursRoute) {
-        editeur.enCoursRoute = {
-          pts: [], largeur: editeur.largeur,
-          trottoir: editeur.mode === 'trottoir',
-          arrondi: editeur.arrondi, boutsDroits: editeur.boutsDroits,
-        };
-      }
-      editeur.enCoursRoute.pts.push(pnB);
-      break;
-    }
-    case 'marquage': {
-      const deuxPoints = MARQUAGES_2_POINTS.includes(editeur.typeMarquage);
-      if (!deuxPoints) {
-        const maintenant = performance.now();
-        if (maintenant - dernierTapEd.t < 350 &&
-            Math.hypot(p.x - dernierTapEd.x, p.y - dernierTapEd.y) < 30) {
-          terminerTrace();
-          dernierTapEd = { t: 0, x: 0, y: 0 };
-          return;
-        }
-        dernierTapEd = { t: maintenant, x: p.x, y: p.y };
-      }
-      if (!editeur.enCoursMarquage) {
-        editeur.enCoursMarquage = {
-          type: editeur.typeMarquage, pts: [],
-          arrondi: editeur.arrondi, jaune: editeur.jaune,
-        };
-      }
-      editeur.enCoursMarquage.pts.push(modeAimanteBord() ? pnB : pn);
-      if (deuxPoints && editeur.enCoursMarquage.pts.length === 2) terminerTrace();
-      break;
-    }
-    case 'panneau': {
-      editeur.panneaux.push({
-        type: editeur.typePanneau, x: pn.x, y: pn.y,
-        taille: 52, etatFeu: 'rouge',
-      });
-      majBoutonPerso();
-      break;
-    }
-  }
-}
-
 ed.canvas.addEventListener('pointermove', (e) => {
   if (timerAppui && appuiOrigine &&
       Math.hypot(e.clientX - appuiOrigine.cx, e.clientY - appuiOrigine.cy) > 10) {
@@ -3457,21 +3388,11 @@ ed.canvas.addEventListener('pointermove', (e) => {
   }
 });
 ed.canvas.addEventListener('pointerleave', () => { editeur.curseur = null; });
-ed.canvas.addEventListener('pointerup', (e) => {
+ed.canvas.addEventListener('pointerup', () => {
   clearTimeout(timerAppui);
   timerAppui = null;
   editeur.dragTest = null;
   editeur.panDrag = null;
-  // Pose différée (option « poser au relâcher ») : on pose au point de lever.
-  if (editeur.poseEnAttente) {
-    editeur.poseEnAttente = false;
-    const pr = pointEd(e);                       // monde (px)
-    const pm = pointEditeur(e);                  // monde (px), magnétisé grille
-    const pn = { x: pm.x / MONDE.W, y: pm.y / MONDE.H };   // normalisé
-    const ab = aimanterBord(pm);
-    const pnB = { x: ab.x / MONDE.W, y: ab.y / MONDE.H };
-    poserConstructif(pr, pn, pnB);
-  }
   if (editeur.zoneSelection) {
     const z = editeur.zoneSelection;
     const x0 = Math.min(z.x0, z.x1), x1 = Math.max(z.x0, z.x1);
@@ -3638,9 +3559,6 @@ selectMarquage.addEventListener('change', () => {
 document.getElementById('ed-jaune').addEventListener('change', (e) => {
   editeur.jaune = e.target.checked;
   if (editeur.enCoursMarquage) editeur.enCoursMarquage.jaune = editeur.jaune;
-});
-document.getElementById('ed-poser-relacher').addEventListener('change', (e) => {
-  editeur.poserRelacher = e.target.checked;
 });
 selectPanneauEd.addEventListener('change', () => {
   editeur.typePanneau = selectPanneauEd.value;
