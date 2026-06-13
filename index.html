@@ -2434,37 +2434,6 @@ function boucle(temps) {
       selection: editeur.mode === 'selection' ? editeur.selection : null,
     });
     drawVehiculesTest(ed.ctx, ed.W, ed.H);
-
-    // Cadre de la zone réellement visible dans la Scène (même ratio).
-    // Tout ce qui déborde sera rogné à l'envoi : on voile le hors-champ.
-    {
-      const rA = sc.W / sc.H;                 // ratio de la Scène
-      const eA = ed.W / ed.H;                 // ratio de l'éditeur
-      let vw, vh;
-      if (eA > rA) { vh = ed.H; vw = vh * rA; }   // éditeur plus large : bandes G/D
-      else         { vw = ed.W; vh = vw / rA; }   // éditeur plus haut : bandes H/B
-      const vx = (ed.W - vw) / 2, vy = (ed.H - vh) / 2;
-      const c = ed.ctx;
-      c.save();
-      // Voile sur les marges hors-champ
-      c.fillStyle = 'rgba(40, 46, 56, 0.30)';
-      if (vx > 0) {
-        c.fillRect(-2000, -2000, 2000 + vx, ed.H + 4000);
-        c.fillRect(vx + vw, -2000, 2000 + ed.W, ed.H + 4000);
-      }
-      if (vy > 0) {
-        c.fillRect(-2000, -2000, ed.W + 4000, 2000 + vy);
-        c.fillRect(-2000, vy + vh, ed.W + 4000, 2000 + ed.H);
-      }
-      // Liseré du cadre visible
-      c.strokeStyle = '#FF3030';
-      c.lineWidth = 2 / vueEd.zoom;
-      c.setLineDash([10 / vueEd.zoom, 7 / vueEd.zoom]);
-      c.strokeRect(vx, vy, vw, vh);
-      c.setLineDash([]);
-      c.restore();
-    }
-
     if (editeur.zoneSelection) {
       const z = editeur.zoneSelection;     // coordonnées MONDE
       ed.ctx.save();
