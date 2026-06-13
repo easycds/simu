@@ -2909,41 +2909,38 @@ sc.canvas.addEventListener('pointermove', (e) => {
     return;
   }
 
-  // --- Traction par la laisse : la voiture suit la poignée ---
+  // --- Traction par la laisse (modèle SimuRoute) : le véhicule pivote
+  // vers la poignée et garde sa pointe avant sous le doigt. ---
   if (geste === 'laisse' && actif) {
     const pe2 = pointDans(sc, e);
     corbeilleSurvol = dansCorbeille(pe2.x, pe2.y);
     const p = versMonde(pe2);
     actif.poignee = { x: p.x, y: p.y };
     const dx = p.x - actif.x, dy = p.y - actif.y;
-    const d = Math.hypot(dx, dy);
-    const L = actif.longueurLaisse;
-    if (d > L) {                       // laisse tendue : on tire
-      actif.angleCible = Math.atan2(dy, dx);
-      actif.x = p.x - (dx / d) * L;    // le véhicule reste au bout de la laisse
-      actif.y = p.y - (dy / d) * L;
+    if (Math.hypot(dx, dy) >= 1) {
+      const cible = Math.atan2(dy, dx);
+      let da = cible - actif.angle;
+      while (da >  Math.PI) da -= 2 * Math.PI;
+      while (da < -Math.PI) da += 2 * Math.PI;
+      const STIFFNESS = 0.9;
+      actif.angle += da * STIFFNESS;       // pivote quasi instantanément
+      actif.angleCible = actif.angle;      // pas de re-lissage en sens inverse
+      const L = actif.longueurLaisse;
+      actif.x = p.x - Math.cos(actif.angle) * L;   // avant collé au doigt
+      actif.y = p.y - Math.sin(actif.angle) * L;
       enregistrerTrace(actif);
-    }                                  // laisse molle : le véhicule ne bouge pas
+    }
     return;
   }
 
-  // --- Drag classique (1 doigt) ---
+  // --- Drag du corps (1 doigt) : DÉPLACEMENT PUR, sans rotation.
+  // L'orientation se règle uniquement via la poignée (le "point vert").
   if (geste === 'drag' && actif) {
     const pe2 = pointDans(sc, e);
     corbeilleSurvol = dansCorbeille(pe2.x, pe2.y);
     const p = versMonde(pe2);
-    const nx = p.x - actif._grabDx, ny = p.y - actif._grabDy;
-    // L'Option A ne s'enclenche qu'après un vrai déplacement :
-    // un simple tap ou un tremblement ne fait pas pivoter l'objet.
-    if (actif.rotationAuDrag && actif._origDrag &&
-        Math.hypot(nx - actif._origDrag.x, ny - actif._origDrag.y) > 14 / vue.zoom) {
-      const dx = nx - actif.x, dy = ny - actif.y;
-      if (Math.hypot(dx, dy) > SEUIL_ROTATION / vue.zoom) {
-        actif.angleCible = Math.atan2(dy, dx);   // OPTION A
-      }
-    }
-    actif.x = nx; actif.y = ny;
-
+    actif.x = p.x - actif._grabDx;
+    actif.y = p.y - actif._grabDy;
     enregistrerTrace(actif);
   }
 });
