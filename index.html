@@ -76,6 +76,41 @@
   }
   header.replie > *:not(.btn-replier) { display: none !important; }
   .btn-replier { font-size: 13px; padding: 7px 12px; }
+  header { align-items: flex-end; }
+  .groupe {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;                 /* un groupe passe à la ligne ENTIER */
+    background: rgba(28, 36, 48, 0.045);
+    border-radius: 12px;
+    padding: 17px 9px 6px;
+  }
+  .groupe[data-titre]::before {
+    content: attr(data-titre);
+    position: absolute;
+    top: 3px;
+    left: 10px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--gris);
+    white-space: nowrap;
+  }
+  .pousse-droite { margin-left: auto; }
+  .beta-zone {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    border-radius: 9px;
+    background: rgba(124, 58, 237, 0.10);
+    border: 1px dashed rgba(124, 58, 237, 0.45);
+  }
+  .beta-zone.ouvert { display: inline-flex; }
+  #btn-beta.actif { background: #7c3aed; border-color: #7c3aed; color: #fff; }
   header .aide { font-size: 12.5px; color: var(--gris); width: 100%; display: none; }
   body.avec-aide header .aide { display: block; }
 
@@ -193,20 +228,21 @@
 <div class="vue" id="vue-scene">
   <header>
     <button class="btn-replier" id="replier-scene" title="Replier / déplier la barre">▴ Menu</button>
-    <div class="groupe" id="choix-decor">
+    <div class="groupe" data-titre="Décor" id="choix-decor">
       <button data-decor="carrefour" class="actif">Carrefour</button>
       <button data-decor="interT">Inter. en T</button>
       <button data-decor="rondpoint">Rond-point</button>
       <button data-decor="voierapide">Voie rapide</button>
       <button data-decor="perso" id="btn-decor-perso" hidden>Perso</button>
+      <label class="controle" id="zone-giratoire" hidden>Giratoire
+        <input type="range" id="taille-giratoire" min="28" max="55" step="1" value="42">
+      </label>
     </div>
-    <label class="controle">Giratoire
-      <input type="range" id="taille-giratoire" min="28" max="55" step="1" value="42">
-    </label>
-    <button id="btn-vehicule">+ Véhicule</button>
-    <button id="btn-camion">+ Poids lourd</button>
-    <button id="btn-pieton">+ Piéton</button>
-    <div class="groupe">
+    <div class="groupe" data-titre="Ajouter">
+      <button id="btn-vehicule">+ Véhicule</button>
+      <button id="btn-camion">+ Poids lourd</button>
+      <button id="btn-moto">+ Moto</button>
+      <button id="btn-pieton">+ Piéton</button>
       <select id="type-panneau" aria-label="Type de panneau">
         <option value="stop">STOP</option>
         <option value="cedez">Cédez-le-passage</option>
@@ -221,25 +257,35 @@
       </select>
       <button id="btn-panneau">+ Panneau</button>
     </div>
-    <button id="btn-angle-mort">Angles morts</button>
-    <div class="groupe">
+    <div class="groupe" data-titre="Pédagogie">
+      <button id="btn-angle-mort">Angles morts</button>
       <button id="btn-trace">Trace</button>
       <button id="btn-stylo">✏ Stylo</button>
       <button id="btn-stylo-couleur" title="Couleur du stylo">●</button>
+      <button id="btn-numeros">N°</button>
+      <button id="btn-laisse-seule" title="Les véhicules ne se déplacent que par leur poignée de traction">Laisse seule</button>
       <button id="btn-effacer-traces">Effacer</button>
+      <button id="btn-beta" title="Fonctions expérimentales">🧪 Bêta</button>
+      <span class="beta-zone" id="beta-zone">
+        <button id="btn-nuit">🌙 Nuit</button>
+        <button id="btn-vision">👁 Vision</button>
+        <label class="controle" id="vision-vitesse-zone" hidden>
+          <input type="range" id="vision-vitesse" min="0" max="130" step="10" value="0">
+          <span id="vision-kmh">0 km/h</span>
+        </label>
+      </span>
     </div>
-    <button id="btn-numeros">N°</button>
-    <button id="btn-nuit">🌙 Nuit</button>
-    <button id="btn-vision">👁 Vision</button>
-    <div class="groupe">
+    <div class="groupe" data-titre="Affichage">
       <button id="btn-zoom-moins">−</button>
-      <button id="btn-zoom-reset">100 %</button>
+      <button id="btn-zoom-reset">100 %</button>
       <button id="btn-zoom-plus">+</button>
+      <button id="btn-plein-ecran">Plein écran</button>
     </div>
-    <button id="btn-plein-ecran">Plein écran</button>
-    <button id="btn-info-scene" title="Afficher les astuces">ℹ Infos</button>
-    <button id="btn-vider">Vider</button>
-    <span class="aide">Tirer le point devant le capot (la « laisse ») : conduite fluide · Glisser la carrosserie : déplacer et orienter · Double-tap : clignotants / type de panneau / couleur du feu · Trace : les véhicules déplacés laissent leur trajectoire (Effacer pour nettoyer) · N° : numéroter les véhicules · Molette ou pincer (2 doigts sur le vide) : zoom et déplacement de la vue · 2ᵉ doigt posé pendant qu'on tient un objet : rotation fine · pincer un panneau tenu : le redimensionner · ✏ Stylo : dessiner par-dessus la scène (Effacer pour nettoyer) · 🌙 Nuit : voile nocturne et faisceaux de phares · 👁 Vision : champ de vision réel du véhicule au premier plan (montants et ombres des autres usagers)</span>
+    <div class="groupe pousse-droite">
+      <button id="btn-info-scene" title="Afficher les astuces">ℹ Infos</button>
+      <button id="btn-vider" class="danger">Vider</button>
+    </div>
+    <span class="aide">Tirer le point devant le capot (la « laisse ») : conduite fluide · Glisser la carrosserie : déplacer et orienter · Double-tap : clignotants / type de panneau / couleur du feu · Trace : les véhicules déplacés laissent leur trajectoire (Effacer pour nettoyer) · N° : numéroter les véhicules · Molette ou pincer (2 doigts sur le vide) : zoom et déplacement de la vue · 2ᵉ doigt posé pendant qu'on tient un objet : rotation fine · pincer un panneau tenu : le redimensionner · ✏ Stylo : dessiner par-dessus la scène (Effacer pour nettoyer) · 🌙 Nuit : voile nocturne et faisceaux de phares · 👁 Vision : champ de vision réel du véhicule au premier plan (montants et ombres des autres usagers) · curseur Vitesse : le champ se rétrécit avec la vitesse (effet tunnel : 40 km/h → 100°, 100 → 45°, 130 → 30°)</span>
   </header>
   <div class="zone-canvas">
     <canvas id="canvas-scene"></canvas>
@@ -251,11 +297,11 @@
 <div class="vue cachee" id="vue-editeur">
   <header>
     <button class="btn-replier" id="replier-editeur" title="Replier / déplier la barre">▴ Menu</button>
-    <div class="groupe">
+    <div class="groupe" data-titre="Scènes">
       <select id="choix-carte" aria-label="Scène en cours"></select>
       <button id="btn-nouvelle-carte">+ Scène</button>
     </div>
-    <div class="groupe" id="choix-mode">
+    <div class="groupe" data-titre="Outils" id="choix-mode">
       <button data-mode="route" class="actif">Route</button>
       <button data-mode="trottoir">Trottoir</button>
       <button data-mode="marquage">Marquage</button>
@@ -263,60 +309,70 @@
       <button data-mode="selection">Sélection</button>
       <button data-mode="gomme">Gomme</button>
     </div>
-    <select id="type-marquage" aria-label="Type de marquage" disabled>
-      <option value="stop">Ligne STOP</option>
-      <option value="cedez">Ligne cédez-le-passage</option>
-      <option value="passage_pieton">Passage piéton</option>
-      <option value="ligne_discontinue">Ligne discontinue</option>
-      <option value="ligne_continue">Ligne continue</option>
-      <option value="fleche_droit">Flèche tout droit</option>
-      <option value="fleche_gauche">Flèche à gauche</option>
-      <option value="fleche_droite">Flèche à droite</option>
-      <option value="velo">Figurine vélo</option>
-      <option value="ralentisseur">Ralentisseur (dos d'âne)</option>
-    </select>
-    <select id="type-panneau-ed" aria-label="Type de panneau (éditeur)" disabled>
-      <option value="stop">STOP</option>
-      <option value="cedez">Cédez-le-passage</option>
-      <option value="sens_interdit">Sens interdit</option>
-      <option value="passage_pieton">Passage piéton</option>
-      <option value="giratoire">Carrefour giratoire</option>
-      <option value="priorite_droite">Priorité à droite</option>
-      <option value="obligation_droit">Obligation tout droit</option>
-      <option value="obligation_droite">Obligation à droite</option>
-      <option value="obligation_gauche">Obligation à gauche</option>
-      <option value="feu">Feu tricolore</option>
-    </select>
-    <label class="controle">Largeur route
-      <input type="range" id="ed-largeur" min="50" max="150" step="10" value="90">
-      <span id="ed-largeur-val">90</span>
-    </label>
-    <label class="controle">
-      <input type="checkbox" id="ed-magnetisme" checked> Magnétisme
-    </label>
-    <label class="controle">
-      <input type="checkbox" id="ed-arrondi"> Routes arrondies
-    </label>
-    <button id="ed-vehicule-test">🚗 Véhicule test</button>
-    <span id="sel-actions" hidden>
-      <button id="sel-dupliquer">Dupliquer</button>
-      <button id="sel-supprimer" class="danger">Supprimer</button>
-      <label class="controle" id="sel-taille-zone" hidden>Taille %
-        <input type="range" id="sel-taille" min="30" max="220" step="5" value="100">
+    <div class="groupe" data-titre="Réglages de l'outil">
+      <select id="type-marquage" aria-label="Type de marquage" hidden>
+        <option value="stop">Ligne STOP</option>
+        <option value="cedez">Ligne cédez-le-passage</option>
+        <option value="passage_pieton">Passage piéton</option>
+        <option value="ligne_discontinue">Ligne discontinue</option>
+        <option value="ligne_continue">Ligne continue</option>
+        <option value="fleche_droit">Flèche tout droit</option>
+        <option value="fleche_gauche">Flèche à gauche</option>
+        <option value="fleche_droite">Flèche à droite</option>
+        <option value="velo">Figurine vélo</option>
+        <option value="ralentisseur">Ralentisseur (dos d'âne)</option>
+        <option value="stationnement">Place de stationnement</option>
+        <option value="zebra">Zébra (zone hachurée)</option>
+        <option value="ligne_effet">Ligne d'effet des feux</option>
+        <option value="sas_velo">Sas vélo</option>
+      </select>
+      <select id="type-panneau-ed" aria-label="Type de panneau (éditeur)" hidden>
+        <option value="stop">STOP</option>
+        <option value="cedez">Cédez-le-passage</option>
+        <option value="sens_interdit">Sens interdit</option>
+        <option value="passage_pieton">Passage piéton</option>
+        <option value="giratoire">Carrefour giratoire</option>
+        <option value="priorite_droite">Priorité à droite</option>
+        <option value="obligation_droit">Obligation tout droit</option>
+        <option value="obligation_droite">Obligation à droite</option>
+        <option value="obligation_gauche">Obligation à gauche</option>
+        <option value="feu">Feu tricolore</option>
+      </select>
+      <label class="controle" id="zone-largeur">Largeur route
+        <input type="range" id="ed-largeur" min="50" max="150" step="10" value="90">
+        <span id="ed-largeur-val">90</span>
       </label>
-      <label class="controle" id="sel-rot-zone" hidden>Rotation
-        <input type="range" id="sel-rot" min="-180" max="180" step="5" value="0">
+      <label class="controle">
+        <input type="checkbox" id="ed-magnetisme" checked> Magnétisme
       </label>
-    </span>
-    <button id="ed-terminer">Terminer</button>
-    <button id="ed-annuler">Annuler</button>
-    <button id="ed-effacer">Tout effacer</button>
-    <div class="groupe">
+      <label class="controle">
+        <input type="checkbox" id="ed-arrondi"> Tracés arrondis
+      </label>
+      <button id="ed-vehicule-test">🚗 Véhicule test</button>
+      <span id="sel-actions" hidden>
+        <button id="sel-dupliquer">Dupliquer</button>
+        <button id="sel-supprimer" class="danger">Supprimer</button>
+        <label class="controle" id="sel-taille-zone" hidden>Taille %
+          <input type="range" id="sel-taille" min="30" max="220" step="5" value="100">
+        </label>
+        <label class="controle" id="sel-rot-zone" hidden>Rotation
+          <input type="range" id="sel-rot" min="-180" max="180" step="5" value="0">
+        </label>
+      </span>
+    </div>
+    <div class="groupe" data-titre="Carte">
+      <button id="ed-undo" title="Annuler (Ctrl+Z)">↶</button>
+      <button id="ed-redo" title="Rétablir (Ctrl+Y)">↷</button>
+      <button id="ed-terminer">Terminer</button>
+      <button id="ed-annuler">Annuler pt</button>
       <button id="ed-exporter">Exporter</button>
       <button id="ed-importer">Importer</button>
+      <button id="ed-effacer" class="danger">Tout effacer</button>
     </div>
-    <button id="btn-info-ed" title="Afficher les astuces">ℹ Infos</button>
-    <button id="ed-utiliser" class="actif">Utiliser dans la scène →</button>
+    <div class="groupe pousse-droite">
+      <button id="btn-info-ed" title="Afficher les astuces">ℹ Infos</button>
+      <button id="ed-utiliser" class="actif">Utiliser dans la scène →</button>
+    </div>
     <input type="file" id="ed-fichier" accept=".json,application/json" hidden>
     <span class="aide" id="ed-aide">Mode Route : tapez pour poser les points, double-tap ou « Terminer » pour clore. Les routes sont nues : marquages et panneaux s'ajoutent avec les autres modes.</span>
   </header>
@@ -772,6 +828,73 @@ class Camion extends Vehicule {
   }
 }
 
+/* Moto : véhicule fin et court — idéal pour l'angle mort et l'inter-files.
+   Hérite tout de Vehicule (laisse, rotation, clignotants, trace, nuit…). */
+class Moto extends Vehicule {
+  constructor(opts) {
+    super(opts);
+    this.longueur = 44;
+    this.largeur = 18;
+  }
+  draw(ctx, temps) {
+    const L = this.longueur, l = this.largeur;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle);
+
+    if (this.afficherAngleMort) {
+      ctx.fillStyle = 'rgba(220, 38, 38, 0.16)';
+      ctx.strokeStyle = 'rgba(220, 38, 38, 0.4)';
+      ctx.lineWidth = 1;
+      for (const c of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(-L * 0.1, c * l / 2);
+        ctx.lineTo(-L * 0.9, c * l * 2.2);
+        ctx.lineTo(L * 0.1, c * l * 2.3);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+      }
+    }
+
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    roundRect(ctx, -L/2 + 2, -l/2 + 3, L, l, l/2); ctx.fill();
+    // Roues
+    ctx.fillStyle = '#1c2430';
+    roundRect(ctx, L * 0.30, -l * 0.16, L * 0.16, l * 0.32, 3); ctx.fill();
+    roundRect(ctx, -L * 0.46, -l * 0.16, L * 0.16, l * 0.32, 3); ctx.fill();
+    // Carrosserie effilée
+    ctx.fillStyle = this.couleur;
+    ctx.beginPath();
+    ctx.moveTo(L * 0.42, 0);
+    ctx.lineTo(L * 0.12, -l / 2);
+    ctx.lineTo(-L * 0.34, -l * 0.40);
+    ctx.lineTo(-L * 0.34, l * 0.40);
+    ctx.lineTo(L * 0.12, l / 2);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1.2; ctx.stroke();
+    // Casque du pilote
+    ctx.fillStyle = '#11151c';
+    ctx.beginPath();
+    ctx.arc(-L * 0.04, 0, l * 0.32, 0, Math.PI * 2);
+    ctx.fill();
+    // Phare
+    ctx.fillStyle = '#ffe9a8';
+    ctx.beginPath();
+    ctx.arc(L * 0.40, 0, 3, 0, Math.PI * 2);
+    ctx.fill();
+    if (this.clignotant && (temps % 800) < 400) {
+      ctx.fillStyle = '#f59e0b';
+      const pos = [];
+      if (this.clignotant !== 'gauche') pos.push([L*0.1, l/2], [-L*0.34, l*0.40]);
+      if (this.clignotant !== 'droite') pos.push([L*0.1, -l/2], [-L*0.34, -l*0.40]);
+      for (const [px, py] of pos) {
+        ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.restore();
+    this.drawAccessoires(ctx);
+  }
+}
+
 class Pieton extends Entity {
   constructor({ x, y, couleur = '#0e7490' }) {
     super(x, y);
@@ -1128,7 +1251,7 @@ function drawVoieRapide(ctx, W, H) {
    - panneaux  : [{ type, x, y (normalisés), taille, etatFeu }]
    ============================================================ */
 
-const MARQUAGES_2_POINTS = ['stop', 'cedez', 'passage_pieton', 'fleche_droit', 'fleche_gauche', 'fleche_droite', 'velo', 'ralentisseur'];
+const MARQUAGES_2_POINTS = ['stop', 'cedez', 'passage_pieton', 'fleche_droit', 'fleche_gauche', 'fleche_droite', 'velo', 'ralentisseur', 'stationnement', 'ligne_effet', 'sas_velo'];
 
 const editeur = {
   mode: 'route',
@@ -1161,11 +1284,68 @@ editeur.cartes = [{
 }];
 editeur.idx = 0;
 
+
 function synchroniserCarte() {
   const c = editeur.cartes[editeur.idx];
   c.routes = editeur.routes;
   c.marquages = editeur.marquages;
   c.panneaux = editeur.panneaux;
+}
+
+/* ----- Historique Annuler / Rétablir : instantanés par carte ----- */
+const HIST_MAX = 50;
+function instantaneCarte() {
+  return JSON.stringify({
+    routes: editeur.routes,
+    marquages: editeur.marquages,
+    panneaux: editeur.panneaux,
+  });
+}
+function histCourante() {
+  const c = editeur.cartes[editeur.idx];
+  if (!c._undo) { c._undo = [instantaneCarte()]; c._redo = []; }
+  return c;
+}
+function pousserHistorique() {
+  const c = histCourante();
+  const snap = instantaneCarte();
+  if (c._undo[c._undo.length - 1] === snap) return;   // pas de changement
+  c._undo.push(snap);
+  if (c._undo.length > HIST_MAX) c._undo.shift();
+  c._redo = [];
+  majBoutonsUndo();
+}
+function appliquerInstantane(snap) {
+  const d = JSON.parse(snap);
+  editeur.routes = d.routes;
+  editeur.marquages = d.marquages;
+  editeur.panneaux = d.panneaux;
+  synchroniserCarte();
+  selectionner(null);
+  editeur.enCoursRoute = null;
+  editeur.enCoursMarquage = null;
+  btnDecorPerso.hidden = editeur.routes.length === 0 &&
+    editeur.marquages.length === 0 && editeur.panneaux.length === 0;
+}
+function annulerEditeur() {
+  const c = histCourante();
+  if (c._undo.length <= 1) return;
+  c._redo.push(c._undo.pop());
+  appliquerInstantane(c._undo[c._undo.length - 1]);
+  majBoutonsUndo();
+}
+function retablirEditeur() {
+  const c = histCourante();
+  if (!c._redo.length) return;
+  const snap = c._redo.pop();
+  c._undo.push(snap);
+  appliquerInstantane(snap);
+  majBoutonsUndo();
+}
+function majBoutonsUndo() {
+  const c = editeur.cartes[editeur.idx];
+  document.getElementById('ed-undo').disabled = !c || !c._undo || c._undo.length <= 1;
+  document.getElementById('ed-redo').disabled = !c || !c._redo || c._redo.length === 0;
 }
 
 function tracerChemin(ctx, pts, W, H) {
@@ -1229,13 +1409,128 @@ function drawMarquage(ctx, m, W, H, alpha = 1) {
     }
     case 'ligne_continue':
       ctx.lineWidth = 4; ctx.lineCap = 'round';
-      tracerChemin(ctx, m.pts, W, H); ctx.stroke();
+      (m.arrondi ? tracerCheminLisse : tracerChemin)(ctx, m.pts, W, H);
+      ctx.stroke();
       break;
     case 'ligne_discontinue':
       ctx.lineWidth = 4; ctx.lineCap = 'butt'; ctx.setLineDash([26, 22]);
-      tracerChemin(ctx, m.pts, W, H); ctx.stroke();
+      (m.arrondi ? tracerCheminLisse : tracerChemin)(ctx, m.pts, W, H);
+      ctx.stroke();
       ctx.setLineDash([]);
       break;
+
+    case 'zebra': {
+      // Zébra : zone hachurée à 45° bordée d'une ligne continue.
+      // Plusieurs taps pour le contour, « Terminer » / double-tap pour clore.
+      if (m.pts.length < 3) {
+        ctx.lineWidth = 5;
+        tracerChemin(ctx, m.pts, W, H);
+        ctx.stroke();
+        break;
+      }
+      ctx.save();
+      ctx.beginPath();
+      m.pts.forEach((p, i) => {
+        const x = p.x * W, y = p.y * H;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      ctx.lineWidth = 5;
+      ctx.stroke();
+      ctx.clip();
+      const xs = m.pts.map(p => p.x * W), ys = m.pts.map(p => p.y * H);
+      const x0 = Math.min(...xs), x1 = Math.max(...xs);
+      const y0 = Math.min(...ys), y1 = Math.max(...ys);
+      const hz = y1 - y0;
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      for (let c = x0 - hz - 20; c < x1 + 20; c += 26) {
+        ctx.moveTo(c, y1 + 10);
+        ctx.lineTo(c + hz + 20, y0 - 10);
+      }
+      ctx.stroke();
+      ctx.restore();
+      break;
+    }
+
+    case 'ligne_effet':
+      // Ligne d'effet des feux : pointillé fin en travers de la voie
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'butt';
+      ctx.setLineDash([10, 8]);
+      tracerChemin(ctx, m.pts, W, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      break;
+
+    case 'sas_velo': {
+      // Sas vélo : 2 taps = la ligne AVANT (côté feu). Le sas s'étend
+      // à droite du sens 1ᵉʳ → 2ᵉ tap ; les véhicules s'arrêtent à
+      // la ligne arrière, les cyclistes attendent dans le sas.
+      const a = { x: m.pts[0].x * W, y: m.pts[0].y * H };
+      const b = { x: m.pts[1].x * W, y: m.pts[1].y * H };
+      const larg = Math.hypot(b.x - a.x, b.y - a.y);
+      if (larg < 8) break;
+      const ang = Math.atan2(b.y - a.y, b.x - a.x);
+      const prof = Math.min(74, Math.max(34, larg * 0.55));
+      ctx.save();
+      ctx.translate(a.x, a.y);
+      ctx.rotate(ang);
+      ctx.lineCap = 'butt';
+      ctx.lineWidth = 5;
+      ctx.beginPath();                       // ligne avant (au feu)
+      ctx.moveTo(0, 0); ctx.lineTo(larg, 0);
+      ctx.stroke();
+      ctx.beginPath();                       // ligne d'arrêt des véhicules
+      ctx.moveTo(0, prof); ctx.lineTo(larg, prof);
+      ctx.stroke();
+      // Petite figurine vélo au centre, tête vers la ligne avant
+      ctx.translate(larg / 2, prof / 2);
+      const hv = prof * 0.74;
+      ctx.lineWidth = Math.max(3, hv * 0.09);
+      const Rv = hv * 0.18;
+      ctx.beginPath(); ctx.arc(0,  hv * 0.28, Rv, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, -hv * 0.28, Rv, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, hv * 0.28);
+      ctx.lineTo(-hv * 0.10, 0);
+      ctx.lineTo(0, -hv * 0.28);
+      ctx.moveTo(-hv * 0.10, 0);
+      ctx.lineTo(-hv * 0.18, -hv * 0.16);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(-hv * 0.20, -hv * 0.26, hv * 0.08, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      break;
+    }
+
+    case 'stationnement': {
+      // Place de stationnement : 2 taps = les deux coins de l'ENTRÉE,
+      // la place s'ouvre du côté droit du sens 1ᵉʳ tap → 2ᵉ tap.
+      // Proportions réglementaires ≈ 2,30 m × 5 m.
+      const a = { x: m.pts[0].x * W, y: m.pts[0].y * H };
+      const b = { x: m.pts[1].x * W, y: m.pts[1].y * H };
+      const larg = Math.hypot(b.x - a.x, b.y - a.y);
+      if (larg < 8) break;
+      const ang = Math.atan2(b.y - a.y, b.x - a.x);
+      const prof = larg * 2.2;
+      ctx.save();
+      ctx.translate(a.x, a.y);
+      ctx.rotate(ang);
+      ctx.strokeStyle = '#f3f4f6';
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'butt';
+      ctx.lineJoin = 'miter';
+      ctx.beginPath();                     // U ouvert côté entrée
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, prof);
+      ctx.lineTo(larg, prof);
+      ctx.lineTo(larg, 0);
+      ctx.stroke();
+      ctx.restore();
+      break;
+    }
 
     case 'velo': {
       // Figurine cycliste réglementaire (0,80 × 1,28 m) : profil
@@ -1354,6 +1649,8 @@ function bboxMarquage(m, W, H) {
   }
   const marge = m.type === 'passage_pieton' ? 34
               : m.type === 'ralentisseur' ? 38
+              : m.type === 'stationnement' ? 56
+              : m.type === 'sas_velo' ? 44
               : m.type === 'velo' ? 30 : 12;
   return { x: x0 - marge, y: y0 - marge, w: x1 - x0 + 2 * marge, h: y1 - y0 + 2 * marge };
 }
@@ -1482,9 +1779,22 @@ const DECORS = {
   interT: drawIntersectionT,
   rondpoint: (ctx, W, H) => drawRondPoint(ctx, W, H, REGLAGES.giratoire),
   voierapide: drawVoieRapide,
-  perso: (ctx, W, H) => drawCartePerso(ctx, W, H, editeur, null),
+  perso: (ctx, W, H) => {
+    // Même échelle que l'éditeur : mise à l'échelle UNIFORME et centrée
+    // (letterbox sur herbe), aucune déformation ni décalage.
+    const ref = carteRef.w > 0 ? carteRef : { w: W, h: H };
+    const s = Math.min(W / ref.w, H / ref.h);
+    ctx.fillStyle = '#9ec79b';
+    ctx.fillRect(0, 0, W, H);
+    ctx.save();
+    ctx.translate((W - ref.w * s) / 2, (H - ref.h * s) / 2);
+    ctx.scale(s, s);
+    drawCartePerso(ctx, ref.w, ref.h, editeur, null);
+    ctx.restore();
+  },
 };
 let decorActif = 'carrefour';
+let carteRef = { w: 0, h: 0 };   // format de l'éditeur au moment de l'envoi
 
 /* ============================================================
    HIT-TESTS DE L'ÉDITEUR
@@ -1498,13 +1808,19 @@ function hitPanneauEd(p, px, py, W, H) {
 function hitMarquage(m, px, py, W, H) {
   if (m.pts.length < 2) return false;
   const seuil = m.type === 'passage_pieton' ? 34
-              : m.type === 'ralentisseur' ? 26
+              : (m.type === 'ralentisseur' || m.type === 'stationnement') ? 26
+              : m.type === 'sas_velo' ? 30
               : (m.type.startsWith('fleche') || m.type === 'velo') ? 22
               : (m.type === 'stop' || m.type === 'cedez') ? 14 : 10;
   for (let i = 0; i < m.pts.length - 1; i++) {
     if (distPointSegment(px, py,
         m.pts[i].x * W, m.pts[i].y * H,
         m.pts[i+1].x * W, m.pts[i+1].y * H) <= seuil) return true;
+  }
+  // Zébra : le contour est fermé, on teste aussi le segment de fermeture
+  if (m.type === 'zebra' && m.pts.length > 2) {
+    const d = m.pts[m.pts.length - 1], p0 = m.pts[0];
+    if (distPointSegment(px, py, d.x * W, d.y * H, p0.x * W, p0.y * H) <= seuil) return true;
   }
   return false;
 }
@@ -1627,6 +1943,7 @@ const OPTIONS = {
   stylo: false,      // mode annotation à main levée
   nuit: false,       // voile nocturne + faisceaux de phares
   vision: false,     // champ de vision du conducteur (véhicule au 1er plan)
+  laisseSeule: false, // les véhicules ne bougent que par leur poignée
 };
 const TRACE_PAS = 6;        // distance mini (px) entre deux points
 const TRACE_MAX = 900;      // nb max de points par trace
@@ -1726,6 +2043,21 @@ function drawPhares(ctx) {
    montants du pare-brise et par les ombres portées des autres usagers.
    S'applique au véhicule au premier plan (le dernier touché). ----- */
 const calqueVision = document.createElement('canvas');
+let vitesseVision = 0;               // km/h simulés pour l'effet tunnel
+
+/* Champ de vision NET (en degrés) selon la vitesse — points d'appui
+   pédagogiques : 0 km/h → 150° · 40 → 100° · 100 → 45° · 130 → 30° */
+function champVision(v) {
+  const pts = [[0, 150], [40, 100], [100, 45], [130, 30]];
+  if (v <= 0) return 150;
+  for (let i = 1; i < pts.length; i++) {
+    if (v <= pts[i][0]) {
+      const [v0, a0] = pts[i - 1], [v1, a1] = pts[i];
+      return a0 + (a1 - a0) * (v - v0) / (v1 - v0);
+    }
+  }
+  return 30;
+}
 
 function drawVision(ctxMain) {
   let v = null;
@@ -1749,9 +2081,21 @@ function drawVision(ctxMain) {
   const cos = Math.cos(v.angle), sin = Math.sin(v.angle);
   const loc = (lx, ly) => ({ x: v.x + lx * cos - ly * sin, y: v.y + lx * sin + ly * cos });
   const oeil = loc(L * 0.02, -l * 0.18);     // siège conducteur (à gauche)
-  const R = L * 4.5;
-  const DEMI = Math.PI * 0.42;               // ~150° de champ visuel
+  const deg = champVision(vitesseVision);
+  const DEMI = (deg / 2) * Math.PI / 180;    // champ NET, rétréci par la vitesse
+  const degFlou = Math.min(170, Math.max(deg + 14, deg * 1.55));
+  const DEMIF = (degFlou / 2) * Math.PI / 180;
+  const R = L * (4.5 + (vitesseVision / 130) * 2.5);  // le regard porte plus loin
 
+  // Vision périphérique FLOUE : teinte faible autour du champ net
+  nc.fillStyle = 'rgba(255, 233, 120, 0.09)';
+  nc.beginPath();
+  nc.moveTo(oeil.x, oeil.y);
+  nc.arc(oeil.x, oeil.y, R * 0.85, v.angle - DEMIF, v.angle + DEMIF);
+  nc.closePath();
+  nc.fill();
+
+  // Vision NETTE
   nc.fillStyle = 'rgba(255, 233, 120, 0.22)';
   nc.beginPath();
   nc.moveTo(oeil.x, oeil.y);
@@ -1822,6 +2166,20 @@ function drawVision(ctxMain) {
   ctxMain.save();
   ctxMain.setTransform(1, 0, 0, 1, 0, 0);
   ctxMain.drawImage(calqueVision, 0, 0);
+  // Étiquette pédagogique : vitesse simulée et champ net correspondant
+  ctxMain.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const txt = vitesseVision + ' km/h · champ net ≈ ' + Math.round(deg) + '°';
+  ctxMain.font = '600 13px Nunito, system-ui, sans-serif';
+  const lTxt = ctxMain.measureText(txt).width;
+  ctxMain.fillStyle = 'rgba(255,255,255,0.92)';
+  roundRect(ctxMain, 12, sc.H - 40, lTxt + 22, 28, 14);
+  ctxMain.fill();
+  ctxMain.strokeStyle = '#FF3030';
+  ctxMain.lineWidth = 1.5;
+  ctxMain.stroke();
+  ctxMain.fillStyle = '#1c2430';
+  ctxMain.textBaseline = 'middle';
+  ctxMain.fillText(txt, 23, sc.H - 26);
   ctxMain.restore();
 }
 
@@ -2094,6 +2452,9 @@ sc.canvas.addEventListener('pointerdown', (e) => {
   if (!touche) return;
   entites.splice(entites.indexOf(touche), 1);
   entites.push(touche);
+  // Mode « laisse seule » : le corps des véhicules est verrouillé,
+  // seuls la poignée (et le double-tap clignotants) restent actifs
+  if (OPTIONS.laisseSeule && touche instanceof Vehicule) return;
   actif = touche;
   actif.enDrag = true;
   actif._grabDx = p.x - actif.x;
@@ -2289,6 +2650,7 @@ function terminerTrace() {
   majBoutonPerso();
 }
 
+
 function centroide(pts) {
   let x = 0, y = 0;
   for (const p of pts) { x += p.x; y += p.y; }
@@ -2400,7 +2762,11 @@ ed.canvas.addEventListener('pointerdown', (e) => {
         dernierTapEd = { t: maintenant, x: p.x, y: p.y };
       }
       if (!editeur.enCoursMarquage) {
-        editeur.enCoursMarquage = { type: editeur.typeMarquage, pts: [] };
+        editeur.enCoursMarquage = {
+          type: editeur.typeMarquage,
+          pts: [],
+          arrondi: editeur.arrondi,
+        };
       }
       editeur.enCoursMarquage.pts.push(modeAimanteBord() ? pnB : pn);
       if (deuxPoints && editeur.enCoursMarquage.pts.length === 2) {
@@ -2565,7 +2931,7 @@ ed.canvas.addEventListener('pointerup', () => {
       else if (refs.length > 1) selectionner({ kind: 'groupe', refs });
     }
   }
-  if (editeur.dragSelection) rafraichirBaseSelection();
+  if (editeur.dragSelection) { rafraichirBaseSelection(); pousserHistorique(); }
   editeur.dragSelection = null;
 });
 ed.canvas.addEventListener('pointercancel', () => {
@@ -2651,6 +3017,7 @@ function majBoutonPerso() {
   btnDecorPerso.hidden = editeur.routes.length === 0 &&
                          editeur.marquages.length === 0 &&
                          editeur.panneaux.length === 0;
+  pousserHistorique();
 }
 
 const selectMarquage  = document.getElementById('type-marquage');
@@ -2688,8 +3055,11 @@ document.getElementById('choix-mode').addEventListener('click', (e) => {
   for (const b of document.querySelectorAll('#choix-mode button')) {
     b.classList.toggle('actif', b === btn);
   }
-  selectMarquage.disabled  = editeur.mode !== 'marquage';
-  selectPanneauEd.disabled = editeur.mode !== 'panneau';
+  // Réglages contextuels : seuls ceux du mode actif sont visibles
+  selectMarquage.hidden  = editeur.mode !== 'marquage';
+  selectPanneauEd.hidden = editeur.mode !== 'panneau';
+  document.getElementById('zone-largeur').hidden =
+    editeur.mode !== 'route' && editeur.mode !== 'trottoir';
   aideEditeur.textContent = AIDES[editeur.mode];
 });
 
@@ -2795,6 +3165,7 @@ document.getElementById('ed-magnetisme').addEventListener('change', (e) => {
 document.getElementById('ed-arrondi').addEventListener('change', (e) => {
   editeur.arrondi = e.target.checked;
   if (editeur.enCoursRoute) editeur.enCoursRoute.arrondi = editeur.arrondi;
+  if (editeur.enCoursMarquage) editeur.enCoursMarquage.arrondi = editeur.arrondi;
 });
 
 document.getElementById('ed-vehicule-test').addEventListener('click', () => {
@@ -2888,6 +3259,7 @@ inputFichier.addEventListener('change', async () => {
 
 document.getElementById('ed-utiliser').addEventListener('click', () => {
   terminerTrace();
+  carteRef = { w: ed.W, h: ed.H };
   if (editeur.routes.length === 0 &&
       editeur.marquages.length === 0 &&
       editeur.panneaux.length === 0) return;
@@ -2918,8 +3290,21 @@ function activerCarte(i) {
   editeur.panneaux = c.panneaux;
   majListeCartes();
   majBoutonPerso();
+  majBoutonsUndo();
 }
 selectCarte.addEventListener('change', () => activerCarte(Number(selectCarte.value)));
+document.getElementById('ed-undo').addEventListener('click', annulerEditeur);
+document.getElementById('ed-redo').addEventListener('click', retablirEditeur);
+window.addEventListener('keydown', (e) => {
+  const editeurActif = !vues.editeur.classList.contains('cachee');
+  if (!editeurActif) return;
+  const k = e.key.toLowerCase();
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && k === 'z') {
+    e.preventDefault(); annulerEditeur();
+  } else if ((e.ctrlKey || e.metaKey) && (k === 'y' || (e.shiftKey && k === 'z'))) {
+    e.preventDefault(); retablirEditeur();
+  }
+});
 document.getElementById('btn-nouvelle-carte').addEventListener('click', () => {
   synchroniserCarte();
   editeur.cartes.push({
@@ -2936,7 +3321,11 @@ majListeCartes();
 
 function choisirDecor(nom) {
   decorActif = nom;
-  if (nom === 'perso') reinitialiserVue();   // la carte s'affiche à 100 %, sans décalage
+  document.getElementById('zone-giratoire').hidden = nom !== 'rondpoint';
+  if (nom === 'perso') {
+    if (ed.W > 0) carteRef = { w: ed.W, h: ed.H };
+    reinitialiserVue();                      // la carte s'affiche à 100 %, sans décalage
+  }
   for (const b of document.querySelectorAll('#choix-decor button')) {
     b.classList.toggle('actif', b.dataset.decor === nom);
   }
@@ -2972,6 +3361,17 @@ document.getElementById('btn-camion').addEventListener('click', () => {
   nbVehicules++;
   c.numero = nbVehicules;
   entites.push(c);
+});
+
+document.getElementById('btn-moto').addEventListener('click', () => {
+  const m = new Moto({
+    x: sc.W / 2 - 70,
+    y: sc.H * 0.82,
+    couleur: couleursVehicules[nbVehicules % couleursVehicules.length],
+  });
+  nbVehicules++;
+  m.numero = nbVehicules;
+  entites.push(m);
 });
 
 document.getElementById('btn-pieton').addEventListener('click', () => {
@@ -3033,16 +3433,37 @@ btnNumeros.addEventListener('click', () => {
   btnNumeros.classList.toggle('actif', OPTIONS.numeros);
 });
 
+const btnBeta = document.getElementById('btn-beta');
+const betaZone = document.getElementById('beta-zone');
+btnBeta.addEventListener('click', () => {
+  const ouvert = betaZone.classList.toggle('ouvert');
+  btnBeta.classList.toggle('actif', ouvert);
+});
+
 const btnNuit = document.getElementById('btn-nuit');
 btnNuit.addEventListener('click', () => {
   OPTIONS.nuit = !OPTIONS.nuit;
   btnNuit.classList.toggle('actif', OPTIONS.nuit);
 });
 
+const btnLaisseSeule = document.getElementById('btn-laisse-seule');
+btnLaisseSeule.addEventListener('click', () => {
+  OPTIONS.laisseSeule = !OPTIONS.laisseSeule;
+  btnLaisseSeule.classList.toggle('actif', OPTIONS.laisseSeule);
+});
+
 const btnVision = document.getElementById('btn-vision');
+const visionVitesseZone = document.getElementById('vision-vitesse-zone');
+const visionVitesseInput = document.getElementById('vision-vitesse');
+const visionKmh = document.getElementById('vision-kmh');
 btnVision.addEventListener('click', () => {
   OPTIONS.vision = !OPTIONS.vision;
   btnVision.classList.toggle('actif', OPTIONS.vision);
+  visionVitesseZone.hidden = !OPTIONS.vision;
+});
+visionVitesseInput.addEventListener('input', () => {
+  vitesseVision = Number(visionVitesseInput.value);
+  visionKmh.textContent = vitesseVision + ' km/h';
 });
 
 for (const [btnId, selecteur] of [
