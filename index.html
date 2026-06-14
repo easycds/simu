@@ -140,6 +140,24 @@
   }
   #choix-decor button .nom { font-size: 12px; font-weight: 500; color: var(--encre); }
 
+  /* Vignettes de véhicules (menu Ajouter) */
+  #choix-vehic {
+    display: grid; grid-template-columns: repeat(2, 104px); gap: 8px;
+    justify-content: start;
+  }
+  #choix-vehic button {
+    width: 104px;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 5px; border: 2px solid #e3e1de; border-radius: 12px;
+    background: #fff; cursor: pointer; transition: border-color 0.12s, box-shadow 0.12s;
+    box-sizing: border-box;
+  }
+  #choix-vehic button:hover { border-color: var(--rouge); }
+  #choix-vehic button canvas {
+    width: 92px; height: 60px; border-radius: 7px; display: block; background: #565d66;
+  }
+  #choix-vehic button .nom { font-size: 12px; font-weight: 500; color: var(--encre); }
+
   /* Bandeau d'aide au tracé (apparaît pendant un tracé en cours) */
   #bandeau-trace {
     position: absolute;
@@ -453,6 +471,50 @@
   #splash svg { width: clamp(90px, 22vw, 230px); height: auto; margin-top: 6px; opacity: 0; animation: splashUp 0.6s ease 0.52s forwards; }
   #splash .easy-trait { stroke: var(--rouge, #ff3131); stroke-width: 22; stroke-linecap: round; fill: none; stroke-dasharray: 360; stroke-dashoffset: 360; animation: splashSourire 0.7s ease 0.6s forwards; }
   @keyframes splashSourire { to { stroke-dashoffset: 0; } }
+  /* Petit bouton plein écran discret dans la barre du haut */
+  .btn-pe-nav {
+    margin-left: 8px;
+    width: 38px; height: 38px;
+    border: 1px solid var(--bordure, #e3e1de);
+    border-radius: 10px;
+    background: #fff;
+    font-size: 18px; line-height: 1;
+    color: var(--encre, #1c2430);
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background 0.12s, border-color 0.12s;
+    flex: 0 0 auto;
+  }
+  .btn-pe-nav:hover { background: var(--gris, #f1f0ef); border-color: var(--rouge, #ff3131); }
+  /* Réglette de distance d'arrêt */
+  #reglette-arret {
+    position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%);
+    z-index: 30; width: min(92vw, 540px);
+    background: rgba(255,255,255,0.98);
+    border-radius: 16px; padding: 14px 16px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+    font-family: var(--police-texte, 'Fredoka'), sans-serif;
+  }
+  #reglette-arret .rg-tete { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  #reglette-arret .rg-titre { font-weight:600; font-size:15px; color:var(--encre,#1c2430); }
+  #reglette-arret #rg-fermer { border:none; background:none; font-size:17px; cursor:pointer; color:#888; }
+  #reglette-arret .rg-vitesse { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  #reglette-arret .rg-vitesse input { flex:1; }
+  #reglette-arret #rg-kmh { font-weight:700; color:var(--rouge,#ff3131); min-width:64px; text-align:right; }
+  #reglette-arret .rg-barre {
+    display:flex; height:26px; border-radius:7px; overflow:hidden; background:#eee; width:100%;
+  }
+  #reglette-arret .rg-seg { height:100%; transition:width 0.18s ease; }
+  #reglette-arret .rg-reaction { background:#f59e0b; }
+  #reglette-arret .rg-freinage { background:var(--rouge,#ff3131); }
+  #reglette-arret .rg-echelle { position:relative; height:14px; margin-top:2px; font-size:10px; color:#999; }
+  #reglette-arret .rg-echelle span { position:absolute; transform:translateX(-50%); }
+  #reglette-arret .rg-legende { display:flex; flex-wrap:wrap; gap:10px 16px; margin-top:10px; font-size:13px; color:#444; }
+  #reglette-arret .rg-legende .pastille { display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:5px; vertical-align:middle; }
+  #reglette-arret .rg-legende .pastille.react { background:#f59e0b; }
+  #reglette-arret .rg-legende .pastille.frein { background:var(--rouge,#ff3131); }
+  #reglette-arret .rg-legende .rg-total { font-weight:600; color:var(--encre,#1c2430); margin-left:auto; }
+  #reglette-arret .rg-sol { display:block; margin-top:9px; font-size:12.5px; color:#555; }
 </style>
 </head>
 <body>
@@ -500,6 +562,7 @@
   </span>
   <button id="onglet-scene" class="actif">Scène</button>
   <button id="onglet-editeur">Éditeur de scènes</button>
+  <button id="btn-plein-ecran" class="btn-pe-nav" title="Plein écran (présentation)" aria-label="Plein écran">⛶</button>
 </nav>
 
 <!-- ================= VUE SCÈNE ================= -->
@@ -511,9 +574,8 @@
     <div class="palette-rail" id="palette-rail">
       <div class="palette-grip" id="palette-grip" title="Déplacer la palette"></div>
       <button class="pal-ico" data-pal="decor" title="Décor">🛣️<span class="lib">décor</span></button>
-      <button class="pal-ico" data-pal="ajouter" title="Ajouter">➕<span class="lib">ajouter</span></button>
+      <button class="pal-ico" data-pal="ajouter" title="Usagers">➕<span class="lib">usagers</span></button>
       <button class="pal-ico" data-pal="pedago" title="Pédagogie">🎓<span class="lib">pédago</span></button>
-      <button class="pal-ico" data-pal="affichage" title="Affichage / zoom">🔍<span class="lib">vue</span></button>
       <button class="pal-ico" data-pal="autres" title="Infos / vider">⋯<span class="lib">autres</span></button>
     </div>
 
@@ -532,26 +594,15 @@
     </div>
 
     <div class="palette-panneau" id="pal-ajouter" data-pour="ajouter">
-      <h4>Ajouter</h4>
-      <button id="btn-vehicule">+ Véhicule</button>
-      <button id="btn-camion">+ Poids lourd</button>
-      <button id="btn-moto">+ Moto</button>
-      <button id="btn-cycliste">+ Cycliste</button>
-      <button id="btn-edpm">+ Trottinette</button>
-      <button id="btn-pieton">+ Piéton</button>
-      <select id="type-panneau" aria-label="Type de panneau">
-        <option value="stop">STOP</option>
-        <option value="cedez">Cédez-le-passage</option>
-        <option value="sens_interdit">Sens interdit</option>
-        <option value="passage_pieton">Passage piéton</option>
-        <option value="giratoire">Carrefour giratoire</option>
-        <option value="priorite_droite">Priorité à droite</option>
-        <option value="obligation_droit">Obligation tout droit</option>
-        <option value="obligation_droite">Obligation à droite</option>
-        <option value="obligation_gauche">Obligation à gauche</option>
-        <option value="feu">Feu tricolore</option>
-      </select>
-      <button id="btn-panneau">+ Panneau</button>
+      <h4>Usagers</h4>
+      <div id="choix-vehic">
+        <button id="btn-vehicule"><canvas data-vehic="vehicule"></canvas><span class="nom">Voiture</span></button>
+        <button id="btn-camion"><canvas data-vehic="camion"></canvas><span class="nom">Poids lourd</span></button>
+        <button id="btn-moto"><canvas data-vehic="moto"></canvas><span class="nom">Moto</span></button>
+        <button id="btn-cycliste"><canvas data-vehic="cycliste"></canvas><span class="nom">Cycliste</span></button>
+        <button id="btn-edpm"><canvas data-vehic="edpm"></canvas><span class="nom">Trottinette</span></button>
+        <button id="btn-pieton"><canvas data-vehic="pieton"></canvas><span class="nom">Piéton</span></button>
+      </div>
     </div>
 
     <div class="palette-panneau" id="pal-pedago" data-pour="pedago">
@@ -563,6 +614,7 @@
         <button id="btn-stylo-couleur" title="Couleur du stylo" style="flex:0 0 40px">●</button>
       </div>
       <button id="btn-numeros">N°</button>
+      <button id="btn-distance-arret" title="Réglette de distance d'arrêt">📏 Distance d'arrêt</button>
       <button id="btn-laisse-seule" title="Les véhicules ne se déplacent que par leur poignée de traction">Laisse seule</button>
       <button id="btn-effacer-traces">Effacer traces</button>
       <button id="btn-beta" title="Fonctions expérimentales">🧪 Bêta</button>
@@ -577,16 +629,6 @@
       </span>
     </div>
 
-    <div class="palette-panneau" id="pal-affichage" data-pour="affichage">
-      <h4>Affichage</h4>
-      <div class="ligne">
-        <button id="btn-zoom-moins">−</button>
-        <button id="btn-zoom-reset">100 %</button>
-        <button id="btn-zoom-plus">+</button>
-      </div>
-      <button id="btn-plein-ecran">Plein écran</button>
-    </div>
-
     <div class="palette-panneau" id="pal-autres" data-pour="autres">
       <h4>Autres</h4>
       <button id="btn-info-scene" title="Afficher les astuces">ℹ Infos</button>
@@ -596,6 +638,29 @@
   <div class="zone-canvas">
     <canvas id="canvas-scene"></canvas>
     <button id="btn-sortie-pe" hidden>✕ Quitter</button>
+    <div id="reglette-arret" hidden>
+      <div class="rg-tete">
+        <span class="rg-titre">Distance d'arrêt</span>
+        <button id="rg-fermer" aria-label="Fermer">✕</button>
+      </div>
+      <div class="rg-vitesse">
+        <input type="range" id="rg-slider" min="30" max="130" step="10" value="50">
+        <span id="rg-kmh">50 km/h</span>
+      </div>
+      <div class="rg-barres">
+        <div class="rg-barre">
+          <div class="rg-seg rg-reaction" id="rg-bar-reaction"></div>
+          <div class="rg-seg rg-freinage" id="rg-bar-freinage"></div>
+        </div>
+        <div class="rg-echelle" id="rg-echelle"></div>
+      </div>
+      <div class="rg-legende">
+        <span><i class="pastille react"></i>Réaction : <b id="rg-d-reaction">15 m</b></span>
+        <span><i class="pastille frein"></i>Freinage : <b id="rg-d-freinage">25 m</b></span>
+        <span class="rg-total">Total : <b id="rg-d-total">40 m</b></span>
+      </div>
+      <label class="rg-sol"><input type="checkbox" id="rg-mouille"> Sol mouillé</label>
+    </div>
   </div>
 </div>
 
@@ -2412,6 +2477,61 @@ const DECORS = {
 };
 let decorActif = 'carrefour';
 
+/* Peint les vignettes d'aperçu des véhicules dans le menu Ajouter. */
+function peindreUneVignetteVehic(cv) {
+  const type = cv.dataset.vehic;
+  const rect = cv.getBoundingClientRect();
+  if (rect.width < 4 || rect.height < 4) return false;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const W = Math.round(rect.width), H = Math.round(rect.height);
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = '#565d66'; ctx.fillRect(0, 0, W, H);   // fond asphalte
+  // Instancier le véhicule au centre, orienté vers le haut
+  let v;
+  try {
+    if (type === 'vehicule') v = new Vehicule({ x: 0, y: 0, couleur: '#2563eb' });
+    else if (type === 'camion') v = new Camion({ x: 0, y: 0 });
+    else if (type === 'moto') v = new Moto({ x: 0, y: 0 });
+    else if (type === 'cycliste') v = new Cycliste({ x: 0, y: 0 });
+    else if (type === 'edpm') v = new EDPM({ x: 0, y: 0 });
+    else if (type === 'pieton') v = new Pieton({ x: 0, y: 0 });
+  } catch (e) {}
+  if (!v) return true;
+  v.angle = v.angleCible = -Math.PI / 2;     // nez vers le haut
+  // Dimensions de référence selon le type (le piéton n'a pas de _L/_l)
+  let longBase, largBase;
+  if (type === 'pieton') {
+    longBase = (v.rayon || 19) * 2.4;
+    largBase = (v.rayon || 19) * 2.4;
+  } else {
+    longBase = v._L || 40;
+    largBase = v._l || 20;
+  }
+  const ancienne = VEH.echelle;
+  VEH.echelle = 1;
+  // Échelle bornée pour rentrer dans la vignette sans déborder
+  let scale = Math.min((H - 14) / longBase, (W - 14) / largBase);
+  if (!isFinite(scale) || scale <= 0) scale = 1;
+  scale = Math.min(scale, 2.2);              // jamais démesuré
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();   // rien ne déborde
+  ctx.translate(W / 2, H / 2);
+  ctx.scale(scale, scale);
+  ctx.translate(-v.x, -v.y);
+  try { v.draw(ctx, performance.now()); } catch (e) {}
+  ctx.restore();
+  VEH.echelle = ancienne;
+  return true;
+}
+function peindreVignettesVehic(essai = 0) {
+  const minis = document.querySelectorAll('#choix-vehic canvas[data-vehic]');
+  let nonPretes = 0;
+  minis.forEach((cv) => { if (!peindreUneVignetteVehic(cv)) nonPretes++; });
+  if (nonPretes > 0 && essai < 12) setTimeout(() => peindreVignettesVehic(essai + 1), 70);
+}
+
 /* Peint les vignettes d'aperçu des décors dans le menu. */
 function peindreUneVignette(cv) {
   const type = cv.dataset.mini;
@@ -2436,7 +2556,16 @@ function peindreUneVignette(cv) {
   const cwm = document.createElement('canvas');
   cwm.width = MONDE.W; cwm.height = MONDE.H;
   const cm = cwm.getContext('2d');
-  try { fn(cm, MONDE.W, MONDE.H); } catch (e) {}
+  // Fonctions de dessin sûres (le rond-point reçoit une taille explicite,
+  // sans dépendre de REGLAGES qui pourrait ne pas être prêt).
+  const dessins = {
+    carrefour: () => drawCarrefour(cm, MONDE.W, MONDE.H),
+    interT:    () => drawIntersectionT(cm, MONDE.W, MONDE.H),
+    rondpoint: () => drawRondPoint(cm, MONDE.W, MONDE.H, 0.42),
+    voierapide:() => drawVoieRapide(cm, MONDE.W, MONDE.H),
+    perso:     () => fn(cm, MONDE.W, MONDE.H),
+  };
+  try { (dessins[type] || (() => fn(cm, MONDE.W, MONDE.H)))(); } catch (e) {}
   // mise à l'échelle « cover » centrée
   const s = Math.max(W / MONDE.W, H / MONDE.H);
   const dw = MONDE.W * s, dh = MONDE.H * s;
@@ -4420,13 +4549,65 @@ document.getElementById('btn-pieton').addEventListener('click', () => {
   }));
 });
 
-document.getElementById('btn-panneau').addEventListener('click', () => {
-  entites.push(new Panneau({
-    x: sc.W * 0.5 + (Math.random() - 0.5) * 160,
-    y: sc.H * 0.3,
-    type: document.getElementById('type-panneau').value,
-  }));
-});
+
+/* ===== Réglette de distance d'arrêt ===== */
+(function regletteArret() {
+  const panneau = document.getElementById('reglette-arret');
+  const btnOuvrir = document.getElementById('btn-distance-arret');
+  const btnFermer = document.getElementById('rg-fermer');
+  const slider = document.getElementById('rg-slider');
+  const kmh = document.getElementById('rg-kmh');
+  const barRe = document.getElementById('rg-bar-reaction');
+  const barFr = document.getElementById('rg-bar-freinage');
+  const dRe = document.getElementById('rg-d-reaction');
+  const dFr = document.getElementById('rg-d-freinage');
+  const dTot = document.getElementById('rg-d-total');
+  const echelle = document.getElementById('rg-echelle');
+  const mouille = document.getElementById('rg-mouille');
+  if (!panneau || !btnOuvrir) return;
+
+  function calc(v) {
+    const d = v / 10;                       // chiffre des dizaines
+    const reaction = d * 3;                 // distance de réaction (~1 s)
+    let freinage = d * d;                   // freinage sur sol sec
+    if (mouille.checked) freinage *= 1.5;   // sol mouillé : +50 %
+    return { reaction, freinage: Math.round(freinage), total: Math.round(reaction + freinage) };
+  }
+  function maj() {
+    const v = Number(slider.value);
+    kmh.textContent = v + ' km/h';
+    const r = calc(v);
+    dRe.textContent = r.reaction + ' m';
+    dFr.textContent = r.freinage + ' m';
+    dTot.textContent = r.total + ' m';
+    // largeur des barres proportionnelle au total (échelle commune fixée à 130 km/h mouillé)
+    const maxTotal = 13 * 3 + 13 * 13 * 1.5;     // borne haute
+    const pRe = (r.reaction / maxTotal) * 100;
+    const pFr = (r.freinage / maxTotal) * 100;
+    barRe.style.width = pRe + '%';
+    barFr.style.width = pFr + '%';
+    // graduation tous les 25 m
+    let html = '';
+    for (let m = 0; m <= maxTotal; m += 25) {
+      const x = (m / maxTotal) * 100;
+      html += '<span style="left:' + x + '%">' + m + '</span>';
+    }
+    echelle.innerHTML = html;
+  }
+  btnOuvrir.addEventListener('click', () => {
+    const ouvert = !panneau.hidden;
+    panneau.hidden = ouvert;
+    btnOuvrir.classList.toggle('actif', !ouvert);
+    if (!ouvert) maj();
+  });
+  btnFermer.addEventListener('click', () => {
+    panneau.hidden = true;
+    btnOuvrir.classList.remove('actif');
+  });
+  slider.addEventListener('input', maj);
+  mouille.addEventListener('change', maj);
+  maj();
+})();
 
 const btnAngleMort = document.getElementById('btn-angle-mort');
 btnAngleMort.addEventListener('click', () => {
@@ -4581,6 +4762,7 @@ visionVitesseInput.addEventListener('input', () => {
       const pan = palette.querySelector('.palette-panneau[data-pour="' + cle + '"]');
       if (pan) pan.classList.add('ouvert');
       if (cle === 'decor') setTimeout(() => peindreVignettesDecor(0), 30);  // dessiner les aperçus
+      if (cle === 'ajouter') setTimeout(() => peindreVignettesVehic(0), 30);
     });
   }
   // Refermer si on clique ailleurs (hors palette)
@@ -4618,26 +4800,6 @@ function basculerAide() {
 document.getElementById('btn-info-scene').addEventListener('click', basculerAide);
 document.getElementById('btn-info-ed').addEventListener('click', basculerAide);
 
-document.getElementById('btn-zoom-plus').addEventListener('click', () =>
-  zoomerVers(sc.W / 2, sc.H / 2, 1.25));
-document.getElementById('btn-zoom-moins').addEventListener('click', () =>
-  zoomerVers(sc.W / 2, sc.H / 2, 0.8));
-document.getElementById('btn-zoom-reset').addEventListener('click', reinitialiserVue);
-
-/* Plein écran : masque la barre de marque et la barre d'outils,
-   ne laisse que le canvas face aux élèves. */
-const btnPE = document.getElementById('btn-plein-ecran');
-const btnSortiePE = document.getElementById('btn-sortie-pe');
-function majPleinEcran(on) {
-  document.body.classList.toggle('presentation', on);
-  btnSortiePE.hidden = !on;
-  reinitialiserVue();                        // pas de zoom résiduel qui décale tout
-  requestAnimationFrame(() => { sc.resize(); ed.resize(); });
-}
-btnPE.addEventListener('click', async () => {
-  try { await document.documentElement.requestFullscreen(); } catch (err) {}
-  majPleinEcran(true);
-});
 btnSortiePE.addEventListener('click', async () => {
   if (document.fullscreenElement) {
     try { await document.exitFullscreen(); } catch (err) {}
