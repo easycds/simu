@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -294,7 +295,17 @@
   .beta-zone.ouvert { display: inline-flex; }
   #btn-beta.actif { background: #7c3aed; border-color: #7c3aed; color: #fff; }
   header .aide { font-size: 12.5px; color: var(--gris); width: 100%; display: none; }
-  body.avec-aide header .aide { display: block; }
+  /* Aide affichée en panneau flottant (les headers sont masqués) */
+  body.avec-aide .vue:not(.cachee) header .aide {
+    display: block; position: fixed;
+    left: 50%; top: 64px; transform: translateX(-50%);
+    z-index: 60; width: min(92vw, 620px);
+    background: rgba(28,36,48,0.96); color: #fff;
+    padding: 16px 18px; border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.28);
+    font-size: 13px; line-height: 1.5; max-height: 70vh; overflow-y: auto;
+  }
+  body.avec-aide .vue:not(.cachee) header { display: block !important; background: none; border: none; box-shadow: none; padding: 0; }
 
   .groupe {
     display: flex;
@@ -472,6 +483,15 @@
   #splash .easy-trait { stroke: var(--rouge, #ff3131); stroke-width: 22; stroke-linecap: round; fill: none; stroke-dasharray: 360; stroke-dashoffset: 360; animation: splashSourire 0.7s ease 0.6s forwards; }
   @keyframes splashSourire { to { stroke-dashoffset: 0; } }
   /* Petit bouton plein écran discret dans la barre du haut */
+  .btn-vider-nav {
+    margin-left: auto;
+    border: 1px solid var(--bordure, #e3e1de);
+    border-radius: 10px; background: #fff;
+    color: var(--rouge, #ff3131); font-weight: 600;
+    font-size: 13px; padding: 8px 14px; cursor: pointer;
+    flex: 0 0 auto; font-family: inherit;
+  }
+  .btn-vider-nav:hover { background: #fff0f0; border-color: var(--rouge, #ff3131); }
   .btn-pe-nav {
     margin-left: 8px;
     width: 38px; height: 38px;
@@ -486,6 +506,64 @@
     flex: 0 0 auto;
   }
   .btn-pe-nav:hover { background: var(--gris, #f1f0ef); border-color: var(--rouge, #ff3131); }
+  /* Menu contextuel d'un véhicule (angle mort / trace / clignotant) */
+  #menu-vehicule {
+    position: fixed; z-index: 55;
+    width: 0; height: 0;            /* centre = position du véhicule */
+    transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
+  }
+  #menu-vehicule .mv-btn {
+    position: absolute;
+    width: 30px; height: 30px; border-radius: 50%;
+    border: none; cursor: pointer;
+    font-size: 14px; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 7px rgba(0,0,0,0.3);
+    transform: translate(-50%, -50%) rotate(var(--contre, 0deg));
+  }
+  #menu-vehicule .mv-gauche  { left: -52px; top: 0;     background: #16a34a; transform: translate(-50%, -50%); }   /* clignotant gauche (rétro) */
+  #menu-vehicule .mv-droite  { left: 52px;  top: 0;     background: #16a34a; transform: translate(-50%, -50%); }   /* clignotant droit (rétro) */
+  #menu-vehicule .mv-haut    { left: 0;     top: -58px; background: #7c3aed; }   /* tracer (avant) */
+  #menu-vehicule .mv-bas     { left: 0;     top: 58px;  background: #f59e0b; }   /* angle mort (arrière) */
+  #menu-vehicule .mv-fermer  { left: 46px;  top: -46px; background: #ef4444; width: 24px; height: 24px; font-size: 12px; }
+  #menu-vehicule .mv-btn.actif { outline: 2px solid #fff; }
+
+  /* Outils flottants détachables (crayon, numéros) */
+  .outil-flottant {
+    position: fixed; z-index: 50;
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.98);
+    border-radius: 14px; padding: 7px 9px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.16);
+    touch-action: none; user-select: none;
+  }
+  #outil-crayon { right: 16px; bottom: 18px; left: auto; top: auto; }
+  #outil-numeros { left: 16px; bottom: 18px; right: auto; top: auto; }
+  /* masqués quand on est dans l'éditeur */
+  body.onglet-editeur .outil-flottant { display: none; }
+  .outil-flottant .of-grip {
+    cursor: grab; color: #bbb; font-size: 14px; letter-spacing: -2px;
+    padding: 0 2px; line-height: 1;
+  }
+  .outil-flottant .of-toggle {
+    width: 38px; height: 38px; border-radius: 10px;
+    border: 1px solid var(--bordure, #e3e1de); background: #fff;
+    font-size: 18px; cursor: pointer;
+  }
+  .outil-flottant .of-toggle.actif { background: var(--rouge,#ff3131); color: #fff; border-color: var(--rouge,#ff3131); }
+  .of-couleurs { display: flex; gap: 4px; }
+  .of-couleurs .pastille-c {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid #fff; box-shadow: 0 0 0 1px #ddd; cursor: pointer;
+    padding: 0;
+  }
+  .of-couleurs .pastille-c.actif { box-shadow: 0 0 0 2px var(--encre,#1c2430); }
+  .outil-flottant .of-eff {
+    width: 34px; height: 34px; border-radius: 9px;
+    border: 1px solid var(--bordure,#e3e1de); background: #fff;
+    font-size: 15px; cursor: pointer; color: #666;
+  }
+
   /* Réglette de distance d'arrêt */
   #reglette-arret {
     position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%);
@@ -560,21 +638,22 @@
          alt="Easy auto-école" onerror="this.hidden=true">
     <span class="nom-outil">Simulateur <em>Easy</em></span>
   </span>
-  <button id="onglet-scene" class="actif">Scène</button>
+  <button id="onglet-scene" class="actif">Situations</button>
   <button id="onglet-editeur">Éditeur de scènes</button>
+  <button id="btn-vider-nav" class="btn-vider-nav" title="Vider la scène">🗑 Vider</button>
   <button id="btn-plein-ecran" class="btn-pe-nav" title="Plein écran (présentation)" aria-label="Plein écran">⛶</button>
 </nav>
 
 <!-- ================= VUE SCÈNE ================= -->
 <div class="vue" id="vue-scene">
   <header>
-    <span class="aide">Tirer le point devant le capot (la « laisse ») : conduite fluide · Glisser la carrosserie : déplacer et orienter · Double-tap : clignotants / type de panneau / couleur du feu · Trace : les véhicules déplacés laissent leur trajectoire (Effacer pour nettoyer) · N° : numéroter les véhicules · Molette ou pincer (2 doigts sur le vide) : zoom et déplacement de la vue · 2ᵉ doigt posé pendant qu'on tient un objet : rotation fine · pincer un panneau tenu : le redimensionner · ✏ Stylo : dessiner par-dessus la scène (Effacer pour nettoyer) · 🌙 Nuit : voile nocturne et faisceaux de phares · 👁 Vision : champ de vision réel du véhicule au premier plan (montants et ombres des autres usagers) · curseur Vitesse : le champ se rétrécit avec la vitesse (effet tunnel : 40 km/h → 100°, 100 → 45°, 130 → 30°)</span>
+    <span class="aide">Tirer le point devant le capot (la « laisse ») : conduite fluide · Glisser la carrosserie : déplacer et orienter · Double-tap sur un véhicule : menu Angle mort / Tracer du vhl / Clignotant · Double-tap sur un feu : changer sa couleur · ✏ Crayon (outil flottant) : dessiner sur la scène · N° (outil flottant) : numéroter les usagers · Molette ou pincer (2 doigts sur le vide) : zoom et déplacement de la vue · 2ᵉ doigt posé pendant qu'on tient un objet : rotation fine · pincer un panneau tenu : le redimensionner · ✏ Stylo : dessiner par-dessus la scène (Effacer pour nettoyer) · 🌙 Nuit : voile nocturne et faisceaux de phares · 👁 Vision : champ de vision réel du véhicule au premier plan (montants et ombres des autres usagers) · curseur Vitesse : le champ se rétrécit avec la vitesse (effet tunnel : 40 km/h → 100°, 100 → 45°, 130 → 30°)</span>
   </header>
   <div class="palette" id="palette-scene">
     <div class="palette-rail" id="palette-rail">
       <div class="palette-grip" id="palette-grip" title="Déplacer la palette"></div>
       <button class="pal-ico" data-pal="decor" title="Décor">🛣️<span class="lib">décor</span></button>
-      <button class="pal-ico" data-pal="ajouter" title="Usagers">➕<span class="lib">usagers</span></button>
+      <button class="pal-ico" data-pal="ajouter" title="Usagers">🚗<span class="lib">usagers</span></button>
       <button class="pal-ico" data-pal="pedago" title="Pédagogie">🎓<span class="lib">pédago</span></button>
       <button class="pal-ico" data-pal="autres" title="Infos / vider">⋯<span class="lib">autres</span></button>
     </div>
@@ -607,13 +686,6 @@
 
     <div class="palette-panneau" id="pal-pedago" data-pour="pedago">
       <h4>Pédagogie</h4>
-      <button id="btn-angle-mort">Angles morts</button>
-      <button id="btn-trace">Trace</button>
-      <div class="ligne">
-        <button id="btn-stylo">✏ Stylo</button>
-        <button id="btn-stylo-couleur" title="Couleur du stylo" style="flex:0 0 40px">●</button>
-      </div>
-      <button id="btn-numeros">N°</button>
       <button id="btn-distance-arret" title="Réglette de distance d'arrêt">📏 Distance d'arrêt</button>
       <button id="btn-laisse-seule" title="Les véhicules ne se déplacent que par leur poignée de traction">Laisse seule</button>
       <button id="btn-effacer-traces">Effacer traces</button>
@@ -632,19 +704,35 @@
     <div class="palette-panneau" id="pal-autres" data-pour="autres">
       <h4>Autres</h4>
       <button id="btn-info-scene" title="Afficher les astuces">ℹ Infos</button>
-      <button id="btn-vider" class="danger">Vider la scène</button>
-    </div>
+      </div>
   </div>
   <div class="zone-canvas">
     <canvas id="canvas-scene"></canvas>
     <button id="btn-sortie-pe" hidden>✕ Quitter</button>
+    <div id="menu-vehicule" hidden>
+      <button class="mv-btn mv-gauche" data-act="cligG" title="Clignotant gauche">◀</button>
+      <button class="mv-btn mv-droite" data-act="cligD" title="Clignotant droit">▶</button>
+      <button class="mv-btn mv-haut" data-act="tracer" title="Tracer du véhicule">✦</button>
+      <button class="mv-btn mv-bas" data-act="anglemort" title="Angle mort">⚠</button>
+      <button class="mv-btn mv-fermer" data-act="fermer" title="Fermer">✕</button>
+    </div>
+    <div id="outil-crayon" class="outil-flottant">
+      <div class="of-grip" id="crayon-grip" title="Déplacer">⋮⋮</div>
+      <button id="btn-stylo" class="of-toggle" title="Crayon : dessiner sur la scène">✏</button>
+      <div class="of-couleurs" id="crayon-couleurs"></div>
+      <button id="btn-effacer-crayon" class="of-eff" title="Effacer les dessins">⌫</button>
+    </div>
+    <div id="outil-numeros" class="outil-flottant">
+      <div class="of-grip" id="numeros-grip" title="Déplacer">⋮⋮</div>
+      <button id="btn-numeros" class="of-toggle" title="Afficher les numéros des usagers">N°</button>
+    </div>
     <div id="reglette-arret" hidden>
       <div class="rg-tete">
         <span class="rg-titre">Distance d'arrêt</span>
         <button id="rg-fermer" aria-label="Fermer">✕</button>
       </div>
       <div class="rg-vitesse">
-        <input type="range" id="rg-slider" min="30" max="130" step="10" value="50">
+        <input type="range" id="rg-slider" min="30" max="90" step="10" value="50">
         <span id="rg-kmh">50 km/h</span>
       </div>
       <div class="rg-barres">
@@ -775,7 +863,7 @@
     </div>
 
     <div class="palette-panneau" id="paled-utiliser" data-pour="utiliser">
-      <h4>Scène</h4>
+      <h4>Situations</h4>
       <button id="ed-utiliser" class="actif">Utiliser dans la scène →</button>
     </div>
   </div>
@@ -1048,6 +1136,7 @@ class Vehicule extends Entity {
     this.angle = this.angleCible = -Math.PI / 2;
     this.clignotant = null;
     this.afficherAngleMort = false;
+    this.tracerVhl = false;
     this.trace = [];          // trajectoire enregistrée (mode Trace)
     this.numero = null;       // numéro d'ordre (bouton N°)
     this.enLaisse = false;    // true pendant une traction par la poignée
@@ -2723,6 +2812,7 @@ function activerOnglet(nom) {
   ongletActif = nom;
   vues.scene.classList.toggle('cachee', nom !== 'scene');
   vues.editeur.classList.toggle('cachee', nom !== 'editeur');
+  document.body.classList.toggle('onglet-editeur', nom === 'editeur');
   document.getElementById('onglet-scene').classList.toggle('actif', nom === 'scene');
   document.getElementById('onglet-editeur').classList.toggle('actif', nom === 'editeur');
   requestAnimationFrame(() => { sc.resize(); ed.resize(); demanderRenduEditeur(); });
@@ -3016,7 +3106,7 @@ function drawVision(ctxMain) {
 
 /* Échantillonnage d'une trace pendant un déplacement */
 function enregistrerTrace(e) {
-  if (!OPTIONS.trace || !e.trace) return;
+  if (!e.tracerVhl || !e.trace) return;
   const der = e.trace[e.trace.length - 1];
   if (!der || Math.hypot(e.x - der.x, e.y - der.y) >= TRACE_PAS) {
     e.trace.push({ x: e.x, y: e.y });
@@ -3355,7 +3445,9 @@ sc.canvas.addEventListener('pointerdown', (e) => {
     Math.hypot(p.x - dernierTap.x, p.y - dernierTap.y) < 30 / vue.zoom;
 
   if (estDoubleTap) {
-    if (touche) {
+    if (touche && touche instanceof Vehicule) {
+      ouvrirMenuVehicule(touche);      // menu angle mort / trace / clignotant
+    } else if (touche) {
       touche.onDoubleTap();
     } else {
       feuDecor.etatFeu = ETATS_FEU[(ETATS_FEU.indexOf(feuDecor.etatFeu) + 1) % ETATS_FEU.length];
@@ -3378,6 +3470,20 @@ sc.canvas.addEventListener('pointerdown', (e) => {
   actif._origDrag = { x: actif.x, y: actif.y };
   geste = 'drag';
   sc.canvas.classList.add('dragging');
+});
+
+// Double-clic SOURIS (PC) : ouvrir le menu radial sur le véhicule sous le curseur
+sc.canvas.addEventListener('dblclick', (e) => {
+  const pe = pointDans(sc, e);
+  const p = versMonde(pe);
+  let touche = null;
+  for (let i = entites.length - 1; i >= 0; i--) {
+    if (entites[i] instanceof Vehicule && entites[i].contains(p.x, p.y)) { touche = entites[i]; break; }
+  }
+  if (touche) {
+    e.preventDefault();
+    ouvrirMenuVehicule(touche);
+  }
 });
 
 sc.canvas.addEventListener('pointermove', (e) => {
@@ -3565,25 +3671,17 @@ function aimanterBord(p) {
   else if (y > MONDE.H - BORD_SEUIL) y = MONDE.H + BORD_DEPASSE;
   return { x, y };
 }
-/* Silhouette de voiture pour tester la largeur des voies */
+/* Voiture de test (vraie instance Vehicule, avec la laisse) dans l'éditeur.
+   Les véhicules test sont en coordonnées MONDE (pixels). */
 function drawVehiculesTest(ctx, W, H) {
-  const L = 74, l = 38;
+  const ancienne = VEH.echelle;
+  VEH.echelle = 1;                 // échelle fixe dans le repère monde
   for (const v of editeur.vehiculesTest) {
-    ctx.save();
-    ctx.translate(v.x * W, v.y * H);
-    ctx.rotate(v.angle);
-    ctx.globalAlpha = 0.9;
-    ctx.fillStyle = '#2563eb';
-    roundRect(ctx, -L/2, -l/2, L, l, 10);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    roundRect(ctx, L*0.12, -l/2 + 6, L*0.16, l - 12, 4);
-    ctx.fill();
-    ctx.restore();
+    if (typeof v.draw === 'function') {
+      v.draw(ctx, performance.now());
+    }
   }
+  VEH.echelle = ancienne;
 }
 
 function modeAimanteBord() {
@@ -3804,7 +3902,7 @@ ed.canvas.addEventListener('pointerdown', (e) => {
     case 'gomme': {
       for (let i = editeur.vehiculesTest.length - 1; i >= 0; i--) {
         const v = editeur.vehiculesTest[i];
-        if (Math.hypot(pRaw.x - v.x * MONDE.W, pRaw.y - v.y * MONDE.H) <= 55) {
+        if (Math.hypot(pRaw.x - v.x, pRaw.y - v.y) <= 50) {
           editeur.vehiculesTest.splice(i, 1);
           return;
         }
@@ -3941,6 +4039,10 @@ ed.canvas.addEventListener('pointerleave', () => {
 ed.canvas.addEventListener('pointerup', () => {
   clearTimeout(timerAppui);
   timerAppui = null;
+  if (editeur.dragTest && editeur.dragTest.ref) {
+    editeur.dragTest.ref.enLaisse = false;
+    editeur.dragTest.ref.poignee = null;
+  }
   editeur.dragTest = null;
   editeur.panDrag = null;
   if (editeur.zoneSelection) {
@@ -3973,6 +4075,10 @@ ed.canvas.addEventListener('pointerup', () => {
 ed.canvas.addEventListener('pointercancel', () => {
   clearTimeout(timerAppui);
   timerAppui = null;
+  if (editeur.dragTest && editeur.dragTest.ref) {
+    editeur.dragTest.ref.enLaisse = false;
+    editeur.dragTest.ref.poignee = null;
+  }
   editeur.dragTest = null;
   editeur.panDrag = null;
   editeur.zoneSelection = null;
@@ -4257,7 +4363,9 @@ document.getElementById('ed-bouts-droits').addEventListener('change', (e) => {
 });
 
 document.getElementById('ed-vehicule-test').addEventListener('click', () => {
-  editeur.vehiculesTest.push({ x: 0.5, y: 0.5, angle: -Math.PI / 2 });
+  const v = new Vehicule({ x: MONDE.W * 0.5, y: MONDE.H * 0.5, couleur: '#2563eb' });
+  v.angle = v.angleCible = -Math.PI / 2;
+  editeur.vehiculesTest.push(v);
 });
 
 document.getElementById('ed-terminer').addEventListener('click', terminerTrace);
@@ -4567,28 +4675,30 @@ document.getElementById('btn-pieton').addEventListener('click', () => {
   if (!panneau || !btnOuvrir) return;
 
   function calc(v) {
-    const d = v / 10;                       // chiffre des dizaines
-    const reaction = d * 3;                 // distance de réaction (~1 s)
-    let freinage = d * d;                   // freinage sur sol sec
-    if (mouille.checked) freinage *= 1.5;   // sol mouillé : +50 %
-    return { reaction, freinage: Math.round(freinage), total: Math.round(reaction + freinage) };
+    const d = v / 10;                       // chiffre des dizaines (diz)
+    const reaction = d * 3;                 // Dtr = diz × 3
+    let freinage = (d * d) / 2;             // DF = diz² / 2 (sol sec)
+    if (mouille.checked) freinage *= 1.5;   // sol mouillé : freinage × 1,5
+    const arrondir = (x) => Math.round(x * 10) / 10;   // 1 décimale
+    return { reaction: arrondir(reaction), freinage: arrondir(freinage), total: arrondir(reaction + freinage) };
   }
   function maj() {
     const v = Number(slider.value);
     kmh.textContent = v + ' km/h';
     const r = calc(v);
-    dRe.textContent = r.reaction + ' m';
-    dFr.textContent = r.freinage + ' m';
-    dTot.textContent = r.total + ' m';
+    const fr = (x) => String(x).replace('.', ',');
+    dRe.textContent = fr(r.reaction) + ' m';
+    dFr.textContent = fr(r.freinage) + ' m';
+    dTot.textContent = fr(r.total) + ' m';
     // largeur des barres proportionnelle au total (échelle commune fixée à 130 km/h mouillé)
-    const maxTotal = 13 * 3 + 13 * 13 * 1.5;     // borne haute
+    const maxTotal = 9 * 3 + (9 * 9 / 2) * 1.5;   // borne haute (90 km/h mouillé)
     const pRe = (r.reaction / maxTotal) * 100;
     const pFr = (r.freinage / maxTotal) * 100;
     barRe.style.width = pRe + '%';
     barFr.style.width = pFr + '%';
     // graduation tous les 25 m
     let html = '';
-    for (let m = 0; m <= maxTotal; m += 25) {
+    for (let m = 0; m <= maxTotal; m += 20) {
       const x = (m / maxTotal) * 100;
       html += '<span style="left:' + x + '%">' + m + '</span>';
     }
@@ -4609,29 +4719,115 @@ document.getElementById('btn-pieton').addEventListener('click', () => {
   maj();
 })();
 
-const btnAngleMort = document.getElementById('btn-angle-mort');
-btnAngleMort.addEventListener('click', () => {
-  const cibles = entites.filter(e => e instanceof Vehicule);
-  const etat = !cibles.some(v => v.afficherAngleMort);
-  for (const v of cibles) v.afficherAngleMort = etat;
-  btnAngleMort.classList.toggle('actif', etat);
-});
+/* ===== Menu contextuel d'un véhicule ===== */
+let vehiculeMenuActif = null;
+function ouvrirMenuVehicule(v) {
+  vehiculeMenuActif = v;
+  const menu = document.getElementById('menu-vehicule');
+  if (!menu) return;
+  const pt = mondeVersEcran(v.x, v.y);
+  menu.style.left = pt.x + 'px';
+  menu.style.top = pt.y + 'px';      // centré pile sur la voiture
+  // Le menu tourne avec la voiture (clignotants toujours aux rétros)
+  const deg = ((v.angle != null ? v.angle : -Math.PI/2) + Math.PI/2) * 180 / Math.PI;
+  menu.style.setProperty('--rot', deg + 'deg');
+  menu.querySelectorAll('.mv-btn').forEach(b => b.style.setProperty('--contre', (-deg) + 'deg'));
+  menu.hidden = false;
+  majMenuVehicule();
+}
+function majMenuVehicule() {
+  const menu = document.getElementById('menu-vehicule');
+  const v = vehiculeMenuActif;
+  if (!menu || !v) return;
+  menu.querySelector('[data-act=anglemort]').classList.toggle('actif', !!v.afficherAngleMort);
+  menu.querySelector('[data-act=tracer]').classList.toggle('actif', !!v.tracerVhl);
+  menu.querySelector('[data-act=cligG]').classList.toggle('actif', v.clignotant === 'gauche' || v.clignotant === 'warning');
+  menu.querySelector('[data-act=cligD]').classList.toggle('actif', v.clignotant === 'droite' || v.clignotant === 'warning');
+}
+function fermerMenuVehicule() {
+  const menu = document.getElementById('menu-vehicule');
+  if (menu) menu.hidden = true;
+  vehiculeMenuActif = null;
+}
+// Conversion monde -> écran (pixels CSS du canvas) avec la transfo de la scène
+function mondeVersEcran(mx, my) {
+  // Les usagers sont dessinés à (x, y) dans le repère vue : translate(vue.ox,vue.oy) + scale(zoom).
+  const xCanvas = mx * vue.zoom + vue.ox;
+  const yCanvas = my * vue.zoom + vue.oy;
+  const rect = sc.canvas.getBoundingClientRect();   // offset viewport (menu fixed)
+  return { x: rect.left + xCanvas, y: rect.top + yCanvas };
+}
+(function brancherMenuVehicule() {
+  const menu = document.getElementById('menu-vehicule');
+  if (!menu) return;
+  menu.addEventListener('pointerdown', (e) => {
+    const b = e.target.closest('button[data-act]');
+    if (!b || !vehiculeMenuActif) return;
+    e.stopPropagation();            // ne pas refermer en cliquant dans le menu
+    const v = vehiculeMenuActif;
+    const act = b.dataset.act;
+    if (act === 'anglemort') {
+      v.afficherAngleMort = !v.afficherAngleMort;
+    } else if (act === 'tracer') {
+      v.tracerVhl = !v.tracerVhl;
+      if (!v.tracerVhl && v.trace) v.trace = [];
+    } else if (act === 'cligG') {
+      v.clignotant = (v.clignotant === 'gauche') ? null : 'gauche';
+    } else if (act === 'cligD') {
+      v.clignotant = (v.clignotant === 'droite') ? null : 'droite';
+    } else if (act === 'fermer') {
+      fermerMenuVehicule(); return;
+    }
+    majMenuVehicule();
+  });
+  // fermer si on tape ailleurs sur le canvas
+  sc.canvas.addEventListener('pointerdown', () => {
+    if (vehiculeMenuActif) fermerMenuVehicule();
+  });
+})();
 
-const btnTrace = document.getElementById('btn-trace');
-btnTrace.addEventListener('click', () => {
-  OPTIONS.trace = !OPTIONS.trace;
-  btnTrace.classList.toggle('actif', OPTIONS.trace);
-});
+// Déplacement d'un widget flottant (position: fixed -> coords viewport)
+function rendreWidgetDeplacable(idWidget, idGrip) {
+  const w = document.getElementById(idWidget);
+  const grip = document.getElementById(idGrip);
+  if (!w || !grip) return;
+  let drag = null;
+  grip.addEventListener('pointerdown', (e) => {
+    const r = w.getBoundingClientRect();
+    drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+    grip.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  grip.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    let x = e.clientX - drag.dx;
+    let y = e.clientY - drag.dy;
+    x = Math.max(4, Math.min(x, window.innerWidth - w.offsetWidth - 4));
+    y = Math.max(4, Math.min(y, window.innerHeight - w.offsetHeight - 4));
+    w.style.left = x + 'px'; w.style.top = y + 'px';
+    w.style.right = 'auto'; w.style.bottom = 'auto';
+  });
+  grip.addEventListener('pointerup', () => { drag = null; });
+}
 
 const COULEURS_STYLO = ['#FF3030', '#1d4ed8', '#16a34a', '#f59e0b', '#111827'];
 let styloCouleur = COULEURS_STYLO[0];
-const btnStyloCouleur = document.getElementById('btn-stylo-couleur');
-btnStyloCouleur.style.color = styloCouleur;
-btnStyloCouleur.addEventListener('click', () => {
-  styloCouleur = COULEURS_STYLO[
-    (COULEURS_STYLO.indexOf(styloCouleur) + 1) % COULEURS_STYLO.length
-  ];
-  btnStyloCouleur.style.color = styloCouleur;
+
+// Pastilles de couleur dans le widget flottant
+const crayonCouleurs = document.getElementById('crayon-couleurs');
+COULEURS_STYLO.forEach((c, i) => {
+  const b = document.createElement('button');
+  b.className = 'pastille-c' + (i === 0 ? ' actif' : '');
+  b.style.background = c;
+  b.title = 'Couleur';
+  b.addEventListener('click', () => {
+    styloCouleur = c;
+    crayonCouleurs.querySelectorAll('.pastille-c').forEach(p => p.classList.remove('actif'));
+    b.classList.add('actif');
+    // activer le stylo si on choisit une couleur
+    if (!OPTIONS.stylo) btnStylo.click();
+  });
+  crayonCouleurs.appendChild(b);
 });
 
 const btnStylo = document.getElementById('btn-stylo');
@@ -4640,6 +4836,14 @@ btnStylo.addEventListener('click', () => {
   btnStylo.classList.toggle('actif', OPTIONS.stylo);
   sc.canvas.classList.toggle('stylo', OPTIONS.stylo);
 });
+
+// Effacer les dessins du crayon
+document.getElementById('btn-effacer-crayon').addEventListener('click', () => {
+  annotations.length = 0;
+});
+
+// Rendre le widget crayon déplaçable
+rendreWidgetDeplacable('outil-crayon', 'crayon-grip');
 
 document.getElementById('btn-effacer-traces').addEventListener('click', () => {
   for (const e of entites) if (e.trace) e.trace = [];
@@ -4651,6 +4855,7 @@ btnNumeros.addEventListener('click', () => {
   OPTIONS.numeros = !OPTIONS.numeros;
   btnNumeros.classList.toggle('actif', OPTIONS.numeros);
 });
+rendreWidgetDeplacable('outil-numeros', 'numeros-grip');
 
 const btnBeta = document.getElementById('btn-beta');
 const betaZone = document.getElementById('beta-zone');
@@ -4800,21 +5005,46 @@ function basculerAide() {
 document.getElementById('btn-info-scene').addEventListener('click', basculerAide);
 document.getElementById('btn-info-ed').addEventListener('click', basculerAide);
 
-btnSortiePE.addEventListener('click', async () => {
-  if (document.fullscreenElement) {
-    try { await document.exitFullscreen(); } catch (err) {}
-  }
+/* ===== Plein écran (mode présentation) ===== */
+const btnSortiePE = document.getElementById('btn-sortie-pe');
+const btnPleinEcran = document.getElementById('btn-plein-ecran');
+function majPleinEcran(actif) {
+  document.body.classList.toggle('plein-ecran', actif);
+  if (btnSortiePE) btnSortiePE.hidden = !actif;
+  // recalculer le canvas après le changement de taille
+  setTimeout(() => { sc.resize(); ed.resize(); demanderRenduEditeur(); }, 60);
+}
+async function entrerPleinEcran() {
+  const el = document.documentElement;
+  try {
+    if (el.requestFullscreen) await el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else if (el.webkitEnterFullscreen) el.webkitEnterFullscreen();
+  } catch (err) {}
+  majPleinEcran(true);   // fonctionne même si l'API fullscreen est refusée (iOS)
+}
+async function sortirPleinEcran() {
+  try {
+    if (document.fullscreenElement && document.exitFullscreen) await document.exitFullscreen();
+    else if (document.webkitFullscreenElement && document.webkitExitFullscreen) document.webkitExitFullscreen();
+  } catch (err) {}
   majPleinEcran(false);
-});
+}
+if (btnPleinEcran) btnPleinEcran.addEventListener('click', entrerPleinEcran);
+if (btnSortiePE) btnSortiePE.addEventListener('click', sortirPleinEcran);
 document.addEventListener('fullscreenchange', () => {
   if (!document.fullscreenElement) majPleinEcran(false);
 });
+document.addEventListener('webkitfullscreenchange', () => {
+  if (!document.webkitFullscreenElement) majPleinEcran(false);
+});
 
-document.getElementById('btn-vider').addEventListener('click', () => {
+document.getElementById('btn-vider-nav').addEventListener('click', () => {
+  if (!confirm('Vider la scène ? Tous les usagers seront retirés.')) return;
   entites = [];
   nbVehicules = 0;
   nbPietons = 0;
-  btnAngleMort.classList.remove('actif');
+  fermerMenuVehicule();
 });
 </script>
 </body>
