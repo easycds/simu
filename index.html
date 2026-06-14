@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -362,9 +361,42 @@
   #canvas-editeur { cursor: crosshair; }
   canvas.dragging { cursor: grabbing; }
   canvas.stylo { cursor: crosshair; }
+  /* ===== Écran de lancement « Simple, easy. » ===== */
+  #splash {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: #fff;
+    transition: opacity 0.6s ease;
+  }
+  #splash.parti { opacity: 0; pointer-events: none; }
+  #splash .mot {
+    font-family: var(--police-titre, 'Fredoka'), sans-serif;
+    font-weight: 700;
+    font-size: clamp(44px, 11vw, 120px);
+    line-height: 0.95;
+    text-align: center;
+    letter-spacing: -0.01em;
+  }
+  #splash .simple { color: var(--encre, #1c2430); opacity: 0; transform: translateY(14px); animation: splashUp 0.6s ease 0.15s forwards; }
+  #splash .easy   { color: var(--rouge, #ff3131); opacity: 0; transform: translateY(14px); animation: splashUp 0.6s ease 0.40s forwards; position: relative; }
+  @keyframes splashUp { to { opacity: 1; transform: translateY(0); } }
+  /* sourire sous le "easy" */
+  #splash svg { width: clamp(90px, 22vw, 230px); height: auto; margin-top: 6px;
+    opacity: 0; animation: splashUp 0.6s ease 0.62s forwards; }
+  #splash .easy-trait { stroke: var(--rouge, #ff3131); stroke-width: 22; stroke-linecap: round; fill: none;
+    stroke-dasharray: 360; stroke-dashoffset: 360; animation: splashSourire 0.7s ease 0.7s forwards; }
+  @keyframes splashSourire { to { stroke-dashoffset: 0; } }
 </style>
 </head>
 <body>
+<div id="splash" aria-hidden="true">
+  <div class="mot simple">simple,</div>
+  <div class="mot easy">easy.</div>
+  <svg viewBox="0 0 320 90" xmlns="http://www.w3.org/2000/svg">
+    <path class="easy-trait" d="M 40 35 Q 160 110 280 35" />
+  </svg>
+</div>
 
 <nav>
   <span class="marque">
@@ -912,6 +944,31 @@ class Vehicule extends Entity {
     roundRect(ctx, L*0.12, -l/2 + 6, L*0.16, l - 12, 4); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,0.55)';
     roundRect(ctx, -L*0.34, -l/2 + 7, L*0.10, l - 14, 4); ctx.fill();
+
+    // Sourire Easy sur le capot (identité de marque).
+    // Rouge sur carrosserie claire, blanc sur carrosserie foncée/rouge.
+    {
+      const c = this.couleur || '#2563eb';
+      let lum = 0.5;
+      if (/^#[0-9a-f]{6}$/i.test(c)) {
+        const r8 = parseInt(c.slice(1,3),16), g8 = parseInt(c.slice(3,5),16), b8 = parseInt(c.slice(5,7),16);
+        lum = (0.299*r8 + 0.587*g8 + 0.114*b8) / 255;
+      }
+      // rouge trop proche de la carrosserie rouge -> on force le blanc
+      const estRouge = /^#(dc2626|ff3131|ff3030|e\w{4}|d\w{4})$/i.test(c);
+      const coulS = (lum < 0.6 || estRouge) ? '#ffffff' : '#ff3131';
+      ctx.save();
+      ctx.translate(L * 0.30, 0);     // sur le capot, plus près du pare-brise
+      ctx.rotate(-Math.PI / 2);       // dans le sens de la longueur
+      ctx.strokeStyle = coulS;
+      ctx.lineWidth = Math.max(2, l * 0.12);
+      ctx.lineCap = 'round';
+      const r = l * 0.34;
+      ctx.beginPath();
+      ctx.arc(0, -r * 0.30, r, Math.PI * 0.30, Math.PI * 0.70, false);
+      ctx.stroke();
+      ctx.restore();
+    }
 
     // Rétroviseurs extérieurs, au niveau du pare-brise
     ctx.fillStyle = this.couleur;
@@ -1568,6 +1625,7 @@ const editeur = {
   jaune: false,           // marquage temporaire jaune (chantier)
   curseur: null,
   selection: null,        // { kind: 'panneau'|'marquage', ref } ou { kind: 'groupe', refs }
+  survol: null,           // élément sous le curseur en mode sélection (contour clair)
   dragSelection: null,    // état du déplacement en cours
   zoneSelection: null,    // rectangle de sélection en cours
   vehiculesTest: [],      // silhouettes pour tester la largeur des voies
@@ -2178,34 +2236,62 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
     ctx.restore();
   }
   // --- Cadre de sélection ---
-  if (apercu.selection) {
-    const s = apercu.selection;
-    ctx.strokeStyle = '#FF3030';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 5]);
-    if (s.kind === 'groupe') {
-      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-      for (const r of s.refs) {
-        if (r.kind === 'panneau') {
-          const rr = r.ref.taille / 2 + 8;
-          x0 = Math.min(x0, r.ref.x * W - rr); y0 = Math.min(y0, r.ref.y * H - rr);
-          x1 = Math.max(x1, r.ref.x * W + rr); y1 = Math.max(y1, r.ref.y * H + rr);
-        } else {
-          const b = bboxMarquage(r.ref, W, H);
-          x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y);
-          x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h);
-        }
-      }
-      ctx.strokeRect(x0 - 4, y0 - 4, x1 - x0 + 8, y1 - y0 + 8);
-    } else if (s.kind === 'panneau') {
-      const r = s.ref.taille / 2 + 8;
-      ctx.strokeRect(s.ref.x * W - r, s.ref.y * H - r, 2 * r, 2 * r);
-    } else {
-      const b = bboxMarquage(s.ref, W, H);
-      ctx.strokeRect(b.x, b.y, b.w, b.h);
+  // Contour de SURVOL (élément sous le curseur, pas encore sélectionné)
+  if (apercu.survol) {
+    const r = boiteElement(apercu.survol, W, H);
+    if (r) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,48,48,0.55)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(r.x0 - 4, r.y0 - 4, r.x1 - r.x0 + 8, r.y1 - r.y0 + 8);
+      ctx.restore();
     }
-    ctx.setLineDash([]);
   }
+  // Contour de SÉLECTION : halo + cadre plein + poignées d'angle
+  if (apercu.selection) {
+    const r = boiteElement(apercu.selection, W, H);
+    if (r) {
+      const x = r.x0 - 6, y = r.y0 - 6, w = r.x1 - r.x0 + 12, h = r.y1 - r.y0 + 12;
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,48,48,0.06)';
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = '#FF3030';
+      ctx.lineWidth = 2.5;
+      ctx.strokeRect(x, y, w, h);
+      const hs = 7;
+      ctx.fillStyle = '#fff';
+      ctx.lineWidth = 2;
+      for (const [hx, hy] of [[x, y], [x + w, y], [x, y + h], [x + w, y + h]]) {
+        ctx.beginPath();
+        ctx.rect(hx - hs, hy - hs, hs * 2, hs * 2);
+        ctx.fill(); ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+}
+
+/* Boîte englobante (en pixels) d'une sélection ou d'un survol. */
+function boiteElement(s, W, H) {
+  if (!s) return null;
+  const acc = (refs) => {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const r of refs) {
+      if (r.kind === 'panneau') {
+        const rr = r.ref.taille / 2 + 8;
+        x0 = Math.min(x0, r.ref.x * W - rr); y0 = Math.min(y0, r.ref.y * H - rr);
+        x1 = Math.max(x1, r.ref.x * W + rr); y1 = Math.max(y1, r.ref.y * H + rr);
+      } else {
+        const b = bboxMarquage(r.ref, W, H);
+        x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y);
+        x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h);
+      }
+    }
+    return { x0, y0, x1, y1 };
+  };
+  if (s.kind === 'groupe') return acc(s.refs);
+  return acc([s]);
 }
 
 const REGLAGES = {
@@ -2237,17 +2323,17 @@ let decorActif = 'carrefour';
    ============================================================ */
 
 function hitPanneauEd(p, px, py, W, H) {
-  const r = p.taille / 2 + 8;
+  const r = p.taille / 2 + 16;          // zone de clic élargie
   return Math.abs(px - p.x * W) <= r && Math.abs(py - p.y * H) <= r;
 }
 
 function hitMarquage(m, px, py, W, H) {
   if (m.pts.length < 2) return false;
-  const seuil = m.type === 'passage_pieton' ? 34
-              : (m.type === 'ralentisseur' || m.type === 'stationnement') ? 26
-              : m.type === 'sas_velo' ? 30
-              : (m.type.startsWith('fleche') || m.type === 'velo') ? 22
-              : (m.type === 'stop' || m.type === 'cedez') ? 14 : 10;
+  const seuil = m.type === 'passage_pieton' ? 40
+              : (m.type === 'ralentisseur' || m.type === 'stationnement') ? 32
+              : m.type === 'sas_velo' ? 36
+              : (m.type.startsWith('fleche') || m.type === 'velo') ? 28
+              : (m.type === 'stop' || m.type === 'cedez') ? 22 : 18;
   for (let i = 0; i < m.pts.length - 1; i++) {
     if (distPointSegment(px, py,
         m.pts[i].x * W, m.pts[i].y * H,
@@ -2266,7 +2352,7 @@ function hitRoute(rt, px, py, W, H) {
   for (let i = 0; i < rt.pts.length - 1; i++) {
     if (distPointSegment(px, py,
         rt.pts[i].x * W, rt.pts[i].y * H,
-        rt.pts[i+1].x * W, rt.pts[i+1].y * H) <= rt.largeur / 2 + 5) return true;
+        rt.pts[i+1].x * W, rt.pts[i+1].y * H) <= rt.largeur / 2 + 12) return true;
   }
   return false;
 }
@@ -2786,6 +2872,7 @@ function dessinerEditeur() {
         ? { type: editeur.typePanneau, taille: 52 } : null,
       curseur: editeur.curseur,
       selection: editeur.mode === 'selection' ? editeur.selection : null,
+      survol: editeur.mode === 'selection' ? editeur.survol : null,
     });
     // Aides de tracé : numéroter chaque point posé, marquer le départ.
     const tracEnCours = editeur.enCoursRoute || editeur.enCoursMarquage;
@@ -2826,6 +2913,18 @@ function dessinerEditeur() {
 }
 requestAnimationFrame(boucle);
 dessinerEditeur();
+
+/* Écran de lancement « Simple, easy. » : disparaît tout seul. */
+(function gererSplash() {
+  const sp = document.getElementById('splash');
+  if (!sp) return;
+  const fermer = () => {
+    sp.classList.add('parti');
+    setTimeout(() => sp.remove(), 650);
+  };
+  setTimeout(fermer, 1700);
+  sp.addEventListener('pointerdown', fermer);   // passer plus vite si on clique
+})();
 
 /* ============================================================
    VUE DE LA SCÈNE : zoom + panoramique
@@ -3501,6 +3600,18 @@ ed.canvas.addEventListener('pointermove', (e) => {
   const pc = modeAimanteBord() ? aimanterBord(p) : p;
   editeur.curseur = { x: pc.x / MONDE.W, y: pc.y / MONDE.H };
 
+  // Survol : surligner l'élément sous le curseur (mode sélection, hors drag)
+  if (editeur.mode === 'selection' && !editeur.dragSelection && !editeur.zoneSelection) {
+    const pr = pointEd(e);
+    const nouv = trouverElement(pr.x, pr.y, MONDE.W, MONDE.H, true);
+    const avant = editeur.survol;
+    editeur.survol = nouv;
+    if ((avant && avant.ref) !== (nouv && nouv.ref)) demanderRenduEditeur();
+  } else if (editeur.survol) {
+    editeur.survol = null;
+    demanderRenduEditeur();
+  }
+
   // Déplacement de la sélection
   if (editeur.mode === 'selection' && editeur.dragSelection && editeur.selection) {
     const pRaw = pointEd(e);
@@ -3530,7 +3641,10 @@ ed.canvas.addEventListener('pointermove', (e) => {
     }
   }
 });
-ed.canvas.addEventListener('pointerleave', () => { editeur.curseur = null; });
+ed.canvas.addEventListener('pointerleave', () => {
+  editeur.curseur = null;
+  if (editeur.survol) { editeur.survol = null; demanderRenduEditeur(); }
+});
 ed.canvas.addEventListener('pointerup', () => {
   clearTimeout(timerAppui);
   timerAppui = null;
