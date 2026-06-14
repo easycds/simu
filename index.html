@@ -120,6 +120,22 @@
   }
   .pousse-droite { margin-left: auto; }
 
+  /* Vignettes de sélection (décors) */
+  #choix-decor {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  #choix-decor button {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 6px; border: 2px solid #e3e1de; border-radius: 12px;
+    background: #fff; cursor: pointer; transition: border-color 0.12s, box-shadow 0.12s;
+  }
+  #choix-decor button:hover { border-color: var(--rouge); }
+  #choix-decor button.actif { border-color: var(--rouge); box-shadow: 0 0 0 2px rgba(255,49,49,0.18); }
+  #choix-decor button canvas {
+    width: 100%; height: 56px; border-radius: 7px; display: block; background: #9ec79b;
+  }
+  #choix-decor button .nom { font-size: 12px; font-weight: 500; color: var(--encre); }
+
   /* Bandeau d'aide au tracé (apparaît pendant un tracé en cours) */
   #bandeau-trace {
     position: absolute;
@@ -361,35 +377,108 @@
   #canvas-editeur { cursor: crosshair; }
   canvas.dragging { cursor: grabbing; }
   canvas.stylo { cursor: crosshair; }
-  /* ===== Écran de lancement « Simple, easy. » ===== */
-  #splash {
+  /* ===== Écran d'accueil (phase de test) ===== */
+  #accueil {
     position: fixed; inset: 0; z-index: 9999;
-    display: flex; flex-direction: column;
+    background: #f1f0ef;
+    overflow-y: auto;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 24px 18px 40px;
+    transition: opacity 0.5s ease;
+  }
+  #accueil.parti { opacity: 0; pointer-events: none; }
+  #accueil .vague {
+    position: fixed; top: 0; left: 0;
+    width: 220px; height: 110px;
+    background: var(--rouge, #ff3131);
+    border-radius: 0 0 110px 0; z-index: 0; opacity: 0.95;
+  }
+  #accueil .contenu { position: relative; z-index: 1; width: 100%; max-width: 660px; margin: auto; text-align: center; }
+  #accueil .logo {
+    font-family: var(--police-titre, 'Fredoka'), sans-serif;
+    font-weight: 700; font-size: clamp(52px, 15vw, 100px);
+    color: var(--rouge, #ff3131); line-height: 0.8; margin-top: 26px;
+    display: inline-block;
+  }
+  #accueil .logo .baseline { display: block; font-size: 0.20em; color: var(--encre, #1c2430); font-weight: 600; letter-spacing: 0.08em; margin-top: 8px; }
+  #accueil .sourire-logo { display: block; margin: 14px auto 0; width: clamp(110px, 32vw, 200px); }
+  #accueil .sourire-logo path { fill: none; stroke: var(--rouge, #ff3131); stroke-width: 24; stroke-linecap: round; }
+  #accueil .slogan { font-family: var(--police-titre, 'Fredoka'), sans-serif; font-size: clamp(20px, 5.5vw, 30px); font-weight: 600; margin: 24px 0 6px; color: var(--encre, #1c2430); text-transform: uppercase; letter-spacing: 0.02em; }
+  #accueil .slogan .pt { color: var(--rouge, #ff3131); }
+  #accueil .presentation { font-weight: 300; font-size: clamp(14px, 3.8vw, 16px); line-height: 1.5; color: #4b5563; max-width: 520px; margin: 12px auto 0; }
+  #accueil .avert { background: #fff; border: 2px solid var(--rouge, #ff3131); border-radius: 18px; padding: 18px 20px; margin: 26px auto 0; max-width: 540px; text-align: left; box-shadow: 0 6px 26px rgba(255,49,49,0.10); }
+  #accueil .avert .titre { display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 16px; color: var(--rouge, #ff3131); margin-bottom: 8px; }
+  #accueil .avert .pastille { background: var(--rouge, #ff3131); color: #fff; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 20px; }
+  #accueil .avert p { font-weight: 300; font-size: 14px; line-height: 1.55; color: #374151; }
+  #accueil .avert p + p { margin-top: 8px; }
+  #accueil .avert strong { font-weight: 600; color: var(--encre, #1c2430); }
+  #accueil .entrer {
+    display: inline-flex; align-items: center; gap: 10px; margin-top: 28px;
+    background: var(--rouge, #ff3131); color: #fff;
+    font-family: var(--police-titre, 'Fredoka'), sans-serif; font-weight: 600;
+    font-size: clamp(16px, 4.5vw, 19px); border: none; cursor: pointer;
+    padding: 14px 32px; border-radius: 40px;
+    box-shadow: 0 6px 20px rgba(255,49,49,0.32);
+    transition: transform 0.12s, box-shadow 0.12s;
+  }
+  #accueil .entrer:hover { transform: translateY(-2px); box-shadow: 0 9px 26px rgba(255,49,49,0.40); }
+  #accueil .entrer:active { transform: translateY(0); }
+  #accueil .entrer svg { width: 21px; height: 21px; }
+  #accueil .pied { margin-top: 30px; font-size: 12px; font-weight: 300; color: #9ca3af; }
+  #accueil .pied a { color: var(--rouge, #ff3131); text-decoration: none; }
+
+  /* ===== Splash « Simple, easy. » (après l'accueil) ===== */
+  #splash {
+    position: fixed; inset: 0; z-index: 9998;
+    display: none; flex-direction: column;
     align-items: center; justify-content: center;
     background: #fff;
     transition: opacity 0.6s ease;
   }
+  #splash.actif { display: flex; }
   #splash.parti { opacity: 0; pointer-events: none; }
   #splash .mot {
     font-family: var(--police-titre, 'Fredoka'), sans-serif;
-    font-weight: 700;
-    font-size: clamp(44px, 11vw, 120px);
-    line-height: 0.95;
-    text-align: center;
-    letter-spacing: -0.01em;
+    font-weight: 700; font-size: clamp(44px, 11vw, 120px);
+    line-height: 0.95; text-align: center; letter-spacing: -0.01em;
   }
-  #splash .simple { color: var(--encre, #1c2430); opacity: 0; transform: translateY(14px); animation: splashUp 0.6s ease 0.15s forwards; }
-  #splash .easy   { color: var(--rouge, #ff3131); opacity: 0; transform: translateY(14px); animation: splashUp 0.6s ease 0.40s forwards; position: relative; }
+  #splash .simple { color: var(--encre, #1c2430); opacity: 0; transform: translateY(14px); animation: splashUp 0.6s ease 0.10s forwards; }
+  #splash .easy   { color: var(--rouge, #ff3131); opacity: 0; transform: translateY(14px); animation: splashUp 0.6s ease 0.32s forwards; }
   @keyframes splashUp { to { opacity: 1; transform: translateY(0); } }
-  /* sourire sous le "easy" */
-  #splash svg { width: clamp(90px, 22vw, 230px); height: auto; margin-top: 6px;
-    opacity: 0; animation: splashUp 0.6s ease 0.62s forwards; }
-  #splash .easy-trait { stroke: var(--rouge, #ff3131); stroke-width: 22; stroke-linecap: round; fill: none;
-    stroke-dasharray: 360; stroke-dashoffset: 360; animation: splashSourire 0.7s ease 0.7s forwards; }
+  #splash svg { width: clamp(90px, 22vw, 230px); height: auto; margin-top: 6px; opacity: 0; animation: splashUp 0.6s ease 0.52s forwards; }
+  #splash .easy-trait { stroke: var(--rouge, #ff3131); stroke-width: 22; stroke-linecap: round; fill: none; stroke-dasharray: 360; stroke-dashoffset: 360; animation: splashSourire 0.7s ease 0.6s forwards; }
   @keyframes splashSourire { to { stroke-dashoffset: 0; } }
 </style>
 </head>
 <body>
+<div id="accueil">
+  <div class="vague"></div>
+  <div class="contenu">
+    <div class="logo">easy<span class="baseline">auto-école</span></div>
+    <svg class="sourire-logo" viewBox="0 0 320 70" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 40 20 Q 160 90 280 20" />
+    </svg>
+    <h1 class="slogan">Simulateur de sécurité routière<span class="pt">.</span></h1>
+    <p class="presentation">
+      Un outil pédagogique pour illustrer en cours les situations de circulation :
+      priorités, carrefours, angles morts, vision et trajectoires.
+      Pensé pour la salle de code, la tablette en voiture et le vidéoprojecteur.
+    </p>
+    <div class="avert">
+      <div class="titre"><span class="pastille">EN TEST</span> Version en phase d'essai</div>
+      <p>Ce simulateur est <strong>en cours de développement</strong>. Rien n'est encore définitif :
+        les fonctions, l'apparence et les réglages peuvent évoluer, et des erreurs sont possibles.</p>
+      <p>J'attends vos <strong>retours</strong> pour l'améliorer : ce qui est utile, ce qui manque,
+        ce qui coince. N'hésitez pas à me faire part de vos remarques.</p>
+    </div>
+    <button class="entrer" id="btn-entrer" type="button">
+      Entrer dans le simulateur
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+    <div class="pied">Easy auto-école · <a href="https://easy-auto-ecole.com" target="_blank" rel="noopener">easy-auto-ecole.com</a> — Simple, easy.</div>
+  </div>
+</div>
+
 <div id="splash" aria-hidden="true">
   <div class="mot simple">simple,</div>
   <div class="mot easy">easy.</div>
@@ -426,11 +515,11 @@
     <div class="palette-panneau" id="pal-decor" data-pour="decor">
       <h4>Décor</h4>
       <div id="choix-decor">
-        <button data-decor="carrefour" class="actif">Carrefour</button>
-        <button data-decor="interT">Inter. en T</button>
-        <button data-decor="rondpoint">Rond-point</button>
-        <button data-decor="voierapide">Voie rapide</button>
-        <button data-decor="perso" id="btn-decor-perso" hidden>Perso</button>
+        <button data-decor="carrefour" class="actif"><canvas data-mini="carrefour" width="120" height="68"></canvas><span class="nom">Carrefour</span></button>
+        <button data-decor="interT"><canvas data-mini="interT" width="120" height="68"></canvas><span class="nom">Inter. en T</span></button>
+        <button data-decor="rondpoint"><canvas data-mini="rondpoint" width="120" height="68"></canvas><span class="nom">Rond-point</span></button>
+        <button data-decor="voierapide"><canvas data-mini="voierapide" width="120" height="68"></canvas><span class="nom">Voie rapide</span></button>
+        <button data-decor="perso" id="btn-decor-perso" hidden><canvas data-mini="perso" width="120" height="68"></canvas><span class="nom">Perso</span></button>
       </div>
       <label class="controle" id="zone-giratoire" hidden>Giratoire
         <input type="range" id="taille-giratoire" min="28" max="55" step="1" value="42">
@@ -2318,6 +2407,21 @@ const DECORS = {
 };
 let decorActif = 'carrefour';
 
+/* Peint les vignettes d'aperçu des décors dans le menu. */
+function peindreVignettesDecor() {
+  const minis = document.querySelectorAll('#choix-decor canvas[data-mini]');
+  minis.forEach((cv) => {
+    const type = cv.dataset.mini;
+    const fn = DECORS[type];
+    if (!fn) return;
+    const ctx = cv.getContext('2d');
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.save();
+    try { fn(ctx, cv.width, cv.height); } catch (e) {}
+    ctx.restore();
+  });
+}
+
 /* ============================================================
    HIT-TESTS DE L'ÉDITEUR
    ============================================================ */
@@ -2913,17 +3017,30 @@ function dessinerEditeur() {
 }
 requestAnimationFrame(boucle);
 dessinerEditeur();
+peindreVignettesDecor();   // mini-aperçus du menu décor
 
-/* Écran de lancement « Simple, easy. » : disparaît tout seul. */
-(function gererSplash() {
+/* Écran d'accueil : disparaît quand on clique « Entrer ». */
+(function gererAccueil() {
+  const ac = document.getElementById('accueil');
+  if (!ac) return;
+  const btn = document.getElementById('btn-entrer');
   const sp = document.getElementById('splash');
-  if (!sp) return;
-  const fermer = () => {
-    sp.classList.add('parti');
-    setTimeout(() => sp.remove(), 650);
+  const entrer = () => {
+    ac.classList.add('parti');
+    setTimeout(() => ac.remove(), 550);
+    // Enchaîner sur le splash animé « Simple, easy. »
+    if (sp) {
+      sp.classList.add('actif');                 // lance les animations
+      setTimeout(() => sp.classList.add('parti'), 1500);   // fondu de sortie
+      setTimeout(() => {
+        sp.remove();
+        sc.resize(); ed.resize(); demanderRenduEditeur();
+      }, 2150);
+    } else {
+      setTimeout(() => { sc.resize(); ed.resize(); demanderRenduEditeur(); }, 80);
+    }
   };
-  setTimeout(fermer, 1700);
-  sp.addEventListener('pointerdown', fermer);   // passer plus vite si on clique
+  if (btn) btn.addEventListener('click', entrer);
 })();
 
 /* ============================================================
