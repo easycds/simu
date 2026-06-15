@@ -122,42 +122,22 @@
   .pousse-droite { margin-left: auto; }
 
   /* Vignettes de sélection (décors) */
-  #choix-decor {
-    display: grid; grid-template-columns: repeat(2, 104px); gap: 8px;
-    justify-content: start;
+  #choix-decor, #choix-vehic {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
   }
-  #choix-decor button {
-    width: 104px;                          /* taille fixe : pas de débordement */
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    padding: 5px; border: 2px solid #e3e1de; border-radius: 12px;
+  #choix-decor button, #choix-vehic button {
+    display: flex; align-items: center; justify-content: center;
+    padding: 12px 10px; border: 2px solid #e3e1de; border-radius: 12px;
     background: #fff; cursor: pointer; transition: border-color 0.12s, box-shadow 0.12s;
-    box-sizing: border-box;
+    box-sizing: border-box; min-height: 46px;
   }
-  #choix-decor button:hover { border-color: var(--rouge); }
-  #choix-decor button.actif { border-color: var(--rouge); box-shadow: 0 0 0 2px rgba(255,49,49,0.18); }
-  #choix-decor button canvas {
-    width: 92px; height: 52px;             /* taille fixe en px */
-    border-radius: 7px; display: block; background: #9ec79b;
+  #choix-decor button:hover, #choix-vehic button:hover { border-color: var(--rouge); }
+  #choix-decor button.actif, #choix-vehic button.actif {
+    border-color: var(--rouge); box-shadow: 0 0 0 2px rgba(255,49,49,0.18);
   }
-  #choix-decor button .nom { font-size: 12px; font-weight: 500; color: var(--encre); }
-
-  /* Vignettes de véhicules (menu Ajouter) */
-  #choix-vehic {
-    display: grid; grid-template-columns: repeat(2, 104px); gap: 8px;
-    justify-content: start;
+  #choix-decor button .nom, #choix-vehic button .nom {
+    font-size: 13px; font-weight: 600; color: var(--encre); text-align: center;
   }
-  #choix-vehic button {
-    width: 104px;
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    padding: 5px; border: 2px solid #e3e1de; border-radius: 12px;
-    background: #fff; cursor: pointer; transition: border-color 0.12s, box-shadow 0.12s;
-    box-sizing: border-box;
-  }
-  #choix-vehic button:hover { border-color: var(--rouge); }
-  #choix-vehic button canvas {
-    width: 92px; height: 60px; border-radius: 7px; display: block; background: #565d66;
-  }
-  #choix-vehic button .nom { font-size: 12px; font-weight: 500; color: var(--encre); }
 
   /* Bandeau d'aide au tracé (apparaît pendant un tracé en cours) */
   #bandeau-trace {
@@ -538,6 +518,9 @@
     touch-action: none; user-select: none;
   }
   #outil-crayon { right: 16px; bottom: 18px; left: auto; top: auto; }
+  #outil-historique { right: 16px; top: 70px; left: auto; bottom: auto; gap: 4px; }
+  #outil-historique .of-toggle { width: 42px; height: 42px; font-size: 20px; }
+  body:not(.onglet-editeur) #outil-historique { display: none !important; }
   #outil-numeros { left: 16px; bottom: 18px; right: auto; top: auto; }
   /* crayon et numéros masqués dans l'éditeur (mais pas le widget de sélection) */
   body.onglet-editeur #outil-crayon,
@@ -780,11 +763,11 @@
     <div class="palette-panneau" id="pal-decor" data-pour="decor">
       <h4>Décor</h4>
       <div id="choix-decor">
-        <button data-decor="carrefour" class="actif"><canvas data-mini="carrefour" width="120" height="68"></canvas><span class="nom">Carrefour</span></button>
-        <button data-decor="interT"><canvas data-mini="interT" width="120" height="68"></canvas><span class="nom">Inter. en T</span></button>
-        <button data-decor="rondpoint"><canvas data-mini="rondpoint" width="120" height="68"></canvas><span class="nom">Rond-point</span></button>
-        <button data-decor="voierapide"><canvas data-mini="voierapide" width="120" height="68"></canvas><span class="nom">Voie rapide</span></button>
-        <button data-decor="perso" id="btn-decor-perso" hidden><canvas data-mini="perso" width="120" height="68"></canvas><span class="nom">Perso</span></button>
+        <button data-decor="carrefour" class="actif"><span class="nom">Carrefour</span></button>
+        <button data-decor="interT"><span class="nom">Inter. en T</span></button>
+        <button data-decor="rondpoint"><span class="nom">Rond-point</span></button>
+        <button data-decor="voierapide"><span class="nom">Voie rapide</span></button>
+        <button data-decor="perso" id="btn-decor-perso" hidden><span class="nom">Perso</span></button>
       </div>
       <label class="controle" id="zone-giratoire" hidden>Giratoire
         <input type="range" id="taille-giratoire" min="28" max="55" step="1" value="42">
@@ -794,12 +777,12 @@
     <div class="palette-panneau" id="pal-ajouter" data-pour="ajouter">
       <h4>Usagers</h4>
       <div id="choix-vehic">
-        <button id="btn-vehicule"><canvas data-vehic="vehicule"></canvas><span class="nom">Voiture</span></button>
-        <button id="btn-camion"><canvas data-vehic="camion"></canvas><span class="nom">Poids lourd</span></button>
-        <button id="btn-moto"><canvas data-vehic="moto"></canvas><span class="nom">Moto</span></button>
-        <button id="btn-cycliste"><canvas data-vehic="cycliste"></canvas><span class="nom">Cycliste</span></button>
-        <button id="btn-edpm"><canvas data-vehic="edpm"></canvas><span class="nom">Trottinette</span></button>
-        <button id="btn-pieton"><canvas data-vehic="pieton"></canvas><span class="nom">Piéton</span></button>
+        <button id="btn-vehicule"><span class="nom">Voiture</span></button>
+        <button id="btn-camion"><span class="nom">Poids lourd</span></button>
+        <button id="btn-moto"><span class="nom">Moto</span></button>
+        <button id="btn-cycliste"><span class="nom">Cycliste</span></button>
+        <button id="btn-edpm"><span class="nom">Trottinette</span></button>
+        <button id="btn-pieton"><span class="nom">Piéton</span></button>
       </div>
     </div>
 
@@ -1025,6 +1008,11 @@
         </div>
       </div>
     </div>
+    <div id="outil-historique" class="outil-flottant">
+      <div class="of-grip" id="histo-grip" title="Déplacer">⋮⋮</div>
+      <button id="histo-undo" class="of-toggle" title="Annuler la dernière action">↶</button>
+      <button id="histo-redo" class="of-toggle" title="Rétablir">↷</button>
+    </div>
     <div id="bandeau-trace">
       <span class="compte" id="bt-compte">0 point</span>
       <span class="txt" id="bt-txt">Tapez pour poser le premier point</span>
@@ -1079,7 +1067,7 @@ function distPointSegment(px, py, ax, ay, bx, by) {
    Dessine à l'origine ; l'appelant fait translate() au préalable.
    ============================================================ */
 
-const ETATS_FEU = ['rouge', 'vert', 'orange'];
+const ETATS_FEU = ['rouge', 'vert', 'orange', 'orange_clignotant', 'orange_clignotant_bas'];
 
 function dessinerPictogramme(ctx, type, taille, etatFeu) {
   const t = taille, r = t / 2;
@@ -1235,9 +1223,16 @@ function dessinerPictogramme(ctx, type, taille, etatFeu) {
         { etat: 'orange', y: 0,          couleur: '#f59e0b' },
         { etat: 'vert',   y:  bh * 0.30, couleur: '#22c55e' },
       ];
+      // Orange clignotant : au milieu (orange) ou en bas (à la place du vert)
+      const clignoteMilieu = etatFeu === 'orange_clignotant';
+      const clignoteBas = etatFeu === 'orange_clignotant_bas';
+      const phaseOn = (Math.floor(performance.now() / 500) % 2 === 0);
       for (const lampe of lampes) {
-        const allumee = lampe.etat === etatFeu;
-        ctx.fillStyle = lampe.couleur;
+        let allumee = lampe.etat === etatFeu;
+        let couleur = lampe.couleur;
+        if (clignoteMilieu && lampe.etat === 'orange') allumee = phaseOn;
+        if (clignoteBas && lampe.etat === 'vert') { allumee = phaseOn; couleur = '#f59e0b'; }  // vert -> orange clignotant
+        ctx.fillStyle = couleur;
         ctx.globalAlpha = allumee ? 1 : 0.18;
         ctx.beginPath();
         ctx.arc(0, lampe.y, t * 0.17, 0, Math.PI * 2);
@@ -1658,26 +1653,45 @@ class Pieton extends Entity {
   constructor({ x, y, couleur = '#0e7490' }) {
     super(x, y);
     this.couleur = couleur;
-    this.rayon = 19;
+    this.rayon = 14;                         // plus petit qu'avant (19)
     this.angle = this.angleCible = -Math.PI / 2;
     this.trace = [];
   }
   contains(px, py) { return Math.hypot(px - this.x, py - this.y) <= this.rayon + 12; }
   draw(ctx) {
+    const r = this.rayon;
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
-    ctx.fillStyle = 'rgba(0,0,0,0.18)';
-    ctx.beginPath(); ctx.ellipse(2, 3, this.rayon*0.7, this.rayon, 0, 0, Math.PI*2); ctx.fill();
+
+    // Ombre portée douce
+    ctx.fillStyle = 'rgba(0,0,0,0.16)';
+    ctx.beginPath(); ctx.ellipse(2, 2, r * 0.95, r * 1.05, 0, 0, Math.PI * 2); ctx.fill();
+
+    // Bras (deux petites capsules le long du corps)
     ctx.fillStyle = this.couleur;
-    ctx.beginPath(); ctx.ellipse(0, 0, this.rayon*0.7, this.rayon, 0, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1.5; ctx.stroke();
-    ctx.fillStyle = '#e8c39e';
     for (const s of [-1, 1]) {
-      ctx.beginPath(); ctx.arc(0, s*this.rayon*0.9, 4.5, 0, Math.PI*2); ctx.fill();
+      ctx.save();
+      ctx.translate(0, s * r * 0.7);
+      roundRect(ctx, -r * 0.45, -r * 0.22, r * 0.9, r * 0.44, r * 0.22);
+      ctx.fill();
+      ctx.restore();
     }
-    ctx.beginPath(); ctx.arc(4, 0, 8.5, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.stroke();
+
+    // Épaules / corps (vu de dessus : ovale dans le sens de la marche)
+    ctx.fillStyle = this.couleur;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 0.82, r * 0.95, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.22)'; ctx.lineWidth = 1.5; ctx.stroke();
+
+    // Tête (vers l'avant), teinte peau + petit liseré
+    ctx.fillStyle = '#e8c39e';
+    ctx.beginPath();
+    ctx.arc(r * 0.42, 0, r * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = 1; ctx.stroke();
+
     ctx.restore();
   }
 }
@@ -2080,7 +2094,11 @@ editeur.cartes = [{
   panneaux: editeur.panneaux,
 }];
 editeur.idx = 0;
-
+// Instantané initial (carte vide) : la toute première action devient annulable
+editeur.cartes[0]._undo = [JSON.stringify({
+  routes: editeur.routes, marquages: editeur.marquages, panneaux: editeur.panneaux,
+})];
+editeur.cartes[0]._redo = [];
 
 function synchroniserCarte() {
   const c = editeur.cartes[editeur.idx];
@@ -2126,11 +2144,16 @@ function appliquerInstantane(snap) {
 }
 function _redrawApres(fn) { return fn; }
 function annulerEditeur() {
+  // Si une route/un marquage est en cours de tracé, le finaliser pour qu'il soit dans l'historique
+  if (editeur.enCoursRoute || editeur.enCoursMarquage) {
+    terminerTrace();
+  }
   const c = histCourante();
   if (c._undo.length <= 1) return;
   c._redo.push(c._undo.pop());
   appliquerInstantane(c._undo[c._undo.length - 1]);
   majBoutonsUndo();
+  if (typeof demanderRenduEditeur === 'function') demanderRenduEditeur();
 }
 function retablirEditeur() {
   const c = histCourante();
@@ -3497,8 +3520,7 @@ function dessinerEditeur() {
 }
 requestAnimationFrame(boucle);
 dessinerEditeur();
-peindreVignettesDecor();        // mini-aperçus du menu décor
-brancherObserverVignettes();    // (re)dessine dès que les vignettes ont une taille
+// (vignettes images retirées — menus en texte simple)
 
 /* Écran d'accueil : disparaît quand on clique « Entrer ». */
 (function gererAccueil() {
@@ -4697,6 +4719,10 @@ document.getElementById('osel-redo').addEventListener('click', () => {
 });
 // Rendre le widget déplaçable
 rendreWidgetDeplacable('outil-selection', 'selection-grip');
+// Widget historique (annuler/rétablir) — toujours visible dans l'éditeur
+document.getElementById('histo-undo').addEventListener('click', () => annulerEditeur());
+document.getElementById('histo-redo').addEventListener('click', () => retablirEditeur());
+rendreWidgetDeplacable('outil-historique', 'histo-grip');
 // Afficher le widget dès l'entrée dans l'éditeur
 (function initWidgetSelection() {
   const w = document.getElementById('outil-selection');
