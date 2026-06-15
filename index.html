@@ -539,8 +539,9 @@
   }
   #outil-crayon { right: 16px; bottom: 18px; left: auto; top: auto; }
   #outil-numeros { left: 16px; bottom: 18px; right: auto; top: auto; }
-  /* masqués quand on est dans l'éditeur */
-  body.onglet-editeur .outil-flottant { display: none; }
+  /* crayon et numéros masqués dans l'éditeur (mais pas le widget de sélection) */
+  body.onglet-editeur #outil-crayon,
+  body.onglet-editeur #outil-numeros { display: none; }
   .outil-flottant .of-grip {
     cursor: grab; color: #bbb; font-size: 14px; letter-spacing: -2px;
     padding: 0 2px; line-height: 1;
@@ -593,6 +594,45 @@
   #reglette-arret .rg-legende .pastille.frein { background:var(--rouge,#ff3131); }
   #reglette-arret .rg-legende .rg-total { font-weight:600; color:var(--encre,#1c2430); margin-left:auto; }
   #reglette-arret .rg-sol { display:block; margin-top:9px; font-size:12.5px; color:#555; }
+  /* Options du pinceau de remplissage */
+  .pinc-coul {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 2px solid #fff; box-shadow: 0 0 0 1px #ccc; cursor: pointer; padding: 0;
+  }
+  .pinc-coul.actif { box-shadow: 0 0 0 2px var(--encre,#1c2430); }
+  .pinc-forme {
+    width: 30px; height: 30px; border-radius: 8px;
+    border: 1px solid var(--bordure,#e3e1de); background: #fff;
+    cursor: pointer; font-size: 15px; color: #555;
+  }
+  .pinc-forme.actif { background: var(--rouge,#ff3131); color: #fff; border-color: var(--rouge,#ff3131); }
+  #zone-pinceau { display: flex; flex-direction: column; gap: 9px; margin-top: 8px; }
+
+  /* Pop-up conseil plein écran à l'entrée de l'éditeur */
+  #popup-editeur {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(20,26,36,0.55);
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  #popup-editeur[hidden] { display: none !important; }
+  #popup-editeur .pe-carte {
+    background: #fff; border-radius: 20px; padding: 26px 28px 22px;
+    max-width: 360px; width: 100%; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    font-family: var(--police-texte,'Fredoka'),sans-serif;
+  }
+  #popup-editeur .pe-sourire { width: 120px; height: auto; display: block; margin: 0 auto 6px; }
+  #popup-editeur .pe-sourire path { fill: none; stroke: var(--rouge,#ff3131); stroke-width: 13; stroke-linecap: round; }
+  #popup-editeur .pe-titre { font-size: 20px; font-weight: 700; color: var(--encre,#1c2430); margin: 4px 0 8px; }
+  #popup-editeur .pe-texte { font-size: 14px; color: #555; line-height: 1.5; margin-bottom: 18px; }
+  #popup-editeur .pe-actions { display: flex; gap: 10px; }
+  #popup-editeur .pe-actions button {
+    flex: 1; padding: 11px 0; border-radius: 12px; font-size: 14px; font-weight: 600;
+    cursor: pointer; font-family: inherit; border: 1px solid var(--bordure,#e3e1de);
+  }
+  #popup-editeur #pe-plein-ecran { background: var(--rouge,#ff3131); color: #fff; border-color: var(--rouge,#ff3131); }
+  #popup-editeur #pe-fermer { background: #fff; color: #555; }
+
   /* Widget flottant de sélection (éditeur) : largeur + rotation */
   #outil-selection {
     right: 16px; bottom: 18px; left: auto; top: auto;
@@ -640,16 +680,16 @@
   }
   #rotation-portrait .rp-phone { font-size: 64px; animation: rp-tourne 1.8s ease-in-out infinite; }
   @keyframes rp-tourne {
-    0%, 40% { transform: rotate(-90deg); }
-    60%, 100% { transform: rotate(0deg); }
+    0%, 40% { transform: rotate(0deg); }
+    60%, 100% { transform: rotate(90deg); }
   }
   #rotation-portrait .rp-titre { font-size: 22px; font-weight: 700; margin: 18px 0 8px; }
   #rotation-portrait .rp-texte { font-size: 15px; opacity: 0.95; }
-  /* En paysage, si l'appareil est tactile ou l'écran assez court, on bloque */
-  @media (orientation: landscape) and (max-height: 600px) {
+  /* On bloque le PORTRAIT sur tablette/mobile : le simu s'utilise en PAYSAGE */
+  @media (orientation: portrait) and (pointer: coarse) {
     #rotation-portrait { display: flex; }
   }
-  @media (orientation: landscape) and (pointer: coarse) {
+  @media (orientation: portrait) and (max-width: 600px) {
     #rotation-portrait { display: flex; }
   }
 </style>
@@ -659,7 +699,20 @@
   <div class="rp-contenu">
     <div class="rp-phone">📱</div>
     <p class="rp-titre">Tournez votre appareil</p>
-    <p class="rp-texte">Le simulateur s'utilise en mode <strong>portrait</strong>.</p>
+    <p class="rp-texte">Le simulateur s'utilise en mode <strong>paysage</strong>.</p>
+  </div>
+</div>
+<div id="popup-editeur" hidden>
+  <div class="pe-carte">
+    <svg class="pe-sourire" viewBox="0 0 320 70" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 40 20 Q 160 90 280 20" />
+    </svg>
+    <p class="pe-titre">Conseil</p>
+    <p class="pe-texte">Pour construire vos scènes confortablement, utilisez l'éditeur en <strong>plein écran</strong>.</p>
+    <div class="pe-actions">
+      <button id="pe-plein-ecran">⛶ Plein écran</button>
+      <button id="pe-fermer">Continuer</button>
+    </div>
   </div>
 </div>
 <div id="accueil">
@@ -845,6 +898,7 @@
         <button data-mode="panneau">Panneau</button>
         <button data-mode="selection">Sélection</button>
         <button data-mode="gomme">Gomme</button>
+        <button data-mode="pinceau">🖌 Pinceau</button>
         <button data-mode="main">✋ Main</button>
       </div>
     </div>
@@ -901,6 +955,21 @@
         <input type="checkbox" id="ed-bouts-droits"> Bouts droits
       </label>
       <button id="ed-vehicule-test">🚗 Véhicule test</button>
+      <div id="zone-pinceau" hidden>
+        <label class="controle" style="flex-direction:row;align-items:center;gap:8px">Couleur
+          <button class="pinc-coul actif" data-coul="goudron" title="Goudron" style="background:#565d66"></button>
+          <button class="pinc-coul" data-coul="herbe" title="Herbe" style="background:#9ec79b"></button>
+        </label>
+        <label class="controle" style="flex-direction:row;align-items:center;gap:8px">Forme
+          <button class="pinc-forme actif" data-forme="cercle" title="Cercle">●</button>
+          <button class="pinc-forme" data-forme="carre" title="Carré">■</button>
+        </label>
+        <label class="controle">Taille du pinceau
+          <input type="range" id="pinc-taille" min="20" max="200" step="5" value="70">
+          <span id="pinc-taille-val">70</span>
+        </label>
+        <button id="pinc-effacer" class="danger">Effacer la peinture</button>
+      </div>
       <span id="sel-actions" hidden>
         <button id="sel-dupliquer">Dupliquer</button>
         <button id="sel-supprimer" class="danger">Supprimer</button>
@@ -1964,6 +2033,11 @@ const editeur = {
   zoneSelection: null,    // rectangle de sélection en cours
   vehiculesTest: [],      // silhouettes pour tester la largeur des voies
   dragTest: null,
+  pinceau: [],            // coups de pinceau de remplissage {x,y,taille,forme,couleur}
+  pinceauCouleur: 'goudron',  // 'goudron' | 'herbe'
+  pinceauForme: 'cercle',     // 'cercle' | 'carre'
+  pinceauTaille: 70,
+  pinceauActif: false,
   panDrag: null,          // déplacement de la vue (outil Main)
 };
 /* ===== MONDE DE RÉFÉRENCE FIXE (16:9 paysage) =====
@@ -2491,6 +2565,20 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
+  // PINCEAU DE REMPLISSAGE — taches goudron/herbe, sous les routes
+  if (ed.pinceau && ed.pinceau.length) {
+    for (const t of ed.pinceau) {
+      ctx.fillStyle = (t.couleur === 'herbe') ? '#9ec79b' : '#565d66';
+      if (t.forme === 'carre') {
+        ctx.fillRect(t.x - t.taille / 2, t.y - t.taille / 2, t.taille, t.taille);
+      } else {
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, t.taille / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
   // PASSE 0 — trottoirs libres (tracés avec l'outil Trottoir),
   // dessinés SOUS les routes : une route qui les croise les recouvre
   for (const rt of ed.routes) {
@@ -2924,7 +3012,29 @@ function activerOnglet(nom) {
   requestAnimationFrame(() => { sc.resize(); ed.resize(); demanderRenduEditeur(); });
 }
 document.getElementById('onglet-scene').addEventListener('click', () => activerOnglet('scene'));
-document.getElementById('onglet-editeur').addEventListener('click', () => activerOnglet('editeur'));
+document.getElementById('onglet-editeur').addEventListener('click', () => {
+  activerOnglet('editeur');
+  montrerPopupEditeur();
+});
+
+let popupEditeurVue = false;
+function montrerPopupEditeur() {
+  if (popupEditeurVue) return;
+  popupEditeurVue = true;
+  const pop = document.getElementById('popup-editeur');
+  if (pop) pop.hidden = false;
+}
+(function brancherPopupEditeur() {
+  const pop = document.getElementById('popup-editeur');
+  if (!pop) return;
+  const fermer = () => { pop.hidden = true; };
+  document.getElementById('pe-fermer').addEventListener('click', fermer);
+  document.getElementById('pe-plein-ecran').addEventListener('click', () => {
+    fermer();
+    if (typeof entrerPleinEcran === 'function') entrerPleinEcran();
+  });
+  pop.addEventListener('click', (e) => { if (e.target === pop) fermer(); });
+})();
 
 /* ============================================================
    BOUCLE DE RENDU
@@ -3964,6 +4074,13 @@ ed.canvas.addEventListener('pointerdown', (e) => {
 
   switch (editeur.mode) {
 
+    case 'pinceau': {
+      editeur.pinceauActif = true;
+      poserCoupPinceau(pRaw);
+      ed.canvas.setPointerCapture(e.pointerId);
+      return;
+    }
+
     case 'route':
     case 'trottoir': {
       const maintenant = performance.now();
@@ -4103,6 +4220,10 @@ ed.canvas.addEventListener('pointerdown', (e) => {
 });
 
 ed.canvas.addEventListener('pointermove', (e) => {
+  if (editeur.mode === 'pinceau' && editeur.pinceauActif) {
+    poserCoupPinceau(pointEd(e));
+    return;
+  }
   if (timerAppui && appuiOrigine &&
       Math.hypot(e.clientX - appuiOrigine.cx, e.clientY - appuiOrigine.cy) > 10) {
     clearTimeout(timerAppui);
@@ -4205,6 +4326,7 @@ ed.canvas.addEventListener('pointerup', () => {
   }
   editeur.dragTest = null;
   editeur.panDrag = null;
+  editeur.pinceauActif = false;
   if (editeur.rotationDrag) { editeur.rotationDrag = null; reinitBaseSelection(); oselRot.value = 0; }
   if (editeur.zoneSelection) {
     const z = editeur.zoneSelection;
@@ -4242,6 +4364,7 @@ ed.canvas.addEventListener('pointercancel', () => {
   }
   editeur.dragTest = null;
   editeur.panDrag = null;
+  editeur.pinceauActif = false;
   if (editeur.rotationDrag) { editeur.rotationDrag = null; reinitBaseSelection(); oselRot.value = 0; }
   editeur.zoneSelection = null;
   editeur.dragSelection = null;
@@ -4343,6 +4466,7 @@ const AIDES = {
   panneau: 'Mode Panneau : choisissez le type puis tapez pour poser. Les feux tricolores resteront pilotables dans la Scène (double-tap pour changer la couleur).',
   selection: 'Mode Sélection : tapez un panneau ou un marquage pour le sélectionner, glissez pour le déplacer, ou utilisez Dupliquer / Supprimer / Taille.',
   gomme: 'Mode Gomme : tapez un élément pour le supprimer (panneau, puis marquage, puis route).',
+  pinceau: 'Mode Pinceau : glissez pour peindre du goudron ou de l\'herbe. Choisissez la couleur, la forme (cercle/carré) et la taille. « Effacer la peinture » retire tout.',
 };
 
 const LIBELLES_MODE = {
@@ -4387,13 +4511,50 @@ document.getElementById('choix-mode').addEventListener('click', (e) => {
   selectPanneauEd.hidden = editeur.mode !== 'panneau';
   document.getElementById('zone-largeur').hidden =
     editeur.mode !== 'route' && editeur.mode !== 'trottoir';
-  aideEditeur.textContent = AIDES[editeur.mode];
+  document.getElementById('zone-pinceau').hidden = editeur.mode !== 'pinceau';
+  aideEditeur.textContent = AIDES[editeur.mode] || '';
 });
 
 selectMarquage.addEventListener('change', () => {
   terminerTrace();
   editeur.typeMarquage = selectMarquage.value;
 });
+
+// ===== Pinceau de remplissage =====
+document.querySelectorAll('.pinc-coul').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.pinc-coul').forEach(x => x.classList.remove('actif'));
+    b.classList.add('actif');
+    editeur.pinceauCouleur = b.dataset.coul;
+  });
+});
+document.querySelectorAll('.pinc-forme').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.pinc-forme').forEach(x => x.classList.remove('actif'));
+    b.classList.add('actif');
+    editeur.pinceauForme = b.dataset.forme;
+  });
+});
+const pincTaille = document.getElementById('pinc-taille');
+pincTaille.addEventListener('input', () => {
+  editeur.pinceauTaille = Number(pincTaille.value);
+  document.getElementById('pinc-taille-val').textContent = pincTaille.value;
+});
+document.getElementById('pinc-effacer').addEventListener('click', () => {
+  if (confirm('Effacer toute la peinture du pinceau ?')) {
+    editeur.pinceau = [];
+    demanderRenduEditeur();
+  }
+});
+function poserCoupPinceau(p) {
+  editeur.pinceau.push({
+    x: p.x, y: p.y,
+    taille: editeur.pinceauTaille,
+    forme: editeur.pinceauForme,
+    couleur: editeur.pinceauCouleur,
+  });
+  demanderRenduEditeur();
+}
 document.getElementById('ed-jaune').addEventListener('change', (e) => {
   editeur.jaune = e.target.checked;
   if (editeur.enCoursMarquage) editeur.enCoursMarquage.jaune = editeur.jaune;
