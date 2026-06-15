@@ -35,6 +35,7 @@
     letter-spacing: 0.01em;           /* interlettrage 10 */
     line-height: 1.1;
     text-transform: lowercase;        /* charte : tout en minuscules */
+    /* mais les widgets gardent leur casse normale (1re lettre en majuscule) */
     background: var(--papier);
     color: var(--encre);
     display: flex;
@@ -520,6 +521,12 @@
   #menu-vehicule .mv-btn.actif { outline: 2px solid #fff; }
 
   /* Outils flottants détachables (crayon, numéros) */
+  .outil-flottant, #outil-selection, #zone-pinceau, #menu-vehicule,
+  #reglette-arret, #popup-editeur,
+  .outil-flottant *, #outil-selection *, #zone-pinceau *, #menu-vehicule *,
+  #reglette-arret *, #popup-editeur * {
+    text-transform: none !important;  /* casse normale dans les widgets et leurs enfants */
+  }
   .outil-flottant {
     position: fixed; z-index: 50;
     display: flex; align-items: center; gap: 6px;
@@ -931,6 +938,8 @@
         <option value="passage_pieton">Passage piéton</option>
         <option value="giratoire">Carrefour giratoire</option>
         <option value="priorite_droite">Priorité à droite</option>
+        <option value="route_prioritaire">Route prioritaire (AB6)</option>
+        <option value="route_prioritaire_m7">Route prioritaire + schéma (AB6 + M7)</option>
         <option value="obligation_droit">Obligation tout droit</option>
         <option value="obligation_droite">Obligation à droite</option>
         <option value="obligation_gauche">Obligation à gauche</option>
@@ -1081,6 +1090,26 @@ function distPointSegment(px, py, ax, ay, bx, by) {
 
 const ETATS_FEU = ['rouge', 'vert', 'orange', 'orange_clignotant', 'orange_clignotant_bas'];
 
+/* Losange AB6 « route prioritaire » : carré sur la pointe,
+   fond blanc, bordure noire, carré central jaune. */
+function dessinerLosangeAB6(ctx, r, t) {
+  ctx.save();
+  ctx.rotate(Math.PI / 4);                 // carré tourné de 45° = losange
+  const c = r * 1.32;                       // demi-côté du carré
+  // fond blanc + bordure noire
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = '#1c2430';
+  ctx.lineWidth = Math.max(2, t * 0.06);
+  roundRect(ctx, -c, -c, c * 2, c * 2, t * 0.05);
+  ctx.fill(); ctx.stroke();
+  // carré jaune central
+  ctx.fillStyle = '#f5c518';
+  const cj = c * 0.52;
+  roundRect(ctx, -cj, -cj, cj * 2, cj * 2, t * 0.03);
+  ctx.fill();
+  ctx.restore();
+}
+
 function dessinerPictogramme(ctx, type, taille, etatFeu) {
   const t = taille, r = t / 2;
   ctx.lineJoin = 'round';
@@ -1219,6 +1248,60 @@ function dessinerPictogramme(ctx, type, taille, etatFeu) {
       ctx.moveTo(-k, cy1 - k); ctx.lineTo(k, cy1 + k);
       ctx.moveTo(-k, cy1 + k); ctx.lineTo(k, cy1 - k);
       ctx.stroke();
+      break;
+    }
+
+    case 'route_prioritaire': {   // AB6 — losange, carré jaune central
+      dessinerLosangeAB6(ctx, r, t);
+      break;
+    }
+
+    case 'route_prioritaire_m7': {  // AB6 + panonceau-schéma M7
+      ctx.save();
+      ctx.translate(0, -r * 0.55);            // remonter le losange
+      dessinerLosangeAB6(ctx, r * 0.70, t * 0.70);
+      ctx.restore();
+      // Panonceau M7 : petit carré blanc bien EN DESSOUS du losange (sous sa pointe)
+      const ps = t * 0.52;                     // panonceau plus petit
+      const py = r * 1.30;                     // descendu sous la pointe du losange
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = '#1c2430';
+      ctx.lineWidth = Math.max(1.5, t * 0.035);
+      roundRect(ctx, -ps / 2, py - ps / 2, ps, ps, t * 0.05);
+      ctx.fill(); ctx.stroke();
+
+      // Schéma noir : branche prioritaire = trait épais qui monte du bas puis tourne à GAUCHE
+      ctx.save();
+      ctx.translate(0, py);                    // origine au centre du panonceau
+      const u = ps * 0.5;                      // demi-côté pour repère
+      ctx.strokeStyle = '#1c2430';
+      ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
+      const ep = ps * 0.16;                    // épaisseur des branches prioritaires
+
+      // Branche prioritaire coudée (bas -> gauche), trait épais avec coin arrondi
+      ctx.lineWidth = ep;
+      ctx.beginPath();
+      ctx.moveTo(-u * 0.05, u * 0.78);         // vient du bas
+      ctx.lineTo(-u * 0.05, u * 0.05);         // monte
+      ctx.quadraticCurveTo(-u * 0.05, -u * 0.05, -u * 0.30, -u * 0.05);  // coude
+      ctx.lineTo(-u * 0.80, -u * 0.05);        // part à gauche
+      ctx.stroke();
+
+      // Branche horizontale prioritaire à DROITE (trait épais séparé)
+      ctx.lineWidth = ep;
+      ctx.beginPath();
+      ctx.moveTo(u * 0.28, -u * 0.05);
+      ctx.lineTo(u * 0.80, -u * 0.05);
+      ctx.stroke();
+
+      // Branche verticale secondaire EN HAUT (trait épais court, séparé)
+      ctx.lineWidth = ep;
+      ctx.beginPath();
+      ctx.moveTo(u * 0.05, -u * 0.30);
+      ctx.lineTo(u * 0.05, -u * 0.78);
+      ctx.stroke();
+
+      ctx.restore();
       break;
     }
 
