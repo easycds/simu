@@ -1653,10 +1653,11 @@ class Pieton extends Entity {
   constructor({ x, y, couleur = '#0e7490' }) {
     super(x, y);
     this.couleur = couleur;
-    this.rayon = 14;                         // plus petit qu'avant (19)
+    this._rayon = 13;                        // rayon de base (avant échelle)
     this.angle = this.angleCible = -Math.PI / 2;
     this.trace = [];
   }
+  get rayon() { return this._rayon * VEH.echelle; }
   contains(px, py) { return Math.hypot(px - this.x, py - this.y) <= this.rayon + 12; }
   draw(ctx) {
     const r = this.rayon;
@@ -3133,7 +3134,7 @@ function drawAnnotations(ctx) {
 const calqueNuit = document.createElement('canvas');
 
 function drawNuit(ctxMain) {
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);   // même plafond que le canvas principal
   if (calqueNuit.width !== sc.canvas.width || calqueNuit.height !== sc.canvas.height) {
     calqueNuit.width = sc.canvas.width;
     calqueNuit.height = sc.canvas.height;
@@ -3225,7 +3226,7 @@ function drawVision(ctxMain) {
     if (entites[i] instanceof Vehicule) { v = entites[i]; break; }
   }
   if (!v) return;
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);   // même plafond que le canvas principal
   if (calqueVision.width !== sc.canvas.width || calqueVision.height !== sc.canvas.height) {
     calqueVision.width = sc.canvas.width;
     calqueVision.height = sc.canvas.height;
