@@ -593,9 +593,75 @@
   #reglette-arret .rg-legende .pastille.frein { background:var(--rouge,#ff3131); }
   #reglette-arret .rg-legende .rg-total { font-weight:600; color:var(--encre,#1c2430); margin-left:auto; }
   #reglette-arret .rg-sol { display:block; margin-top:9px; font-size:12.5px; color:#555; }
+  /* Widget flottant de sélection (éditeur) : largeur + rotation */
+  #outil-selection {
+    right: 16px; bottom: 18px; left: auto; top: auto;
+    flex-direction: column; align-items: stretch; gap: 8px;
+    min-width: 190px; padding: 10px 12px;
+  }
+  #outil-selection .of-grip { align-self: center; }
+  #outil-selection .os-corps { display: flex; flex-direction: column; gap: 9px; }
+  #outil-selection .os-haut { display: flex; gap: 6px; align-items: center; }
+  #outil-selection .os-haut #osel-mode {
+    flex: 1; padding: 7px 8px; border-radius: 9px;
+    border: 1px solid var(--bordure,#e3e1de); background: #fff;
+    font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  #outil-selection .os-haut #osel-mode.actif { background: var(--rouge,#ff3131); color: #fff; border-color: var(--rouge,#ff3131); }
+  #outil-selection .os-haut button { font-family: inherit; }
+  #outil-selection .os-haut #osel-undo, #outil-selection .os-haut #osel-redo {
+    width: 34px; padding: 7px 0; border-radius: 9px;
+    border: 1px solid var(--bordure,#e3e1de); background: #fff;
+    font-size: 16px; cursor: pointer;
+  }
+  #outil-selection.sans-sel .os-ligne,
+  #outil-selection.sans-sel .os-boutons { opacity: 0.4; pointer-events: none; }
+  #outil-selection .os-ligne {
+    display: flex; flex-direction: column; gap: 3px;
+    font-size: 12px; color: var(--encre,#1c2430); font-weight: 600;
+  }
+  #outil-selection .os-ligne input[type=range] { width: 100%; }
+  #outil-selection .os-boutons { display: flex; gap: 8px; justify-content: center; margin-top: 2px; }
+  #outil-selection .os-boutons button {
+    flex: 1; padding: 7px 0; border-radius: 9px;
+    border: 1px solid var(--bordure,#e3e1de); background: #fff;
+    font-size: 15px; cursor: pointer;
+  }
+  #outil-selection .os-boutons button.danger { color: var(--rouge,#ff3131); }
+  body:not(.onglet-editeur) #outil-selection { display: none !important; }
+
+  /* Forcer le portrait sur mobile et tablette */
+  #rotation-portrait {
+    position: fixed; inset: 0; z-index: 9999;
+    background: var(--rouge, #ff3131); color: #fff;
+    display: none; align-items: center; justify-content: center;
+    text-align: center; padding: 30px;
+    font-family: var(--police-texte, 'Fredoka'), sans-serif;
+  }
+  #rotation-portrait .rp-phone { font-size: 64px; animation: rp-tourne 1.8s ease-in-out infinite; }
+  @keyframes rp-tourne {
+    0%, 40% { transform: rotate(-90deg); }
+    60%, 100% { transform: rotate(0deg); }
+  }
+  #rotation-portrait .rp-titre { font-size: 22px; font-weight: 700; margin: 18px 0 8px; }
+  #rotation-portrait .rp-texte { font-size: 15px; opacity: 0.95; }
+  /* En paysage, si l'appareil est tactile ou l'écran assez court, on bloque */
+  @media (orientation: landscape) and (max-height: 600px) {
+    #rotation-portrait { display: flex; }
+  }
+  @media (orientation: landscape) and (pointer: coarse) {
+    #rotation-portrait { display: flex; }
+  }
 </style>
 </head>
 <body>
+<div id="rotation-portrait">
+  <div class="rp-contenu">
+    <div class="rp-phone">📱</div>
+    <p class="rp-titre">Tournez votre appareil</p>
+    <p class="rp-texte">Le simulateur s'utilise en mode <strong>portrait</strong>.</p>
+  </div>
+</div>
 <div id="accueil">
   <div class="vague"></div>
   <div class="contenu">
@@ -870,6 +936,26 @@
   <input type="file" id="ed-fichier" accept=".json,application/json" hidden>
   <span class="aide" id="ed-aide" hidden>Mode Route : tapez pour poser les points, double-tap ou « Terminer » pour clore. Les routes sont nues : marquages et panneaux s'ajoutent avec les autres modes.</span>
   <div class="zone-canvas"><canvas id="canvas-editeur"></canvas>
+    <div id="outil-selection" class="outil-flottant">
+      <div class="of-grip" id="selection-grip" title="Déplacer">⋮⋮</div>
+      <div class="os-corps">
+        <div class="os-haut">
+          <button id="osel-mode" title="Mode Sélection">☝ Sélection</button>
+          <button id="osel-undo" title="Revenir en arrière">↶</button>
+          <button id="osel-redo" title="Revenir en avant">↷</button>
+        </div>
+        <label class="os-ligne">Largeur
+          <input type="range" id="osel-taille" min="30" max="220" step="5" value="100">
+        </label>
+        <label class="os-ligne">Rotation
+          <input type="range" id="osel-rot" min="-180" max="180" step="5" value="0">
+        </label>
+        <div class="os-boutons">
+          <button id="osel-dupliquer" title="Dupliquer">⧉ Dupliquer</button>
+          <button id="osel-supprimer" class="danger" title="Supprimer">🗑</button>
+        </div>
+      </div>
+    </div>
     <div id="bandeau-trace">
       <span class="compte" id="bt-compte">0 point</span>
       <span class="txt" id="bt-txt">Tapez pour poser le premier point</span>
@@ -2515,6 +2601,26 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
         ctx.rect(hx - hs, hy - hs, hs * 2, hs * 2);
         ctx.fill(); ctx.stroke();
       }
+      // Poignée de ROTATION : cercle au-dessus du cadre, relié par une tige
+      const rotX = x + w / 2;
+      const rotY = y - 30;
+      ctx.beginPath();
+      ctx.moveTo(rotX, y);
+      ctx.lineTo(rotX, rotY + 11);
+      ctx.strokeStyle = '#FF3030';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(rotX, rotY, 12, 0, Math.PI * 2);
+      ctx.fillStyle = '#FF3030';
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = '15px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('\u21BB', rotX, rotY + 1);
+      // mémoriser la position écran de la poignée pour le hit-test
+      editeur._poigneeRotation = { x: rotX, y: rotY, r: 16 };
       ctx.restore();
     }
   }
@@ -3292,13 +3398,13 @@ brancherObserverVignettes();    // (re)dessine dès que les vignettes ont une ta
   const sp = document.getElementById('splash');
   const entrer = () => {
     ac.classList.add('parti');
-    setTimeout(() => ac.remove(), 550);
-    // Enchaîner sur le splash animé « Simple, easy. »
+    setTimeout(() => { ac.style.display = 'none'; }, 550);   // caché, pas supprimé
     if (sp) {
-      sp.classList.add('actif');                 // lance les animations
-      setTimeout(() => sp.classList.add('parti'), 1500);   // fondu de sortie
+      sp.classList.remove('parti');
+      sp.classList.add('actif');
+      setTimeout(() => sp.classList.add('parti'), 1500);
       setTimeout(() => {
-        sp.remove();
+        sp.classList.remove('actif');
         sc.resize(); ed.resize(); demanderRenduEditeur();
         peindreVignettesDecor();
       }, 2150);
@@ -3307,6 +3413,17 @@ brancherObserverVignettes();    // (re)dessine dès que les vignettes ont une ta
     }
   };
   if (btn) btn.addEventListener('click', entrer);
+
+  // Clic sur le logo easy -> revenir à l'écran d'accueil
+  const marque = document.querySelector('nav .marque');
+  if (marque) {
+    marque.style.cursor = 'pointer';
+    marque.title = 'Retour à l\'accueil';
+    marque.addEventListener('click', () => {
+      ac.style.display = '';
+      ac.classList.remove('parti');
+    });
+  }
 })();
 
 /* ============================================================
@@ -3799,14 +3916,23 @@ ed.canvas.addEventListener('pointerdown', (e) => {
   }
 
   if (editeur.mode !== 'gomme') {
+    // a) poignée "laisse" (orientation) en priorité
     for (let i = editeur.vehiculesTest.length - 1; i >= 0; i--) {
       const v = editeur.vehiculesTest[i];
-      if (Math.hypot(pRaw.x - v.x * MONDE.W, pRaw.y - v.y * MONDE.H) <= 55) {
-        editeur.dragTest = {
-          ref: v,
-          dx: pRaw.x - v.x * MONDE.W,
-          dy: pRaw.y - v.y * MONDE.H,
-        };
+      if (typeof v.poigneeRepos !== 'function') continue;
+      const pg = v.poigneeRepos();
+      if (Math.hypot(pRaw.x - pg.x, pRaw.y - pg.y) <= 22) {
+        v.enLaisse = true; v.poignee = { x: pRaw.x, y: pRaw.y };
+        editeur.dragTest = { ref: v, mode: 'laisse' };
+        ed.canvas.setPointerCapture(e.pointerId);
+        return;
+      }
+    }
+    // b) corps du véhicule (déplacement pur)
+    for (let i = editeur.vehiculesTest.length - 1; i >= 0; i--) {
+      const v = editeur.vehiculesTest[i];
+      if (Math.hypot(pRaw.x - v.x, pRaw.y - v.y) <= 42) {
+        editeur.dragTest = { ref: v, mode: 'corps', dx: pRaw.x - v.x, dy: pRaw.y - v.y };
         ed.canvas.setPointerCapture(e.pointerId);
         return;
       }
@@ -3920,6 +4046,22 @@ ed.canvas.addEventListener('pointerdown', (e) => {
     }
 
     case 'selection': {
+      // Poignée de rotation (si une sélection est active et qu'on la saisit)
+      if (editeur.selection && editeur._poigneeRotation) {
+        const pr = editeur._poigneeRotation;
+        if (Math.hypot(pRaw.x - pr.x, pRaw.y - pr.y) <= pr.r + 8) {
+          const bo = boiteElement(editeur.selection, MONDE.W, MONDE.H);
+          const cx = (bo.x0 + bo.x1) / 2, cy = (bo.y0 + bo.y1) / 2;
+          reinitBaseSelection();
+          editeur.rotationDrag = {
+            cx, cy,
+            angleDepart: Math.atan2(pRaw.y - cy, pRaw.x - cx),
+          };
+          oselRot.value = 0;
+          ed.canvas.setPointerCapture(e.pointerId);
+          return;
+        }
+      }
       const el = trouverElement(pRaw.x, pRaw.y, MONDE.W, MONDE.H, false);
       const selAvant = editeur.selection;
 
@@ -3974,11 +4116,29 @@ ed.canvas.addEventListener('pointermove', (e) => {
   if (editeur.dragTest) {
     const pr = pointEd(e);
     const v = editeur.dragTest.ref;
-    const nx = pr.x - editeur.dragTest.dx, ny = pr.y - editeur.dragTest.dy;
-    const ddx = nx - v.x * MONDE.W, ddy = ny - v.y * MONDE.H;
-    if (Math.hypot(ddx, ddy) > 4) v.angle = Math.atan2(ddy, ddx);   // Option A
-    v.x = nx / MONDE.W;
-    v.y = ny / MONDE.H;
+    if (editeur.dragTest.mode === 'laisse') {
+      v.poignee = { x: pr.x, y: pr.y };
+      const a = Math.atan2(pr.y - v.y, pr.x - v.x);
+      v.angle = v.angleCible = a;
+      const L = v.longueurLaisse;
+      v.x = pr.x - Math.cos(a) * L;
+      v.y = pr.y - Math.sin(a) * L;
+    } else {
+      v.x = pr.x - editeur.dragTest.dx;
+      v.y = pr.y - editeur.dragTest.dy;
+    }
+    demanderRenduEditeur();
+    return;
+  }
+  if (editeur.rotationDrag) {
+    const pr = pointEd(e);
+    const rd = editeur.rotationDrag;
+    const a = Math.atan2(pr.y - rd.cy, pr.x - rd.cx);
+    let deg = (a - rd.angleDepart) * 180 / Math.PI;
+    while (deg > 180) deg -= 360;
+    while (deg < -180) deg += 360;
+    oselRot.value = Math.max(-180, Math.min(180, deg));
+    appliquerTransformSelection();
     return;
   }
   if (editeur.mode === 'selection' && editeur.zoneSelection) {
@@ -4045,6 +4205,7 @@ ed.canvas.addEventListener('pointerup', () => {
   }
   editeur.dragTest = null;
   editeur.panDrag = null;
+  if (editeur.rotationDrag) { editeur.rotationDrag = null; reinitBaseSelection(); oselRot.value = 0; }
   if (editeur.zoneSelection) {
     const z = editeur.zoneSelection;
     const x0 = Math.min(z.x0, z.x1), x1 = Math.max(z.x0, z.x1);
@@ -4081,6 +4242,7 @@ ed.canvas.addEventListener('pointercancel', () => {
   }
   editeur.dragTest = null;
   editeur.panDrag = null;
+  if (editeur.rotationDrag) { editeur.rotationDrag = null; reinitBaseSelection(); oselRot.value = 0; }
   editeur.zoneSelection = null;
   editeur.dragSelection = null;
 });
@@ -4194,10 +4356,18 @@ function majPastilleMode() {
 
 function majSelectionUI() {
   const sel = editeur.selection;
-  const groupe = sel && sel.kind === 'groupe';
+  // Les contrôles taille/rotation vivent désormais dans le widget flottant
   selActions.hidden = !sel;
-  selTailleZone.hidden = !sel;             // taille/rotation : élément seul OU groupe
-  selRotZone.hidden = !sel;
+  selTailleZone.hidden = true;
+  selRotZone.hidden = true;
+  const widget = document.getElementById('outil-selection');
+  if (widget) {
+    widget.hidden = false;                       // toujours visible dans l'éditeur
+    widget.classList.toggle('sans-sel', !sel);   // sliders grisés si rien de sélectionné
+    if (sel) { oselTaille.value = 100; oselRot.value = 0; }
+    const bm = document.getElementById('osel-mode');
+    if (bm) bm.classList.toggle('actif', editeur.mode === 'selection');
+  }
 }
 
 document.getElementById('choix-mode').addEventListener('click', (e) => {
@@ -4295,8 +4465,8 @@ function appliquerTransformSelection() {
   const sel = editeur.selection;
   if (!sel || !sel.base) return;
   demanderRenduEditeur();
-  const k = Number(selTaille.value) / 100;
-  const th = Number(selRot.value) * Math.PI / 180;
+  const k = Number(oselTaille.value) / 100;
+  const th = Number(oselRot.value) * Math.PI / 180;
   if (sel.kind === 'groupe') {
     const cos = Math.cos(th), sin = Math.sin(th);
     const b = sel.base;
@@ -4338,8 +4508,68 @@ function appliquerTransformSelection() {
     });
   }
 }
-selTaille.addEventListener('input', appliquerTransformSelection);
-selRot.addEventListener('input', appliquerTransformSelection);
+// Widget flottant de sélection (largeur + rotation détachés de la barre)
+const oselTaille = document.getElementById('osel-taille');
+const oselRot = document.getElementById('osel-rot');
+oselTaille.addEventListener('input', appliquerTransformSelection);
+oselRot.addEventListener('input', appliquerTransformSelection);
+oselTaille.addEventListener('change', figerBaseSelection);
+oselRot.addEventListener('change', figerBaseSelection);
+// Boutons dupliquer / supprimer dans le widget
+document.getElementById('osel-dupliquer').addEventListener('click', () => {
+  const b = document.getElementById('sel-dupliquer'); if (b) b.click();
+});
+document.getElementById('osel-supprimer').addEventListener('click', () => {
+  const b = document.getElementById('sel-supprimer'); if (b) b.click();
+});
+// Bouton Sélection : active le mode sélection
+document.getElementById('osel-mode').addEventListener('click', () => {
+  const b = document.querySelector('#choix-mode [data-mode=selection]');
+  if (b) b.click();
+});
+// Undo / Redo (mêmes actions que les boutons de Carte)
+document.getElementById('osel-undo').addEventListener('click', () => {
+  const b = document.getElementById('ed-undo'); if (b) b.click();
+});
+document.getElementById('osel-redo').addEventListener('click', () => {
+  const b = document.getElementById('ed-redo'); if (b) b.click();
+});
+// Rendre le widget déplaçable
+rendreWidgetDeplacable('outil-selection', 'selection-grip');
+// Afficher le widget dès l'entrée dans l'éditeur
+(function initWidgetSelection() {
+  const w = document.getElementById('outil-selection');
+  if (w) { w.hidden = false; w.classList.add('sans-sel'); }
+})();
+
+// Après un réglage, refiger la base pour enchaîner les transformations
+function reinitBaseSelection() {
+  const sel = editeur.selection;
+  if (!sel) return;
+  if (sel.kind === 'groupe') {
+    const centres = sel.refs.map(r => r.kind === 'panneau'
+      ? { x: r.ref.x, y: r.ref.y } : centroide(r.ref.pts));
+    const cx = centres.reduce((s, c) => s + c.x, 0) / centres.length;
+    const cy = centres.reduce((s, c) => s + c.y, 0) / centres.length;
+    sel.base = {
+      cx, cy,
+      membres: sel.refs.map(r => r.kind === 'panneau'
+        ? { x: r.ref.x, y: r.ref.y, taille: r.ref.taille, angle: r.ref.angle || 0 }
+        : { pts: r.ref.pts.map(p => ({ x: p.x, y: p.y })) }),
+    };
+  } else if (sel.kind === 'panneau') {
+    sel.base = { taille: sel.ref.taille, angle: sel.ref.angle || 0 };
+  } else {
+    const c = centroide(sel.ref.pts);
+    sel.base = { pts: sel.ref.pts.map(p => ({ x: p.x, y: p.y })), cx: c.x, cy: c.y };
+  }
+}
+function figerBaseSelection() {
+  const sel = editeur.selection;
+  if (!sel) return;
+  oselTaille.value = 100; oselRot.value = 0;
+  reinitBaseSelection();
+}
 
 const sliderLargeur = document.getElementById('ed-largeur');
 sliderLargeur.addEventListener('input', () => {
