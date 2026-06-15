@@ -463,6 +463,17 @@
   #splash .easy-trait { stroke: var(--rouge, #ff3131); stroke-width: 22; stroke-linecap: round; fill: none; stroke-dasharray: 360; stroke-dashoffset: 360; animation: splashSourire 0.7s ease 0.6s forwards; }
   @keyframes splashSourire { to { stroke-dashoffset: 0; } }
   /* Petit bouton plein écran discret dans la barre du haut */
+  .btn-select-nav {
+    margin-left: auto;
+    border: 1px solid var(--bordure, #e3e1de);
+    border-radius: 10px; background: #fff;
+    color: var(--encre, #1c2430); font-weight: 600;
+    font-size: 13px; padding: 8px 14px; cursor: pointer;
+    flex: 0 0 auto; font-family: inherit; display: none;
+  }
+  body.onglet-editeur .btn-select-nav { display: inline-block; }
+  .btn-select-nav.actif { background: var(--rouge,#ff3131); color: #fff; border-color: var(--rouge,#ff3131); }
+  body.onglet-editeur .btn-vider-nav { margin-left: 8px; }
   .btn-vider-nav {
     margin-left: auto;
     border: 1px solid var(--bordure, #e3e1de);
@@ -742,6 +753,7 @@
   </span>
   <button id="onglet-scene" class="actif">Situations</button>
   <button id="onglet-editeur">Éditeur de scènes</button>
+  <button id="btn-select-nav" class="btn-select-nav" title="Mode Sélection (déplacer un élément)">☝ Sélection</button>
   <button id="btn-vider-nav" class="btn-vider-nav" title="Vider la scène">🗑 Vider</button>
   <button id="btn-plein-ecran" class="btn-pe-nav" title="Plein écran (présentation)" aria-label="Plein écran">⛶</button>
 </nav>
@@ -1278,6 +1290,48 @@ class Entity {
   draw() {}
 }
 
+/* Angles morts façon fiche pédagogique :
+   - champ de vision en clair (éventail vers l'avant + arc côté droit étendu)
+   - angles morts en gris foncé (2 triangles sur les côtés arrière)
+   Dessiné dans le repère local du véhicule (avant = +X). */
+function dessinerAnglesMorts(ctx, L, l) {
+  return;   // *** angles morts désactivés temporairement (retirer ce return pour réactiver) ***
+  ctx.save();
+
+  // 1) CHAMP DE VISION (zone claire) — large éventail vers l'avant
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.30)';
+  ctx.beginPath();
+  ctx.moveTo(L * 0.1, -l * 0.5);
+  ctx.lineTo(L * 6.5, -l * 5.5);
+  ctx.lineTo(L * 7.5, 0);
+  ctx.lineTo(L * 6.5,  l * 5.5);
+  ctx.lineTo(L * 0.1,  l * 0.5);
+  ctx.closePath();
+  ctx.fill();
+
+  // Grand arc de vision (rétroviseurs/vision périphérique) côté droit
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.arc(0, 0, L * 4.5, -Math.PI * 0.5, Math.PI * 0.5);
+  ctx.closePath();
+  ctx.fill();
+
+  // 2) ANGLES MORTS (zones gris foncé) — 2 triangles sur les côtés arrière
+  ctx.fillStyle = 'rgba(60, 64, 72, 0.55)';
+  for (const c of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(-L * 0.15, c * l * 0.45);     // près de l'épaule du conducteur
+    ctx.lineTo(-L * 3.2,  c * l * 0.30);     // pointe loin derrière
+    ctx.lineTo(-L * 1.2,  c * l * 3.6);      // s'évase sur le côté
+    ctx.lineTo( L * 0.05, c * l * 0.9);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
 class Vehicule extends Entity {
   constructor({ x, y, couleur = '#2563eb' }) {
     super(x, y);
@@ -1322,16 +1376,7 @@ class Vehicule extends Entity {
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
     if (this.afficherAngleMort) {
-      ctx.fillStyle = 'rgba(220, 38, 38, 0.18)';
-      ctx.strokeStyle = 'rgba(220, 38, 38, 0.45)';
-      ctx.lineWidth = 1;
-      for (const c of [-1, 1]) {
-        ctx.beginPath();
-        ctx.moveTo(-L * 0.18, c * l / 2);
-        ctx.lineTo(-L * 1.6,  c * l * 2.6);
-        ctx.lineTo(-L * 0.55, c * l * 2.9);
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-      }
+      dessinerAnglesMorts(ctx, L, l);
     }
     ctx.fillStyle = 'rgba(0,0,0,0.18)';
     roundRect(ctx, -L/2 + 3, -l/2 + 4, L, l, 10); ctx.fill();
@@ -1528,16 +1573,7 @@ class Moto extends Vehicule {
     ctx.rotate(this.angle);
 
     if (this.afficherAngleMort) {
-      ctx.fillStyle = 'rgba(220, 38, 38, 0.16)';
-      ctx.strokeStyle = 'rgba(220, 38, 38, 0.4)';
-      ctx.lineWidth = 1;
-      for (const c of [-1, 1]) {
-        ctx.beginPath();
-        ctx.moveTo(-L * 0.1, c * l / 2);
-        ctx.lineTo(-L * 0.9, c * l * 2.2);
-        ctx.lineTo(L * 0.1, c * l * 2.3);
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-      }
+      dessinerAnglesMorts(ctx, L, l);
     }
 
     ctx.fillStyle = 'rgba(0,0,0,0.18)';
@@ -3690,9 +3726,13 @@ sc.canvas.addEventListener('pointerdown', (e) => {
 
   const cible = touche || feuDecor;
   const maintenant = performance.now();
-  const estDoubleTap = cible && cible === dernierTap.cible &&
-    maintenant - dernierTap.t < 350 &&
-    Math.hypot(p.x - dernierTap.x, p.y - dernierTap.y) < 30 / vue.zoom;
+  // Tolérance plus large pour le tactile : délai 500 ms, distance 45 px.
+  // On compare aussi par type+position si la référence d'objet a changé.
+  const memesCible = cible && (cible === dernierTap.cible ||
+    (dernierTap.cible && Math.hypot(p.x - dernierTap.x, p.y - dernierTap.y) < 50 / vue.zoom));
+  const estDoubleTap = memesCible &&
+    maintenant - dernierTap.t < 500 &&
+    Math.hypot(p.x - dernierTap.x, p.y - dernierTap.y) < 45 / vue.zoom;
 
   if (estDoubleTap) {
     if (touche && touche instanceof Vehicule) {
@@ -4072,28 +4112,11 @@ ed.canvas.addEventListener('pointerdown', (e) => {
     }
   }
 
-  // Appui long (550 ms sans bouger) -> menu contextuel.
-  // Désactivé en mode Sélection : maintenir sert à déplacer.
+  // Appui long désactivé : maintenir sert UNIQUEMENT à déplacer.
+  // Le menu copier/supprimer reste accessible par clic droit (PC) et
+  // par les boutons du widget de sélection (⧉ / 🗑).
   clearTimeout(timerAppui);
   timerAppui = null;
-  if (editeur.mode !== 'selection') {
-  appuiOrigine = { cx: e.clientX, cy: e.clientY, x: pRaw.x, y: pRaw.y };
-  timerAppui = setTimeout(() => {
-    // Si cet appui vient de poser un point de tracé, on le retire
-    if ((editeur.mode === 'route' || editeur.mode === 'trottoir') &&
-        editeur.enCoursRoute && editeur.enCoursRoute.pts.length > 0) {
-      editeur.enCoursRoute.pts.pop();
-      if (!editeur.enCoursRoute.pts.length) editeur.enCoursRoute = null;
-    } else if (editeur.mode === 'marquage' &&
-               editeur.enCoursMarquage && editeur.enCoursMarquage.pts.length > 0) {
-      editeur.enCoursMarquage.pts.pop();
-      if (!editeur.enCoursMarquage.pts.length) editeur.enCoursMarquage = null;
-    }
-    editeur.dragSelection = null;
-    ouvrirMenuCtx(appuiOrigine.cx, appuiOrigine.cy,
-                  { x: appuiOrigine.x, y: appuiOrigine.y });
-  }, 550);
-  }
 
   switch (editeur.mode) {
 
@@ -4514,6 +4537,8 @@ function majSelectionUI() {
     if (sel) { oselTaille.value = 100; oselRot.value = 0; }
     const bm = document.getElementById('osel-mode');
     if (bm) bm.classList.toggle('actif', editeur.mode === 'selection');
+    const bn = document.getElementById('btn-select-nav');
+    if (bn) bn.classList.toggle('actif', editeur.mode === 'selection');
   }
 }
 
@@ -4706,11 +4731,13 @@ document.getElementById('osel-dupliquer').addEventListener('click', () => {
 document.getElementById('osel-supprimer').addEventListener('click', () => {
   const b = document.getElementById('sel-supprimer'); if (b) b.click();
 });
-// Bouton Sélection : active le mode sélection
-document.getElementById('osel-mode').addEventListener('click', () => {
+// Bouton Sélection : active le mode sélection (widget + barre du haut)
+function activerModeSelection() {
   const b = document.querySelector('#choix-mode [data-mode=selection]');
   if (b) b.click();
-});
+}
+document.getElementById('osel-mode').addEventListener('click', activerModeSelection);
+document.getElementById('btn-select-nav').addEventListener('click', activerModeSelection);
 // Undo / Redo (mêmes actions que les boutons de Carte)
 document.getElementById('osel-undo').addEventListener('click', () => {
   const b = document.getElementById('ed-undo'); if (b) b.click();
