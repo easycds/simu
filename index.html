@@ -540,9 +540,11 @@
   #outil-historique .of-toggle { width: 42px; height: 42px; font-size: 20px; }
   body:not(.onglet-editeur) #outil-historique { display: none !important; }
   #outil-numeros { left: 16px; bottom: 18px; right: auto; top: auto; }
+  #outil-rejeu { left: 50%; transform: translateX(-50%); bottom: 18px; right: auto; top: auto; }
   /* crayon et numéros masqués dans l'éditeur (mais pas le widget de sélection) */
   body.onglet-editeur #outil-crayon,
-  body.onglet-editeur #outil-numeros { display: none; }
+  body.onglet-editeur #outil-numeros,
+  body.onglet-editeur #outil-rejeu { display: none; }
   .outil-flottant .of-grip {
     cursor: grab; color: #bbb; font-size: 14px; letter-spacing: -2px;
     padding: 0 2px; line-height: 1;
@@ -567,6 +569,43 @@
   }
 
   /* Réglette de distance d'arrêt */
+  #outil-rejeu { display: flex; align-items: center; gap: 4px; }
+  #outil-rejeu .rj-btn {
+    border: 1px solid var(--bordure,#e3e1de); background: #fff;
+    color: var(--encre,#1c2430); font-weight: 700; font-size: 13px;
+    border-radius: 9px; padding: 8px 10px; cursor: pointer; font-family: inherit;
+    min-width: 38px;
+  }
+  #outil-rejeu .rj-btn:disabled { opacity: 0.4; cursor: default; }
+  #outil-rejeu #rj-rec { color: var(--rouge,#ff3131); }
+  #outil-rejeu #rj-rec.actif { background: var(--rouge,#ff3131); color: #fff; border-color: var(--rouge,#ff3131); }
+  #outil-rejeu #rj-play.actif { background: #16a34a; color: #fff; border-color: #16a34a; }
+  #outil-rejeu #rj-trajet.actif { background: #2563eb; color: #fff; border-color: #2563eb; }
+  #outil-rejeu #rj-points.actif { background: #2563eb; color: #fff; border-color: #2563eb; }
+  #outil-rejeu #rj-arret.actif { background: #f59e0b; color: #fff; border-color: #f59e0b; }
+  #outil-rejeu #rj-depart.actif { background: #16a34a; color: #fff; border-color: #16a34a; }
+  /* Bulle de réglage du délai de départ */
+  #bulle-depart {
+    position: fixed; z-index: 120;
+    background: #fff; border-radius: 12px; padding: 10px 12px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.22);
+    font-family: var(--police-texte,'Fredoka'),sans-serif; font-size: 13px;
+    display: flex; flex-direction: column; gap: 8px; min-width: 150px;
+    border: 1px solid var(--bordure,#e3e1de);
+  }
+  #bulle-depart[hidden] { display: none !important; }
+  #bulle-depart .bd-titre { font-weight: 700; color: var(--encre,#1c2430); }
+  #bulle-depart .bd-ligne { display: flex; align-items: center; gap: 6px; }
+  #bulle-depart input { width: 54px; padding: 6px; border-radius: 8px; border: 1px solid var(--bordure,#e3e1de); font-family: inherit; text-align: center; }
+  #bulle-depart .bd-ok { background: var(--rouge,#ff3131); color: #fff; border: none; border-radius: 8px; padding: 7px 10px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  #bulle-depart .bd-fleche {
+    position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%);
+    width: 14px; height: 14px; background: #fff; border-right: 1px solid var(--bordure,#e3e1de);
+    border-bottom: 1px solid var(--bordure,#e3e1de); transform: translateX(-50%) rotate(45deg);
+  }
+  #outil-rejeu #rj-duree-zone { font-size: 12px; color: var(--encre,#1c2430); display: inline-flex; align-items: center; gap: 3px; }
+  #outil-rejeu #rj-duree { width: 42px; padding: 6px 4px; border-radius: 8px; border: 1px solid var(--bordure,#e3e1de); font-family: inherit; font-size: 12px; text-align: center; }
+
   #reglette-arret {
     position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%);
     z-index: 30; width: min(92vw, 540px);
@@ -595,6 +634,27 @@
   #reglette-arret .rg-legende .pastille.frein { background:var(--rouge,#ff3131); }
   #reglette-arret .rg-legende .rg-total { font-weight:600; color:var(--encre,#1c2430); margin-left:auto; }
   #reglette-arret .rg-sol { display:block; margin-top:9px; font-size:12.5px; color:#555; }
+  /* Bloc Mes scènes (sauvegarde locale) */
+  #zone-scenes {
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--bordure, #e3e1de);
+    display: flex; flex-direction: column; gap: 7px;
+  }
+  #zone-scenes .zs-titre { font-size: 12px; font-weight: 700; color: var(--encre,#1c2430); }
+  #zone-scenes .zs-ligne { display: flex; gap: 6px; }
+  #zone-scenes select {
+    flex: 1; padding: 7px 8px; border-radius: 9px;
+    border: 1px solid var(--bordure,#e3e1de); background: #fff;
+    font-size: 12px; font-family: inherit; min-width: 0;
+  }
+  #zone-scenes button {
+    padding: 8px 10px; border-radius: 9px; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--bordure,#e3e1de); background: #fff; cursor: pointer;
+    font-family: inherit; flex: 1;
+  }
+  #zone-scenes #zs-sauver { background: var(--rouge,#ff3131); color: #fff; border-color: var(--rouge,#ff3131); }
+  #zone-scenes button.danger { color: var(--rouge,#ff3131); }
+
   /* Options du pinceau de remplissage */
   .pinc-coul {
     width: 26px; height: 26px; border-radius: 50%;
@@ -608,6 +668,7 @@
   }
   .pinc-forme.actif { background: var(--rouge,#ff3131); color: #fff; border-color: var(--rouge,#ff3131); }
   #zone-pinceau { display: flex; flex-direction: column; gap: 9px; margin-top: 8px; }
+  #zone-pinceau[hidden] { display: none !important; }
 
   /* Pop-up conseil plein écran à l'entrée de l'éditeur */
   #popup-editeur {
@@ -847,6 +908,26 @@
       <div class="of-grip" id="numeros-grip" title="Déplacer">⋮⋮</div>
       <button id="btn-numeros" class="of-toggle" title="Afficher les numéros des usagers">N°</button>
     </div>
+    <div id="outil-rejeu" class="outil-flottant">
+      <div class="of-grip" id="rejeu-grip" title="Déplacer">⋮⋮</div>
+      <button id="rj-trajet" class="rj-btn" title="Trajet libre : choisir un véhicule puis dessiner son chemin au doigt">✏ Trajet</button>
+      <button id="rj-points" class="rj-btn" title="Trajet point par point : taper le véhicule, puis poser des points. Re-cliquer pour valider.">⋯ Points</button>
+      <button id="rj-arret" class="rj-btn" title="Le prochain point posé sera un arrêt (la voiture marque une pause)">⏸ Arrêt</button>
+      <span id="rj-duree-zone"><input type="number" id="rj-duree" min="1" max="10" step="1" value="2" title="Durée de l'arrêt (secondes)"> s</span>
+      <button id="rj-depart" class="rj-btn" title="Régler un délai avant que la voiture sélectionnée démarre">⏱ Départ</button>
+      <button id="rj-rec" class="rj-btn" title="Enregistrer : bougez les véhicules à la main">● REC</button>
+      <button id="rj-play" class="rj-btn" title="Rejouer en boucle" disabled>▶</button>
+      <button id="rj-pause" class="rj-btn" title="Pause" disabled>⏸</button>
+      <button id="rj-stop" class="rj-btn" title="Stop / revenir au début" disabled>■</button>
+      <button id="rj-annuler" class="rj-btn" title="Annuler le dernier trajet tracé">↶</button>
+      <button id="rj-effacer" class="rj-btn" title="Effacer tous les trajets dessinés">🗑</button>
+    </div>
+    <div id="bulle-depart" hidden>
+      <span class="bd-titre">Départ différé</span>
+      <div class="bd-ligne">Part après <input type="number" id="bd-delai" min="0" max="20" step="1" value="0"> s</div>
+      <button class="bd-ok" id="bd-valider">OK</button>
+      <div class="bd-fleche"></div>
+    </div>
     <div id="reglette-arret" hidden>
       <div class="rg-tete">
         <span class="rg-titre">Distance d'arrêt</span>
@@ -959,6 +1040,17 @@
         <input type="checkbox" id="ed-bouts-droits"> Bouts droits
       </label>
       <button id="ed-vehicule-test">🚗 Véhicule test</button>
+      <div id="zone-scenes">
+        <div class="zs-titre">Mes scènes</div>
+        <button id="zs-sauver">💾 Sauvegarder cette scène</button>
+        <div class="zs-ligne">
+          <select id="zs-liste"><option value="">— scènes enregistrées —</option></select>
+        </div>
+        <div class="zs-ligne">
+          <button id="zs-charger">Charger</button>
+          <button id="zs-supprimer" class="danger">Supprimer</button>
+        </div>
+      </div>
       <div id="zone-pinceau" hidden>
         <label class="controle" style="flex-direction:row;align-items:center;gap:8px">Couleur
           <button class="pinc-coul actif" data-coul="goudron" title="Goudron" style="background:#565d66"></button>
@@ -1357,8 +1449,10 @@ function dessinerOmbrePanneau(ctx, taille) {
    ENTITÉS DE LA SCÈNE
    ============================================================ */
 
+let _idEntiteSuivant = 1;
 class Entity {
   constructor(x, y) {
+    this.id = _idEntiteSuivant++;        // identité stable (pour le rejeu)
     this.x = x; this.y = y;
     this.angle = 0; this.angleCible = 0;
     this.rotationAuDrag = true;
@@ -3547,6 +3641,7 @@ function boucle(temps) {
   if (ongletActif === 'scene') {
     majEchelleVehicules();
     for (const e of entites) e.update();
+    majRejeu(temps);                         // enregistrement / lecture (après update)
     sc.ctx.fillStyle = '#9ec79b';              // herbe partout (hors-monde au dézoom)
     sc.ctx.fillRect(0, 0, sc.W, sc.H);
     sc.ctx.save();
@@ -3554,6 +3649,7 @@ function boucle(temps) {
     sc.ctx.scale(vue.zoom, vue.zoom);
     DECORS[decorActif](sc.ctx, sc.W, sc.H);
     drawTraces(sc.ctx);
+    dessinerTrajets(sc.ctx);
     for (const e of entites) e.draw(sc.ctx, temps);
     if (OPTIONS.nuit) {
       drawNuit(sc.ctx);
@@ -3568,6 +3664,418 @@ function boucle(temps) {
   }
   requestAnimationFrame(boucle);
 }
+
+/* ===== Rejeu de scénario : enregistre les déplacements manuels puis les rejoue ===== */
+const rejeu = {
+  mode: 'arret',        // 'arret' | 'rec' | 'play' | 'pause'
+  frames: [],           // chaque frame = [{x,y,angle}, ...] par entité
+  idx: 0,               // index de lecture
+  dernierT: 0,          // pour cadencer la capture/lecture (~30 fps)
+};
+const REJEU_INTERVALLE = 33;   // ms entre deux frames (~30 fps)
+
+/* Mode Trajet : on choisit un véhicule puis on dessine son chemin (suivi fluide) */
+const trajetMode = { actif: false, vehicule: null, dessine: false, points: false, prochainArret: false };
+const ordreTrajets = [];   // pile des véhicules dans l'ordre où leur trajet a été créé
+const TRAJET_VITESSE = 2.6;    // pixels-monde par frame (vitesse de parcours)
+
+function capturerFrame() {
+  return entites.map(e => ({ id: e.id, x: e.x, y: e.y, angle: e.angle }));
+}
+function appliquerFrame(f) {
+  // Associer chaque enregistrement à SON véhicule par id (pas par position dans la liste)
+  for (const s of f) {
+    const e = entites.find(en => en.id === s.id);
+    if (!e) continue;
+    e.x = s.x; e.y = s.y;
+    e.angle = e.angleCible = s.angle;
+    if (e.cible) e.cible = null;            // couper tout déplacement auto
+  }
+}
+function majRejeu(temps) {
+  const t = performance.now();
+  if (rejeu.mode === 'rec') {
+    if (t - rejeu.dernierT >= REJEU_INTERVALLE) {
+      rejeu.frames.push(capturerFrame());
+      rejeu.dernierT = t;
+    }
+  } else if (rejeu.mode === 'play') {
+    if (t - rejeu.dernierT >= REJEU_INTERVALLE) {
+      rejeu.dernierT = t;
+      if (rejeu.frames.length) {
+        appliquerFrame(rejeu.frames[rejeu.idx]);
+        rejeu.idx++;
+        if (rejeu.idx >= rejeu.frames.length) rejeu.idx = 0;   // boucle
+      }
+    } else if (rejeu.frames.length) {
+      appliquerFrame(rejeu.frames[Math.min(rejeu.idx, rejeu.frames.length - 1)]);
+    }
+    animerTrajets();    // véhicules suivant un trajet dessiné (fluide)
+  }
+}
+
+/* Dessine les trajets définis (ligne pointillée colorée + flèche de sens) */
+function dessinerTrajets(ctx) {
+  // Halo sur le véhicule en cours de traçage (bien visible)
+  const vSel = trajetMode.vehicule;
+  if (vSel) {
+    const r = (vSel.longueur ? vSel.longueur : 70) * 0.75;
+    ctx.save();
+    ctx.globalAlpha = 0.30 + 0.15 * Math.sin(performance.now() / 250);  // pulsation douce
+    ctx.fillStyle = '#2563eb';
+    ctx.beginPath();
+    ctx.arc(vSel.x, vSel.y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = '#2563eb';
+    ctx.lineWidth = 3 / vue.zoom;
+    ctx.setLineDash([6 / vue.zoom, 5 / vue.zoom]);
+    ctx.beginPath();
+    ctx.arc(vSel.x, vSel.y, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+  for (const e of entites) {
+    if (!(e instanceof Vehicule) || !e.trajet || e.trajet.length < 2) continue;
+    const chemin = e._trajetLisse || e.trajet;
+    ctx.save();
+    ctx.strokeStyle = e.couleur;
+    ctx.globalAlpha = 0.55;
+    ctx.lineWidth = 3.5 / vue.zoom;
+    ctx.setLineDash([10 / vue.zoom, 8 / vue.zoom]);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(chemin[0].x, chemin[0].y);
+    for (let i = 1; i < chemin.length; i++) ctx.lineTo(chemin[i].x, chemin[i].y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // petite flèche à la fin pour indiquer le sens
+    const a = chemin[chemin.length - 2], b = chemin[chemin.length - 1];
+    const ang = Math.atan2(b.y - a.y, b.x - a.x);
+    const fl = 13 / vue.zoom;
+    ctx.globalAlpha = 0.8;
+    ctx.fillStyle = e.couleur;
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y);
+    ctx.lineTo(b.x - fl * Math.cos(ang - 0.4), b.y - fl * Math.sin(ang - 0.4));
+    ctx.lineTo(b.x - fl * Math.cos(ang + 0.4), b.y - fl * Math.sin(ang + 0.4));
+    ctx.closePath(); ctx.fill();
+    // marqueurs d'arrêt (orange) sur les points du trajet original
+    if (e.trajet) {
+      ctx.globalAlpha = 0.9;
+      for (const p of e.trajet) {
+        if (!p.arret) continue;
+        ctx.fillStyle = '#f59e0b';
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2 / vue.zoom;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 7 / vue.zoom, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+  // Points en cours de pose (mode Points) : petits ronds sur le véhicule édité
+  if (trajetMode.points && trajetMode.vehicule && trajetMode.vehicule.trajet) {
+    const v = trajetMode.vehicule;
+    ctx.save();
+    ctx.fillStyle = '#2563eb';
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2 / vue.zoom;
+    for (const p of v.trajet) {
+      ctx.fillStyle = p.arret ? '#f59e0b' : '#2563eb';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, (p.arret ? 8 : 6) / vue.zoom, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+/* Fait avancer en boucle chaque véhicule possédant un trajet dessiné.
+   Le véhicule est tiré PAR L'AVANT (comme la laisse) : l'avant suit le trajet,
+   le centre se place en retrait, le cap pointe vers l'avant. */
+function animerTrajets() {
+  const maintenant = performance.now();
+  for (const e of entites) {
+    const chemin = e._trajetLisse || e.trajet;
+    if (!(e instanceof Vehicule) || !chemin || chemin.length < 2) continue;
+    if (e._trajDist === undefined) e._trajDist = 0;
+    if (e._arretsFaits === undefined) e._arretsFaits = {};
+
+    // Délai de départ : la voiture attend avant de démarrer
+    if (e._departJusqu && maintenant < e._departJusqu) {
+      continue;   // pas encore partie
+    } else if (e._departJusqu) {
+      e._departJusqu = 0;
+    }
+
+    // En pause à un arrêt ?
+    if (e._pauseJusqu && maintenant < e._pauseJusqu) {
+      // immobile : on garde la position, juste le cap
+      continue;
+    } else if (e._pauseJusqu) {
+      e._pauseJusqu = 0;   // pause terminée, on repart
+    }
+
+    // Distances cumulées des points d'arrêt (calculées une fois)
+    if (!e._distArrets) {
+      e._distArrets = [];
+      let d = 0;
+      for (let i = 1; i < chemin.length; i++) {
+        d += Math.hypot(chemin[i].x - chemin[i-1].x, chemin[i].y - chemin[i-1].y);
+        if (chemin[i].arret) e._distArrets.push({ d, duree: chemin[i].arret, i });
+      }
+    }
+
+    const distAvant = e._trajDist;
+    e._trajDist += TRAJET_VITESSE;
+
+    // A-t-on franchi un point d'arrêt pas encore fait ?
+    for (const a of e._distArrets) {
+      if (distAvant < a.d && e._trajDist >= a.d && !e._arretsFaits[a.i]) {
+        e._trajDist = a.d;                       // se caler pile sur l'arrêt
+        e._pauseJusqu = maintenant + a.duree * 1000;
+        e._arretsFaits[a.i] = true;
+        break;
+      }
+    }
+
+    // Point de TÊTE (avant du véhicule) sur le trajet
+    const tete = pointSurTrajet(chemin, e._trajDist);
+    if (tete.fin) {
+      // Arrivée au bout : on cale le véhicule sur le dernier point et on ne bouge plus
+      e._trajDist = e._trajLong || e._trajDist;
+      e._fini = true;
+      const dernier = chemin[chemin.length - 1];
+      const avantDernier = chemin[chemin.length - 2] || dernier;
+      const angF = Math.atan2(dernier.y - avantDernier.y, dernier.x - avantDernier.x);
+      e.angle = e.angleCible = angF;
+      const Lf = e.longueurLaisse;
+      e.x = dernier.x - Math.cos(angF) * Lf;
+      e.y = dernier.y - Math.sin(angF) * Lf;
+      continue;
+    }
+
+    const devant = pointSurTrajet(chemin, e._trajDist + 6);
+    const ang = Math.atan2(devant.y - tete.y, devant.x - tete.x);
+    e.angle = e.angleCible = ang;
+
+    const L = e.longueurLaisse;
+    e.x = tete.x - Math.cos(ang) * L;
+    e.y = tete.y - Math.sin(ang) * L;
+  }
+}
+
+/* Lissage d'un trajet (Catmull-Rom) : points anguleux -> courbe douce */
+function lisserTrajet(pts) {
+  if (!pts || pts.length < 3) return pts ? pts.slice() : pts;
+  const sortie = [];
+  const N = 8;   // sous-segments par portion
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] || pts[i + 1];
+    for (let j = 0; j < N; j++) {
+      const t = j / N, t2 = t * t, t3 = t2 * t;
+      const x = 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t +
+        (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+        (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
+      const y = 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t +
+        (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+        (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3);
+      const pt = { x, y };
+      if (j === 0 && p1.arret) pt.arret = p1.arret;   // conserver les arrêts
+      sortie.push(pt);
+    }
+  }
+  const dernier = { x: pts[pts.length - 1].x, y: pts[pts.length - 1].y };
+  if (pts[pts.length - 1].arret) dernier.arret = pts[pts.length - 1].arret;
+  sortie.push(dernier);
+  return sortie;
+}
+
+/* Renvoie le point à distance d le long du trajet (liste de points), + drapeau fin */
+function pointSurTrajet(pts, d) {
+  let reste = d;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i], b = pts[i + 1];
+    const seg = Math.hypot(b.x - a.x, b.y - a.y);
+    if (reste <= seg) {
+      const k = seg === 0 ? 0 : reste / seg;
+      return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, fin: false };
+    }
+    reste -= seg;
+  }
+  return { x: pts[pts.length - 1].x, y: pts[pts.length - 1].y, fin: true };
+}
+function majBoutonsRejeu() {
+  const bRec = document.getElementById('rj-rec');
+  const bPlay = document.getElementById('rj-play');
+  const bPause = document.getElementById('rj-pause');
+  const bStop = document.getElementById('rj-stop');
+  const aDesImages = rejeu.frames.length > 0 || entites.some(e => e.trajet && e.trajet.length >= 2);
+  bRec.classList.toggle('actif', rejeu.mode === 'rec');
+  bPlay.classList.toggle('actif', rejeu.mode === 'play');
+  bRec.textContent = rejeu.mode === 'rec' ? '● ...' : '● REC';
+  bPlay.disabled = !aDesImages || rejeu.mode === 'rec' || rejeu.mode === 'play';
+  bPause.disabled = rejeu.mode !== 'play';
+  bStop.disabled = rejeu.mode === 'arret' && rejeu.idx === 0;
+}
+function rejeuRec() {
+  if (rejeu.mode === 'rec') {                // 2e clic = stop enregistrement
+    rejeu.mode = 'arret';
+  } else {
+    rejeu.frames = [];
+    rejeu.idx = 0;
+    rejeu.dernierT = performance.now();
+    rejeu.mode = 'rec';
+  }
+  majBoutonsRejeu();
+}
+function rejeuPlay() {
+  const aTrajet = entites.some(e => e.trajet && e.trajet.length >= 2);
+  if (!rejeu.frames.length && !aTrajet) return;
+  // Remettre chaque trajet au début pour rejouer proprement
+  const t0 = performance.now();
+  for (const e of entites) {
+    if (e.trajet && e.trajet.length) {
+      e._trajDist = 0; e._fini = false; e._arretsFaits = {}; e._pauseJusqu = 0;
+      // délai de départ : la voiture attend avant de démarrer
+      e._departJusqu = (e._delaiDepart && e._delaiDepart > 0) ? t0 + e._delaiDepart * 1000 : 0;
+    }
+  }
+  rejeu.mode = 'play';
+  rejeu.dernierT = performance.now();
+  majBoutonsRejeu();
+}
+function rejeuPause() {
+  if (rejeu.mode === 'play') { rejeu.mode = 'pause'; majBoutonsRejeu(); }
+}
+function rejeuStop() {
+  rejeu.mode = 'arret';
+  rejeu.idx = 0;
+  if (rejeu.frames.length) appliquerFrame(rejeu.frames[0]);   // retour au début
+  for (const e of entites) {                 // remettre les trajets au début
+    if (e.trajet && e.trajet.length) {
+      e._trajDist = 0; e._fini = false; e._arretsFaits = {}; e._pauseJusqu = 0;
+      e.x = e.trajet[0].x; e.y = e.trajet[0].y;
+    }
+  }
+  majBoutonsRejeu();
+}
+function basculerModeTrajet() {
+  trajetMode.actif = !trajetMode.actif;
+  trajetMode.points = false;                // quitter le mode points
+  trajetMode.vehicule = null;
+  trajetMode.dessine = false;
+  document.getElementById('rj-points').classList.remove('actif');
+  document.getElementById('rj-trajet').classList.toggle('actif', trajetMode.actif);
+  sc.canvas.style.cursor = trajetMode.actif ? 'crosshair' : '';
+}
+function effacerTousTrajets() {
+  for (const e of entites) { e.trajet = null; e._trajetLisse = null; e._trajDist = 0; e._distArrets = null; e._fini = false; }
+  ordreTrajets.length = 0;
+  majBoutonsRejeu();
+}
+function empilerTrajet(v) {
+  // éviter les doublons : si le véhicule a déjà un trajet en pile, on le remonte
+  const i = ordreTrajets.indexOf(v);
+  if (i >= 0) ordreTrajets.splice(i, 1);
+  ordreTrajets.push(v);
+}
+function annulerDernierTrajet() {
+  // Si on est en plein traçage, annuler d'abord le trajet en cours
+  if (trajetMode.vehicule && trajetMode.vehicule.trajet) {
+    const vc = trajetMode.vehicule;
+    vc.trajet = null; vc._trajetLisse = null; vc._trajDist = 0; vc._distArrets = null; vc._fini = false;
+    trajetMode.vehicule = null;
+    majBoutonsRejeu();
+    return;
+  }
+  // Sinon, retirer le dernier trajet validé (pile)
+  while (ordreTrajets.length) {
+    const v = ordreTrajets.pop();
+    if (v && v.trajet) {
+      v.trajet = null; v._trajetLisse = null; v._trajDist = 0; v._distArrets = null; v._fini = false; v._pauseJusqu = 0; v._arretsFaits = {};
+      majBoutonsRejeu();
+      return;
+    }
+  }
+  // Filet de sécurité : si la pile est vide mais qu'il reste des trajets, prendre le dernier véhicule qui en a un
+  for (let i = entites.length - 1; i >= 0; i--) {
+    const v = entites[i];
+    if (v.trajet) {
+      v.trajet = null; v._trajetLisse = null; v._trajDist = 0; v._distArrets = null; v._fini = false;
+      majBoutonsRejeu();
+      return;
+    }
+  }
+}
+document.getElementById('rj-annuler').addEventListener('click', annulerDernierTrajet);
+function basculerModePoints() {
+  // Si on était en train de poser des points : on valide le trajet en cours
+  if (trajetMode.points && trajetMode.vehicule) {
+    const v = trajetMode.vehicule;
+    // Arrêt armé au moment de valider -> le dernier point devient un arrêt (pause finale)
+    if (trajetMode.prochainArret && v.trajet && v.trajet.length >= 2) {
+      const d = Number(document.getElementById('rj-duree').value) || 2;
+      v.trajet[v.trajet.length - 1].arret = d;
+      trajetMode.prochainArret = false;
+      document.getElementById('rj-arret').classList.remove('actif');
+    }
+    if (!v.trajet || v.trajet.length < 2) { v.trajet = null; v._trajetLisse = null; }
+    else { v._trajDist = 0; v._trajetLisse = lisserTrajet(v.trajet); v._distArrets = null; empilerTrajet(v); }
+    trajetMode.vehicule = null;
+  }
+  trajetMode.points = !trajetMode.points;
+  trajetMode.actif = false;                 // on quitte le mode libre
+  document.getElementById('rj-trajet').classList.remove('actif');
+  document.getElementById('rj-points').classList.toggle('actif', trajetMode.points);
+  sc.canvas.style.cursor = trajetMode.points ? 'crosshair' : '';
+  majBoutonsRejeu();
+}
+document.getElementById('rj-points').addEventListener('click', basculerModePoints);
+function basculerArret() {
+  trajetMode.prochainArret = !trajetMode.prochainArret;
+  document.getElementById('rj-arret').classList.toggle('actif', trajetMode.prochainArret);
+}
+document.getElementById('rj-arret').addEventListener('click', basculerArret);
+
+function ouvrirBulleDepart() {
+  // véhicule concerné : celui en cours de traçage, sinon le dernier qui a un trajet
+  let v = trajetMode.vehicule;
+  if (!v) { for (let i = entites.length - 1; i >= 0; i--) { if (entites[i].trajet) { v = entites[i]; break; } } }
+  if (!v) { alert('Sélectionne d\'abord une voiture (en mode Trajet ou Points).'); return; }
+  bulleDepartVehicule = v;
+  const bulle = document.getElementById('bulle-depart');
+  document.getElementById('bd-delai').value = v._delaiDepart || 0;
+  // positionner la bulle au-dessus du véhicule
+  const ec = mondeVersEcran(v.x, v.y);
+  bulle.hidden = false;
+  bulle.style.left = (ec.x - bulle.offsetWidth / 2) + 'px';
+  bulle.style.top = (ec.y - bulle.offsetHeight - 24) + 'px';
+  document.getElementById('rj-depart').classList.add('actif');
+}
+let bulleDepartVehicule = null;
+document.getElementById('rj-depart').addEventListener('click', ouvrirBulleDepart);
+document.getElementById('bd-valider').addEventListener('click', () => {
+  if (bulleDepartVehicule) {
+    bulleDepartVehicule._delaiDepart = Number(document.getElementById('bd-delai').value) || 0;
+  }
+  document.getElementById('bulle-depart').hidden = true;
+  document.getElementById('rj-depart').classList.remove('actif');
+  bulleDepartVehicule = null;
+});
+document.getElementById('rj-effacer').addEventListener('click', effacerTousTrajets);
+document.getElementById('rj-trajet').addEventListener('click', basculerModeTrajet);
+document.getElementById('rj-rec').addEventListener('click', rejeuRec);
+document.getElementById('rj-play').addEventListener('click', rejeuPlay);
+document.getElementById('rj-pause').addEventListener('click', rejeuPause);
+document.getElementById('rj-stop').addEventListener('click', rejeuStop);
+majBoutonsRejeu();
 
 let renduEditeurDemande = false;
 function demanderRenduEditeur() {
@@ -3735,6 +4243,53 @@ sc.canvas.addEventListener('pointerdown', (e) => {
   pointeurs.set(e.pointerId, pe);
   sc.canvas.setPointerCapture(e.pointerId);
 
+  // --- Mode Points : taper le véhicule, puis poser des points un à un ---
+  if (trajetMode.points) {
+    const pm = versMonde(pe);
+    if (!trajetMode.vehicule) {
+      // 1er tap : choisir le véhicule
+      let veh = null;
+      for (let i = entites.length - 1; i >= 0; i--) {
+        if (entites[i] instanceof Vehicule && entites[i].contains(pm.x, pm.y)) { veh = entites[i]; break; }
+      }
+      if (veh) {
+        trajetMode.vehicule = veh;
+        veh.trajet = [{ x: veh.x, y: veh.y }];   // départ sur la voiture
+        veh._trajetLisse = null;
+      }
+    } else {
+      // taps suivants : ajouter un point (éventuellement un arrêt)
+      const pt = { x: pm.x, y: pm.y };
+      if (trajetMode.prochainArret) {
+        const d = Number(document.getElementById('rj-duree').value) || 2;
+        pt.arret = d;                          // durée d'arrêt en secondes
+        trajetMode.prochainArret = false;
+        document.getElementById('rj-arret').classList.remove('actif');
+      }
+      trajetMode.vehicule.trajet.push(pt);
+      trajetMode.vehicule._trajetLisse = lisserTrajet(trajetMode.vehicule.trajet);
+      trajetMode.vehicule._distArrets = null;   // recalcul des arrêts
+    }
+    return;
+  }
+
+  // --- Mode Trajet : choisir un véhicule puis dessiner son chemin ---
+  if (trajetMode.actif) {
+    const pm = versMonde(pe);
+    // chercher un véhicule sous le doigt
+    let veh = null;
+    for (let i = entites.length - 1; i >= 0; i--) {
+      if (entites[i] instanceof Vehicule && entites[i].contains(pm.x, pm.y)) { veh = entites[i]; break; }
+    }
+    if (veh) {
+      trajetMode.vehicule = veh;
+      veh.trajet = [{ x: veh.x, y: veh.y }];   // le trajet démarre sur la voiture
+      trajetMode.dessine = true;
+      geste = 'trajet';
+    }
+    return;
+  }
+
   // --- Arrivée d'un 2ᵉ doigt : rotation fine ou pincement ---
   if (pointeurs.size === 2) {
     if ((geste === 'drag' || geste === 'laisse') && actif) {
@@ -3863,6 +4418,15 @@ sc.canvas.addEventListener('pointermove', (e) => {
   if (!pointeurs.has(e.pointerId)) return;
   pointeurs.set(e.pointerId, pointDans(sc, e));
 
+  // --- Trajet : on prolonge le chemin dessiné ---
+  if (geste === 'trajet' && trajetMode.vehicule) {
+    const p = versMonde(pointDans(sc, e));
+    const tr = trajetMode.vehicule.trajet;
+    const der = tr[tr.length - 1];
+    if (Math.hypot(p.x - der.x, p.y - der.y) >= 4 / vue.zoom) tr.push(p);
+    return;
+  }
+
   // --- Stylo : on prolonge le trait en cours ---
   if (geste === 'stylo' && traitEnCours) {
     const p = versMonde(pointDans(sc, e));
@@ -3934,6 +4498,17 @@ sc.canvas.addEventListener('pointermove', (e) => {
 function finPointeurScene(e) {
   pointeurs.delete(e.pointerId);
   if (pointeurs.size === 0) {
+    if (geste === 'trajet' && trajetMode.vehicule) {
+      const v = trajetMode.vehicule;
+      // tap court (trajet d'1 point) sur une voiture : on efface son trajet existant
+      if (!v.trajet || v.trajet.length < 2) { v.trajet = null; v._trajetLisse = null; v._trajDist = 0; }
+      else { v._trajDist = 0; v._trajetLisse = lisserTrajet(v.trajet); v._distArrets = null; empilerTrajet(v); }
+      trajetMode.vehicule = null;
+      trajetMode.dessine = false;
+      geste = null;
+      majBoutonsRejeu();
+      return;
+    }
     if (geste === 'stylo' && traitEnCours) {
       if (traitEnCours.pts.length > 1) annotations.push(traitEnCours);
       traitEnCours = null;
@@ -4677,6 +5252,75 @@ document.getElementById('pinc-effacer').addEventListener('click', () => {
     demanderRenduEditeur();
   }
 });
+
+/* ===== Mes scènes : sauvegarde locale (localStorage) ===== */
+const SCENES_CLE = 'easy-simu-scenes';
+
+function lireScenesEnregistrees() {
+  try { return JSON.parse(localStorage.getItem(SCENES_CLE)) || {}; }
+  catch (e) { return {}; }
+}
+function ecrireScenesEnregistrees(obj) {
+  try { localStorage.setItem(SCENES_CLE, JSON.stringify(obj)); return true; }
+  catch (e) { alert('Impossible de sauvegarder (mémoire pleine ou navigation privée).'); return false; }
+}
+function rafraichirListeScenes() {
+  const sel = document.getElementById('zs-liste');
+  if (!sel) return;
+  const scenes = lireScenesEnregistrees();
+  const noms = Object.keys(scenes).sort((a, b) => a.localeCompare(b));
+  sel.innerHTML = '<option value="">— scènes enregistrées —</option>' +
+    noms.map(nm => `<option value="${nm.replace(/"/g, '&quot;')}">${nm}</option>`).join('');
+}
+function sauverSceneCourante() {
+  const nom = (prompt('Nom de la scène :') || '').trim();
+  if (!nom) return;
+  const scenes = lireScenesEnregistrees();
+  if (scenes[nom] && !confirm('Une scène « ' + nom + ' » existe déjà. La remplacer ?')) return;
+  scenes[nom] = {
+    routes: editeur.routes,
+    marquages: editeur.marquages,
+    panneaux: editeur.panneaux,
+    pinceau: editeur.pinceau || [],
+  };
+  if (ecrireScenesEnregistrees(scenes)) {
+    rafraichirListeScenes();
+    document.getElementById('zs-liste').value = nom;
+  }
+}
+function chargerSceneSelectionnee() {
+  const sel = document.getElementById('zs-liste');
+  const nom = sel.value;
+  if (!nom) { alert('Choisis d\'abord une scène dans la liste.'); return; }
+  const scenes = lireScenesEnregistrees();
+  const s = scenes[nom];
+  if (!s) return;
+  editeur.routes = s.routes || [];
+  editeur.marquages = s.marquages || [];
+  editeur.panneaux = s.panneaux || [];
+  editeur.pinceau = s.pinceau || [];
+  editeur.enCoursRoute = null;
+  editeur.enCoursMarquage = null;
+  selectionner(null);
+  synchroniserCarte();
+  btnDecorPerso.hidden = false;
+  pousserHistorique();
+  demanderRenduEditeur();
+}
+function supprimerSceneSelectionnee() {
+  const sel = document.getElementById('zs-liste');
+  const nom = sel.value;
+  if (!nom) { alert('Choisis d\'abord une scène à supprimer.'); return; }
+  if (!confirm('Supprimer définitivement la scène « ' + nom + ' » ?')) return;
+  const scenes = lireScenesEnregistrees();
+  delete scenes[nom];
+  ecrireScenesEnregistrees(scenes);
+  rafraichirListeScenes();
+}
+document.getElementById('zs-sauver').addEventListener('click', sauverSceneCourante);
+document.getElementById('zs-charger').addEventListener('click', chargerSceneSelectionnee);
+document.getElementById('zs-supprimer').addEventListener('click', supprimerSceneSelectionnee);
+rafraichirListeScenes();
 function poserCoupPinceau(p) {
   editeur.pinceau.push({
     x: p.x, y: p.y,
@@ -5384,6 +6028,7 @@ btnNumeros.addEventListener('click', () => {
   btnNumeros.classList.toggle('actif', OPTIONS.numeros);
 });
 rendreWidgetDeplacable('outil-numeros', 'numeros-grip');
+rendreWidgetDeplacable('outil-rejeu', 'rejeu-grip');
 
 const btnBeta = document.getElementById('btn-beta');
 const betaZone = document.getElementById('beta-zone');
