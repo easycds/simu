@@ -3677,6 +3677,7 @@ const REJEU_INTERVALLE = 33;   // ms entre deux frames (~30 fps)
 /* Mode Trajet : on choisit un véhicule puis on dessine son chemin (suivi fluide) */
 const trajetMode = { actif: false, vehicule: null, dessine: false, points: false, prochainArret: false };
 const ordreTrajets = [];   // pile des véhicules dans l'ordre où leur trajet a été créé
+let dragPointTrajet = null;  // { vehicule, index } : point de trajet en cours de déplacement
 const TRAJET_VITESSE = 2.6;    // pixels-monde par frame (vitesse de parcours)
 
 function capturerFrame() {
@@ -4254,11 +4255,26 @@ sc.canvas.addEventListener('pointerdown', (e) => {
       }
       if (veh) {
         trajetMode.vehicule = veh;
-        veh.trajet = [{ x: veh.x, y: veh.y }];   // départ sur la voiture
-        veh._trajetLisse = null;
+        // s'il a déjà un trajet, on le REPREND (pour le modifier) ; sinon on en démarre un
+        if (!veh.trajet || veh.trajet.length < 2) {
+          veh.trajet = [{ x: veh.x, y: veh.y }];
+          veh._trajetLisse = null;
+        }
       }
     } else {
-      // taps suivants : ajouter un point (éventuellement un arrêt)
+      const v = trajetMode.vehicule;
+      // D'abord : a-t-on tapé SUR un point existant ? -> on le saisit pour le déplacer
+      const seuil = 16 / vue.zoom;
+      let idxTrouve = -1;
+      for (let i = 0; i < v.trajet.length; i++) {
+        if (Math.hypot(pm.x - v.trajet[i].x, pm.y - v.trajet[i].y) <= seuil) { idxTrouve = i; break; }
+      }
+      if (idxTrouve >= 0) {
+        dragPointTrajet = { vehicule: v, index: idxTrouve };
+        geste = 'pointTrajet';
+        return;
+      }
+      // sinon : ajouter un nouveau point (éventuellement un arrêt)
       const pt = { x: pm.x, y: pm.y };
       if (trajetMode.prochainArret) {
         const d = Number(document.getElementById('rj-duree').value) || 2;
@@ -4266,9 +4282,9 @@ sc.canvas.addEventListener('pointerdown', (e) => {
         trajetMode.prochainArret = false;
         document.getElementById('rj-arret').classList.remove('actif');
       }
-      trajetMode.vehicule.trajet.push(pt);
-      trajetMode.vehicule._trajetLisse = lisserTrajet(trajetMode.vehicule.trajet);
-      trajetMode.vehicule._distArrets = null;   // recalcul des arrêts
+      v.trajet.push(pt);
+      v._trajetLisse = lisserTrajet(v.trajet);
+      v._distArrets = null;   // recalcul des arrêts
     }
     return;
   }
@@ -4315,8 +4331,25 @@ sc.canvas.addEventListener('pointerdown', (e) => {
   }
   if (pointeurs.size > 2) return;
 
-  // --- Stylo d'annotation : prioritaire sur toute manipulation ---
+  // --- Stylo d'annotation : prioritaire, SAUF si on attrape une poignée de laisse ---
   if (OPTIONS.stylo) {
+    const ps = versMonde(pe);
+    let surLaisse = false;
+    for (let i = entites.length - 1; i >= 0; i--) {
+      const v = entites[i];
+      if (!(v instanceof Vehicule)) continue;
+      const pr = v.poigneeRepos();
+      if (Math.hypot(ps.x - pr.x, ps.y - pr.y) <= 8 + 14 / vue.zoom) {
+        entites.splice(i, 1); entites.push(v);
+        actif = v; actif.enDrag = true; actif.enLaisse = true;
+        actif.poignee = { x: ps.x, y: ps.y };
+        geste = 'laisse';
+        sc.canvas.classList.add('dragging');
+        surLaisse = true;
+        break;
+      }
+    }
+    if (surLaisse) return;
     traitEnCours = { pts: [versMonde(pe)], couleur: styloCouleur };
     geste = 'stylo';
     return;
@@ -4348,18 +4381,22 @@ sc.canvas.addEventListener('pointerdown', (e) => {
     if (entites[i].contains(p.x, p.y)) { touche = entites[i]; break; }
   }
   let feuDecor = null;
-  if (!touche && decorActif === 'perso') {
-    // Le décor perso est dessiné via la transform "cover" : on convertit
-    // le point du tap (repère vue) vers le MONDE fixe pour viser le feu.
+  if (!touche && editeur.panneaux && editeur.panneaux.length) {
+    // Convertir le point du tap (repère vue) vers le MONDE fixe pour viser le feu.
     const t = transformContain(sc.W, sc.H);
     const mx = (p.x - t.ox) / t.s, my = (p.y - t.oy) / t.s;
+    let meilleur = null, meilleureDist = Infinity;
     for (let i = editeur.panneaux.length - 1; i >= 0; i--) {
       const pa = editeur.panneaux[i];
-      if (pa.type === 'feu' && hitPanneauEd(pa, mx, my, MONDE.W, MONDE.H)) {
-        feuDecor = pa;
-        break;
+      if (pa.type !== 'feu') continue;
+      // hit précis, sinon proximité élargie (tablette : doigt peu précis)
+      const cx = pa.x * MONDE.W, cy = pa.y * MONDE.H;
+      const d = Math.hypot(mx - cx, my - cy);
+      if (hitPanneauEd(pa, mx, my, MONDE.W, MONDE.H) || d < 70) {
+        if (d < meilleureDist) { meilleur = pa; meilleureDist = d; }
       }
     }
+    feuDecor = meilleur;
   }
 
   const cible = touche || feuDecor;
@@ -4417,6 +4454,19 @@ sc.canvas.addEventListener('dblclick', (e) => {
 sc.canvas.addEventListener('pointermove', (e) => {
   if (!pointeurs.has(e.pointerId)) return;
   pointeurs.set(e.pointerId, pointDans(sc, e));
+
+  // --- Point de trajet en cours de déplacement ---
+  if (geste === 'pointTrajet' && dragPointTrajet) {
+    const p = versMonde(pointDans(sc, e));
+    const v = dragPointTrajet.vehicule;
+    v.trajet[dragPointTrajet.index].x = p.x;
+    v.trajet[dragPointTrajet.index].y = p.y;
+    // si on déplace le 1er point, la voiture le suit (départ)
+    if (dragPointTrajet.index === 0) { v.x = p.x; v.y = p.y; }
+    v._trajetLisse = lisserTrajet(v.trajet);
+    v._distArrets = null;
+    return;
+  }
 
   // --- Trajet : on prolonge le chemin dessiné ---
   if (geste === 'trajet' && trajetMode.vehicule) {
@@ -4498,6 +4548,11 @@ sc.canvas.addEventListener('pointermove', (e) => {
 function finPointeurScene(e) {
   pointeurs.delete(e.pointerId);
   if (pointeurs.size === 0) {
+    if (geste === 'pointTrajet') {
+      dragPointTrajet = null;
+      geste = null;
+      return;
+    }
     if (geste === 'trajet' && trajetMode.vehicule) {
       const v = trajetMode.vehicule;
       // tap court (trajet d'1 point) sur une voiture : on efface son trajet existant
@@ -5303,9 +5358,18 @@ function chargerSceneSelectionnee() {
   editeur.enCoursMarquage = null;
   selectionner(null);
   synchroniserCarte();
+  // réinitialiser l'historique sur l'état chargé (sinon l'undo ramène à vide / scène invisible)
+  const carte = editeur.cartes[editeur.idx];
+  carte._undo = [instantaneCarte()];
+  carte._redo = [];
+  majBoutonsUndo();
   btnDecorPerso.hidden = false;
-  pousserHistorique();
+  // activer le décor perso pour voir la scène en mode Scène aussi
+  decorActif = 'perso';
+  document.querySelectorAll('#choix-decor button').forEach(b =>
+    b.classList.toggle('actif', b.dataset.decor === 'perso'));
   demanderRenduEditeur();
+  alert('Scène « ' + nom + ' » chargée dans l\'éditeur.');
 }
 function supprimerSceneSelectionnee() {
   const sel = document.getElementById('zs-liste');
