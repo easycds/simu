@@ -1282,7 +1282,7 @@ function dessinerSchemaM7(ctx, ps, py, variante) {
   ctx.translate(0, py);
   const u = ps * 0.5;
   ctx.strokeStyle = '#1c2430';
-  ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   const ep = ps * 0.16;          // branche prioritaire (épaisse)
   const efin = ps * 0.07;        // branche secondaire (fine)
   ctx.lineWidth = ep;
@@ -1308,30 +1308,30 @@ function dessinerSchemaM7(ctx, ps, py, variante) {
   }
 
   if (variante === 'gauche') {
-    // PRIORITAIRE : vient du bas et tourne à gauche (seul trait épais)
-    brancheEpaisse([{x:0,y:0.85},{x:0,y:0},{x:-0.30,y:0,courbe:true,cx:0,cy:0},{x:-0.85,y:0}]);
-    // secondaires (fines) : droite + haut
-    brancheFine(0.18, 0, 0.85, 0);
-    brancheFine(0, -0.18, 0, -0.85);
+    // PRIORITAIRE : vient du bas, remonte puis PART EN DIAGONALE vers la gauche
+    brancheEpaisse([{x:0,y:0.85},{x:0,y:0.18},{x:-0.85,y:-0.45}]);
+    // secondaires (fines) : branche droite + branche haut
+    brancheFine(0.16, 0, 0.85, 0);
+    brancheFine(0, -0.16, 0, -0.85);
   } else if (variante === 'droite') {
-    // PRIORITAIRE : vient du bas et tourne à droite
-    brancheEpaisse([{x:0,y:0.85},{x:0,y:0},{x:0.30,y:0,courbe:true,cx:0,cy:0},{x:0.85,y:0}]);
-    brancheFine(-0.18, 0, -0.85, 0);
-    brancheFine(0, -0.18, 0, -0.85);
+    // PRIORITAIRE : vient du bas, remonte puis PART EN DIAGONALE vers la droite
+    brancheEpaisse([{x:0,y:0.85},{x:0,y:0.18},{x:0.85,y:-0.45}]);
+    brancheFine(-0.16, 0, -0.85, 0);
+    brancheFine(0, -0.16, 0, -0.85);
   } else if (variante === 'T') {
     // PRIORITAIRE : horizontale tout droit ; secondaire (fine) vers le bas
     brancheEpaisse([{x:-0.85,y:0},{x:0.85,y:0}]);
     brancheFine(0, 0.18, 0, 0.85);
   } else if (variante === 'gauche_bas') {
-    // PRIORITAIRE : vient du haut et tourne à gauche
-    brancheEpaisse([{x:0,y:-0.85},{x:0,y:0},{x:-0.30,y:0,courbe:true,cx:0,cy:0},{x:-0.85,y:0}]);
-    brancheFine(0.18, 0, 0.85, 0);
-    brancheFine(0, 0.18, 0, 0.85);
+    // PRIORITAIRE : vient du haut, descend puis PART EN DIAGONALE vers la gauche
+    brancheEpaisse([{x:0,y:-0.85},{x:0,y:-0.18},{x:-0.85,y:0.45}]);
+    brancheFine(0.16, 0, 0.85, 0);
+    brancheFine(0, 0.16, 0, 0.85);
   } else if (variante === 'droite_bas') {
-    // PRIORITAIRE : vient du haut et tourne à droite
-    brancheEpaisse([{x:0,y:-0.85},{x:0,y:0},{x:0.30,y:0,courbe:true,cx:0,cy:0},{x:0.85,y:0}]);
-    brancheFine(-0.18, 0, -0.85, 0);
-    brancheFine(0, 0.18, 0, 0.85);
+    // PRIORITAIRE : vient du haut, descend puis PART EN DIAGONALE vers la droite
+    brancheEpaisse([{x:0,y:-0.85},{x:0,y:-0.18},{x:0.85,y:0.45}]);
+    brancheFine(-0.16, 0, -0.85, 0);
+    brancheFine(0, 0.16, 0, 0.85);
   }
   ctx.restore();
 }
