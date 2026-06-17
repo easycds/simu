@@ -1020,7 +1020,11 @@
         <option value="giratoire">Carrefour giratoire</option>
         <option value="priorite_droite">Priorité à droite</option>
         <option value="route_prioritaire">Route prioritaire (AB6)</option>
-        <option value="route_prioritaire_m7">Route prioritaire + schéma (AB6 + M7)</option>
+        <option value="route_prioritaire_m7">AB6 + M7 — prioritaire ↰ (tourne à gauche)</option>
+        <option value="route_prioritaire_m7b">AB6 + M7 — prioritaire ↱ (tourne à droite)</option>
+        <option value="route_prioritaire_m7c">AB6 + M7 — prioritaire tout droit (en T)</option>
+        <option value="route_prioritaire_m7d">AB6 + M7 — prioritaire ↰ (depuis le haut)</option>
+        <option value="route_prioritaire_m7e">AB6 + M7 — prioritaire ↱ (depuis le haut)</option>
         <option value="obligation_droit">Obligation tout droit</option>
         <option value="obligation_droite">Obligation à droite</option>
         <option value="obligation_gauche">Obligation à gauche</option>
@@ -1202,6 +1206,66 @@ function dessinerLosangeAB6(ctx, r, t) {
   ctx.restore();
 }
 
+/* Schéma M7 : représente l'intersection, branche prioritaire en trait épais.
+   variante : 'gauche', 'droite', 'T', 'gauche_bas', 'droite_bas'. */
+function dessinerSchemaM7(ctx, ps, py, variante) {
+  ctx.save();
+  ctx.translate(0, py);
+  const u = ps * 0.5;
+  ctx.strokeStyle = '#1c2430';
+  ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
+  const ep = ps * 0.16;          // branche prioritaire (épaisse)
+  const efin = ps * 0.07;        // branche secondaire (fine)
+  ctx.lineWidth = ep;
+
+  function brancheEpaisse(pts) {
+    ctx.lineWidth = ep;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x * u, pts[0].y * u);
+    for (let i = 1; i < pts.length; i++) {
+      if (pts[i].courbe) {
+        ctx.quadraticCurveTo(pts[i].cx * u, pts[i].cy * u, pts[i].x * u, pts[i].y * u);
+      } else {
+        ctx.lineTo(pts[i].x * u, pts[i].y * u);
+      }
+    }
+    ctx.stroke();
+  }
+  function brancheFine(x1, y1, x2, y2) {
+    ctx.lineWidth = efin;
+    ctx.beginPath();
+    ctx.moveTo(x1 * u, y1 * u); ctx.lineTo(x2 * u, y2 * u);
+    ctx.stroke();
+  }
+
+  if (variante === 'gauche') {
+    // prioritaire vient du bas et tourne à gauche
+    brancheEpaisse([{x:-0.05,y:0.85},{x:-0.05,y:0},{x:-0.30,y:0,courbe:true,cx:-0.05,cy:0},{x:-0.85,y:0}]);
+    brancheEpaisse([{x:0.30,y:0},{x:0.85,y:0}]);     // droite
+    brancheFine(0.05, -0.30, 0.05, -0.85);           // secondaire haut
+  } else if (variante === 'droite') {
+    // prioritaire vient du bas et tourne à droite
+    brancheEpaisse([{x:0.05,y:0.85},{x:0.05,y:0},{x:0.30,y:0,courbe:true,cx:0.05,cy:0},{x:0.85,y:0}]);
+    brancheEpaisse([{x:-0.30,y:0},{x:-0.85,y:0}]);   // gauche
+    brancheFine(-0.05, -0.30, -0.05, -0.85);         // secondaire haut
+  } else if (variante === 'T') {
+    // prioritaire horizontale (les deux côtés), secondaire vers le bas
+    brancheEpaisse([{x:-0.85,y:0},{x:0.85,y:0}]);
+    brancheFine(0, 0.10, 0, 0.85);                   // secondaire bas
+  } else if (variante === 'gauche_bas') {
+    // prioritaire vient du haut et tourne à gauche
+    brancheEpaisse([{x:-0.05,y:-0.85},{x:-0.05,y:0},{x:-0.30,y:0,courbe:true,cx:-0.05,cy:0},{x:-0.85,y:0}]);
+    brancheEpaisse([{x:0.30,y:0},{x:0.85,y:0}]);
+    brancheFine(0.05, 0.30, 0.05, 0.85);             // secondaire bas
+  } else if (variante === 'droite_bas') {
+    // prioritaire vient du haut et tourne à droite
+    brancheEpaisse([{x:0.05,y:-0.85},{x:0.05,y:0},{x:0.30,y:0,courbe:true,cx:0.05,cy:0},{x:0.85,y:0}]);
+    brancheEpaisse([{x:-0.30,y:0},{x:-0.85,y:0}]);
+    brancheFine(-0.05, 0.30, -0.05, 0.85);           // secondaire bas
+  }
+  ctx.restore();
+}
+
 function dessinerPictogramme(ctx, type, taille, etatFeu) {
   const t = taille, r = t / 2;
   ctx.lineJoin = 'round';
@@ -1348,52 +1412,25 @@ function dessinerPictogramme(ctx, type, taille, etatFeu) {
       break;
     }
 
-    case 'route_prioritaire_m7': {  // AB6 + panonceau-schéma M7
+    case 'route_prioritaire_m7':
+    case 'route_prioritaire_m7b':
+    case 'route_prioritaire_m7c':
+    case 'route_prioritaire_m7d':
+    case 'route_prioritaire_m7e': {  // AB6 + panonceau-schéma M7 (plusieurs formes)
       ctx.save();
       ctx.translate(0, -r * 0.55);            // remonter le losange
       dessinerLosangeAB6(ctx, r * 0.70, t * 0.70);
       ctx.restore();
-      // Panonceau M7 : petit carré blanc bien EN DESSOUS du losange (sous sa pointe)
-      const ps = t * 0.52;                     // panonceau plus petit
-      const py = r * 1.30;                     // descendu sous la pointe du losange
+      const ps = t * 0.52;
+      const py = r * 1.30;
       ctx.fillStyle = '#fff';
       ctx.strokeStyle = '#1c2430';
       ctx.lineWidth = Math.max(1.5, t * 0.035);
       roundRect(ctx, -ps / 2, py - ps / 2, ps, ps, t * 0.05);
       ctx.fill(); ctx.stroke();
-
-      // Schéma noir : branche prioritaire = trait épais qui monte du bas puis tourne à GAUCHE
-      ctx.save();
-      ctx.translate(0, py);                    // origine au centre du panonceau
-      const u = ps * 0.5;                      // demi-côté pour repère
-      ctx.strokeStyle = '#1c2430';
-      ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
-      const ep = ps * 0.16;                    // épaisseur des branches prioritaires
-
-      // Branche prioritaire coudée (bas -> gauche), trait épais avec coin arrondi
-      ctx.lineWidth = ep;
-      ctx.beginPath();
-      ctx.moveTo(-u * 0.05, u * 0.78);         // vient du bas
-      ctx.lineTo(-u * 0.05, u * 0.05);         // monte
-      ctx.quadraticCurveTo(-u * 0.05, -u * 0.05, -u * 0.30, -u * 0.05);  // coude
-      ctx.lineTo(-u * 0.80, -u * 0.05);        // part à gauche
-      ctx.stroke();
-
-      // Branche horizontale prioritaire à DROITE (trait épais séparé)
-      ctx.lineWidth = ep;
-      ctx.beginPath();
-      ctx.moveTo(u * 0.28, -u * 0.05);
-      ctx.lineTo(u * 0.80, -u * 0.05);
-      ctx.stroke();
-
-      // Branche verticale secondaire EN HAUT (trait épais court, séparé)
-      ctx.lineWidth = ep;
-      ctx.beginPath();
-      ctx.moveTo(u * 0.05, -u * 0.30);
-      ctx.lineTo(u * 0.05, -u * 0.78);
-      ctx.stroke();
-
-      ctx.restore();
+      const variante = { route_prioritaire_m7: 'gauche', route_prioritaire_m7b: 'droite',
+        route_prioritaire_m7c: 'T', route_prioritaire_m7d: 'gauche_bas', route_prioritaire_m7e: 'droite_bas' }[type];
+      dessinerSchemaM7(ctx, ps, py, variante);
       break;
     }
 
@@ -2319,6 +2356,7 @@ function synchroniserCarte() {
   c.routes = editeur.routes;
   c.marquages = editeur.marquages;
   c.panneaux = editeur.panneaux;
+  c.pinceau = editeur.pinceau;
 }
 
 /* ----- Historique Annuler / Rétablir : instantanés par carte ----- */
@@ -2328,6 +2366,7 @@ function instantaneCarte() {
     routes: editeur.routes,
     marquages: editeur.marquages,
     panneaux: editeur.panneaux,
+    pinceau: editeur.pinceau || [],
   });
 }
 function histCourante() {
@@ -2349,6 +2388,7 @@ function appliquerInstantane(snap) {
   editeur.routes = d.routes;
   editeur.marquages = d.marquages;
   editeur.panneaux = d.panneaux;
+  editeur.pinceau = d.pinceau || [];
   synchroniserCarte();
   selectionner(null);
   editeur.enCoursRoute = null;
@@ -5353,7 +5393,7 @@ function chargerSceneSelectionnee() {
   editeur.routes = s.routes || [];
   editeur.marquages = s.marquages || [];
   editeur.panneaux = s.panneaux || [];
-  editeur.pinceau = s.pinceau || [];
+  editeur.pinceau = (s.pinceau && Array.isArray(s.pinceau)) ? s.pinceau : [];
   editeur.enCoursRoute = null;
   editeur.enCoursMarquage = null;
   selectionner(null);
