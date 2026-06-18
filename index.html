@@ -581,6 +581,9 @@
   #outil-rejeu #rj-rec.actif { background: var(--rouge,#ff3131); color: #fff; border-color: var(--rouge,#ff3131); }
   #outil-rejeu #rj-play.actif { background: #16a34a; color: #fff; border-color: #16a34a; }
   #outil-rejeu #rj-trajet.actif { background: #2563eb; color: #fff; border-color: #2563eb; }
+  #osel-routes.actif { background: var(--rouge,#ff3131); color: #fff; border-color: var(--rouge,#ff3131); }
+  .os-libre { display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; }
+  .os-libre input { width: 18px; height: 18px; }
   #outil-rejeu #rj-points.actif { background: #2563eb; color: #fff; border-color: #2563eb; }
   #outil-rejeu #rj-arret.actif { background: #f59e0b; color: #fff; border-color: #f59e0b; }
   #outil-rejeu #rj-depart.actif { background: #16a34a; color: #fff; border-color: #16a34a; }
@@ -634,6 +637,18 @@
   #reglette-arret .rg-legende .pastille.frein { background:var(--rouge,#ff3131); }
   #reglette-arret .rg-legende .rg-total { font-weight:600; color:var(--encre,#1c2430); margin-left:auto; }
   #reglette-arret .rg-sol { display:block; margin-top:9px; font-size:12.5px; color:#555; }
+  /* Image de fond (Google Earth) */
+  #zone-fond { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+  #btn-importer-fond {
+    padding: 10px; border-radius: 10px; border: 2px solid var(--rouge,#ff3131);
+    background: #fff; color: var(--rouge,#ff3131); font-weight: 700; cursor: pointer; font-family: inherit; font-size: 13px;
+  }
+  #fond-reglages { display: flex; flex-direction: column; gap: 8px; }
+  #fond-reglages .fond-check { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  #fond-reglages .fond-check input { width: 18px; height: 18px; }
+  #btn-retirer-fond { padding: 8px; border-radius: 9px; border: none; background: #c1121f; color: #fff; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .fond-aide { font-size: 11px; color: #777; line-height: 1.4; }
+
   /* Choix du type de bâtiment */
   #zone-batiment { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
   .bat-choix { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px; }
@@ -1071,7 +1086,8 @@
         <option value="sens_interdit">Sens interdit</option>
         <option value="passage_pieton">Passage piéton</option>
         <option value="giratoire">Carrefour giratoire</option>
-        <option value="priorite_droite">Priorité à droite</option>
+        <option value="priorite_droite">Priorité à droite (AB1)</option>
+        <option value="priorite_ponctuelle">Priorité ponctuelle (AB2)</option>
         <option value="route_prioritaire">Route prioritaire (AB6)</option>
         <option value="route_prioritaire_m7">AB6 + M7 — prioritaire ↰ (tourne à gauche)</option>
         <option value="route_prioritaire_m7b">AB6 + M7 — prioritaire ↱ (tourne à droite)</option>
@@ -1112,6 +1128,20 @@
           <button id="zs-charger">Charger</button>
           <button id="zs-supprimer" class="danger">Supprimer</button>
         </div>
+      </div>
+      <div id="zone-fond">
+        <button id="btn-importer-fond">🛰️ Importer une image (Google Earth)</button>
+        <div id="fond-reglages" hidden>
+          <label class="os-ligne">Opacité
+            <input type="range" id="fond-opacite" min="10" max="100" step="5" value="60">
+          </label>
+          <label class="os-ligne fond-check">
+            <input type="checkbox" id="fond-verrou"><span>Verrouiller (ne plus bouger)</span>
+          </label>
+          <button id="btn-retirer-fond" class="danger">🗑 Retirer l'image</button>
+          <p class="fond-aide">Déplacez l'image au doigt, redimensionnez-la avec les coins. Baissez l'opacité pour décalquer par-dessus.</p>
+        </div>
+        <input type="file" id="fichier-fond" accept="image/*" hidden>
       </div>
       <div id="zone-batiment" hidden>
         <label class="controle">Type de bâtiment
@@ -1179,11 +1209,19 @@
       <div class="os-corps">
         <div class="os-haut">
           <button id="osel-mode" title="Mode Sélection">☝ Sélection</button>
+          <button id="osel-routes" title="Inclure les routes dans la sélection">🛣️ Routes</button>
           <button id="osel-undo" title="Revenir en arrière">↶</button>
           <button id="osel-redo" title="Revenir en avant">↷</button>
         </div>
         <label class="os-ligne">Largeur
-          <input type="range" id="osel-taille" min="30" max="220" step="5" value="100">
+          <input type="range" id="osel-taille" min="5" max="1000" step="5" value="100">
+        </label>
+        <label class="os-ligne os-libre">
+          <input type="checkbox" id="osel-libre">
+          <span>Redimension libre (étirer L ou H)</span>
+        </label>
+        <label class="os-ligne" id="os-ligne-hauteur" hidden>Hauteur
+          <input type="range" id="osel-hauteur" min="5" max="1000" step="5" value="100">
         </label>
         <label class="os-ligne">Rotation
           <input type="range" id="osel-rot" min="-180" max="180" step="5" value="0">
@@ -1282,7 +1320,7 @@ function dessinerSchemaM7(ctx, ps, py, variante) {
   ctx.translate(0, py);
   const u = ps * 0.5;
   ctx.strokeStyle = '#1c2430';
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
   const ep = ps * 0.16;          // branche prioritaire (épaisse)
   const efin = ps * 0.07;        // branche secondaire (fine)
   ctx.lineWidth = ep;
@@ -1308,30 +1346,30 @@ function dessinerSchemaM7(ctx, ps, py, variante) {
   }
 
   if (variante === 'gauche') {
-    // PRIORITAIRE : vient du bas, remonte puis PART EN DIAGONALE vers la gauche
-    brancheEpaisse([{x:0,y:0.85},{x:0,y:0.18},{x:-0.85,y:-0.45}]);
-    // secondaires (fines) : branche droite + branche haut
-    brancheFine(0.16, 0, 0.85, 0);
-    brancheFine(0, -0.16, 0, -0.85);
+    // PRIORITAIRE : vient du bas et tourne à gauche (seul trait épais)
+    brancheEpaisse([{x:0,y:0.85},{x:0,y:0},{x:-0.30,y:0,courbe:true,cx:0,cy:0},{x:-0.85,y:0}]);
+    // secondaires (fines) : droite + haut
+    brancheFine(0.18, 0, 0.85, 0);
+    brancheFine(0, -0.18, 0, -0.85);
   } else if (variante === 'droite') {
-    // PRIORITAIRE : vient du bas, remonte puis PART EN DIAGONALE vers la droite
-    brancheEpaisse([{x:0,y:0.85},{x:0,y:0.18},{x:0.85,y:-0.45}]);
-    brancheFine(-0.16, 0, -0.85, 0);
-    brancheFine(0, -0.16, 0, -0.85);
+    // PRIORITAIRE : vient du bas et tourne à droite
+    brancheEpaisse([{x:0,y:0.85},{x:0,y:0},{x:0.30,y:0,courbe:true,cx:0,cy:0},{x:0.85,y:0}]);
+    brancheFine(-0.18, 0, -0.85, 0);
+    brancheFine(0, -0.18, 0, -0.85);
   } else if (variante === 'T') {
     // PRIORITAIRE : horizontale tout droit ; secondaire (fine) vers le bas
     brancheEpaisse([{x:-0.85,y:0},{x:0.85,y:0}]);
     brancheFine(0, 0.18, 0, 0.85);
   } else if (variante === 'gauche_bas') {
-    // PRIORITAIRE : vient du haut, descend puis PART EN DIAGONALE vers la gauche
-    brancheEpaisse([{x:0,y:-0.85},{x:0,y:-0.18},{x:-0.85,y:0.45}]);
-    brancheFine(0.16, 0, 0.85, 0);
-    brancheFine(0, 0.16, 0, 0.85);
+    // PRIORITAIRE : vient du haut et tourne à gauche
+    brancheEpaisse([{x:0,y:-0.85},{x:0,y:0},{x:-0.30,y:0,courbe:true,cx:0,cy:0},{x:-0.85,y:0}]);
+    brancheFine(0.18, 0, 0.85, 0);
+    brancheFine(0, 0.18, 0, 0.85);
   } else if (variante === 'droite_bas') {
-    // PRIORITAIRE : vient du haut, descend puis PART EN DIAGONALE vers la droite
-    brancheEpaisse([{x:0,y:-0.85},{x:0,y:-0.18},{x:0.85,y:0.45}]);
-    brancheFine(-0.16, 0, -0.85, 0);
-    brancheFine(0, 0.16, 0, 0.85);
+    // PRIORITAIRE : vient du haut et tourne à droite
+    brancheEpaisse([{x:0,y:-0.85},{x:0,y:0},{x:0.30,y:0,courbe:true,cx:0,cy:0},{x:0.85,y:0}]);
+    brancheFine(-0.18, 0, -0.85, 0);
+    brancheFine(0, 0.18, 0, 0.85);
   }
   ctx.restore();
 }
@@ -1473,6 +1511,31 @@ function dessinerPictogramme(ctx, type, taille, etatFeu) {
       ctx.beginPath();
       ctx.moveTo(-k, cy1 - k); ctx.lineTo(k, cy1 + k);
       ctx.moveTo(-k, cy1 + k); ctx.lineTo(k, cy1 - k);
+      ctx.stroke();
+      break;
+    }
+
+    case 'priorite_ponctuelle': { // AB2 — triangle danger, croix : verticale ÉPAISSE (prioritaire), horizontale fine
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = '#c1121f';
+      ctx.lineWidth = Math.max(3.5, t * 0.115);
+      ctx.beginPath();
+      ctx.moveTo(0, -r);
+      ctx.lineTo(-r * 0.95, r * 0.62);
+      ctx.lineTo( r * 0.95, r * 0.62);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = '#1c2430';
+      ctx.lineCap = 'butt';
+      const kk = r * 0.34, cyk = r * 0.10;
+      // branche verticale PRIORITAIRE (épaisse)
+      ctx.lineWidth = Math.max(4, t * 0.16);
+      ctx.beginPath();
+      ctx.moveTo(0, cyk - kk); ctx.lineTo(0, cyk + kk);
+      ctx.stroke();
+      // branche horizontale secondaire (fine)
+      ctx.lineWidth = Math.max(2, t * 0.06);
+      ctx.beginPath();
+      ctx.moveTo(-kk, cyk); ctx.lineTo(kk, cyk);
       ctx.stroke();
       break;
     }
@@ -2385,6 +2448,9 @@ const MARQUAGES_2_POINTS = ['stop', 'cedez', 'passage_pieton', 'fleche_droit', '
 const editeur = {
   mode: 'route',
   miroir: 'off',          // 'off' | 'vertical' | 'horizontal' : duplication symétrique
+  selRoutes: false,       // sélectionner aussi les routes (dissocié des panneaux)
+  libre: false,           // redimensionnement libre (largeur/hauteur indépendants)
+  fond: null,             // image de fond Google Earth { img, x, y, w, h, opacite, verrou }
   typeMarquage: 'stop',
   typePanneau: 'stop',
   routes: [],
@@ -3004,6 +3070,14 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
+  // IMAGE DE FOND (Google Earth) — tout en dessous, pour décalquer
+  if (ed.fond && ed.fond.img && ed.fond.img.complete) {
+    ctx.save();
+    ctx.globalAlpha = (ed.fond.opacite != null ? ed.fond.opacite : 60) / 100;
+    ctx.drawImage(ed.fond.img, ed.fond.x * W, ed.fond.y * H, ed.fond.w * W, ed.fond.h * H);
+    ctx.restore();
+  }
+
   // PINCEAU DE REMPLISSAGE — taches goudron/herbe, sous les routes
   if (ed.pinceau && ed.pinceau.length) {
     for (const t of ed.pinceau) {
@@ -3128,13 +3202,16 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
       ctx.strokeStyle = '#FF3030';
       ctx.lineWidth = 2.5;
       ctx.strokeRect(x, y, w, h);
-      const hs = 7;
-      ctx.fillStyle = '#fff';
-      ctx.lineWidth = 2;
-      for (const [hx, hy] of [[x, y], [x + w, y], [x, y + h], [x + w, y + h]]) {
-        ctx.beginPath();
-        ctx.rect(hx - hs, hy - hs, hs * 2, hs * 2);
-        ctx.fill(); ctx.stroke();
+      const hs = 11;                       // poignées plus grosses (tactile)
+      ctx.lineWidth = 2.5;
+      const coins = [[x, y, 'tl'], [x + w, y, 'tr'], [x, y + h, 'bl'], [x + w, y + h, 'br']];
+      editeur._poigneesCoin = [];
+      for (const [hx, hy, id] of coins) {
+        ctx.fillStyle = '#FF3030';
+        ctx.beginPath(); ctx.rect(hx - hs, hy - hs, hs * 2, hs * 2); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.rect(hx - hs + 3, hy - hs + 3, (hs - 3) * 2, (hs - 3) * 2); ctx.fill();
+        editeur._poigneesCoin.push({ id, x: hx, y: hy, r: hs + 6, cx: x + w / 2, cy: y + h / 2 });
       }
       // Poignée de ROTATION : cercle au-dessus du cadre, relié par une tige
       const rotX = x + w / 2;
@@ -5236,6 +5313,42 @@ ed.canvas.addEventListener('pointerdown', (e) => {
     }
 
     case 'selection': {
+      // IMAGE DE FOND : déplacer / redimensionner (si non verrouillée et rien d'autre sélectionné)
+      if (editeur.fond && !editeur.fond.verrou) {
+        const fx = editeur.fond.x * MONDE.W, fy = editeur.fond.y * MONDE.H;
+        const fw = editeur.fond.w * MONDE.W, fh = editeur.fond.h * MONDE.H;
+        const tEd = transformContain(ed.W, ed.H);
+        const tol = 44 / (vueEd.zoom * tEd.s);
+        // coins de l'image -> redimensionnement proportionnel
+        const coinsF = [
+          { x: fx, y: fy }, { x: fx + fw, y: fy },
+          { x: fx, y: fy + fh }, { x: fx + fw, y: fy + fh },
+        ];
+        for (const cf of coinsF) {
+          if (Math.hypot(pRaw.x - cf.x, pRaw.y - cf.y) <= tol) {
+            editeur.fondResize = {
+              ox: editeur.fond.x, oy: editeur.fond.y,
+              ow: editeur.fond.w, oh: editeur.fond.h,
+              ratio: editeur.fond.w / editeur.fond.h,
+              depart: { x: pRaw.x, y: pRaw.y },
+            };
+            ed.canvas.setPointerCapture(e.pointerId);
+            return;
+          }
+        }
+        // corps de l'image -> déplacement (seulement si on ne vise pas un élément sélectionnable au-dessus)
+        if (pRaw.x >= fx && pRaw.x <= fx + fw && pRaw.y >= fy && pRaw.y <= fy + fh) {
+          const elDessus = trouverElement(pRaw.x, pRaw.y, MONDE.W, MONDE.H, editeur.selRoutes);
+          if (!elDessus) {
+            editeur.fondDrag = {
+              ox: editeur.fond.x, oy: editeur.fond.y,
+              depart: { x: pRaw.x, y: pRaw.y },
+            };
+            ed.canvas.setPointerCapture(e.pointerId);
+            return;
+          }
+        }
+      }
       // Poignée de rotation (si une sélection est active et qu'on la saisit)
       if (editeur.selection && editeur._poigneeRotation) {
         const pr = editeur._poigneeRotation;
@@ -5252,7 +5365,34 @@ ed.canvas.addEventListener('pointerdown', (e) => {
           return;
         }
       }
-      const el = trouverElement(pRaw.x, pRaw.y, MONDE.W, MONDE.H, false);
+      // Poignées de COIN : redimensionnement proportionnel (coins calculés à la volée)
+      if (editeur.selection) {
+        const bo = boiteElement(editeur.selection, MONDE.W, MONDE.H);
+        if (bo) {
+          const pad = 6;
+          const coins = [
+            { x: bo.x0 - pad, y: bo.y0 - pad },
+            { x: bo.x1 + pad, y: bo.y0 - pad },
+            { x: bo.x0 - pad, y: bo.y1 + pad },
+            { x: bo.x1 + pad, y: bo.y1 + pad },
+          ];
+          const cx = (bo.x0 + bo.x1) / 2, cy = (bo.y0 + bo.y1) / 2;
+          const tEd = transformContain(ed.W, ed.H);
+          const tolMonde = 44 / (vueEd.zoom * tEd.s);
+          for (const pc of coins) {
+            if (Math.hypot(pRaw.x - pc.x, pRaw.y - pc.y) <= tolMonde) {
+              reinitBaseSelection();
+              const dist0 = Math.hypot(pc.x - cx, pc.y - cy) || 1;
+              editeur.coinDrag = { cx, cy, dist0 };
+              oselTaille.value = 100;
+              ed.canvas.setPointerCapture(e.pointerId);
+              return;
+            }
+          }
+        }
+      }
+
+      const el = trouverElement(pRaw.x, pRaw.y, MONDE.W, MONDE.H, editeur.selRoutes);
       const selAvant = editeur.selection;
 
       // Presser un membre du groupe sélectionné : tout le groupe se déplace
@@ -5324,6 +5464,34 @@ ed.canvas.addEventListener('pointermove', (e) => {
     demanderRenduEditeur();
     return;
   }
+  if (editeur.fondDrag && editeur.fond) {
+    const pr = pointEd(e);
+    const dx = (pr.x - editeur.fondDrag.depart.x) / MONDE.W;
+    const dy = (pr.y - editeur.fondDrag.depart.y) / MONDE.H;
+    editeur.fond.x = editeur.fondDrag.ox + dx;
+    editeur.fond.y = editeur.fondDrag.oy + dy;
+    demanderRenduEditeur();
+    return;
+  }
+  if (editeur.fondResize && editeur.fond) {
+    const pr = pointEd(e);
+    const dx = (pr.x - editeur.fondResize.depart.x) / MONDE.W;
+    const nw = Math.max(0.05, editeur.fondResize.ow + dx);
+    editeur.fond.w = nw;
+    editeur.fond.h = nw / editeur.fondResize.ratio;   // garder les proportions de l'image
+    demanderRenduEditeur();
+    return;
+  }
+  if (editeur.coinDrag) {
+    const pr = pointEd(e);
+    const cd = editeur.coinDrag;
+    const dist = Math.hypot(pr.x - cd.cx, pr.y - cd.cy);
+    const ratio = Math.max(0.05, Math.min(12, dist / cd.dist0));
+    oselTaille.value = Math.max(5, Math.min(1000, Math.round(100 * ratio)));
+    appliquerTransformSelection();
+    demanderRenduEditeur();
+    return;
+  }
   if (editeur.rotationDrag) {
     const pr = pointEd(e);
     const rd = editeur.rotationDrag;
@@ -5348,6 +5516,28 @@ ed.canvas.addEventListener('pointermove', (e) => {
   // Survol : surligner l'élément sous le curseur (mode sélection, hors drag)
   if (editeur.mode === 'selection' && !editeur.dragSelection && !editeur.zoneSelection) {
     const pr = pointEd(e);
+    // Curseur de redimensionnement si on survole un coin de la sélection
+    let surCoin = false;
+    if (editeur.selection) {
+      const bo = boiteElement(editeur.selection, MONDE.W, MONDE.H);
+      if (bo) {
+        const pad = 6;
+        const coins = [
+          { x: bo.x0 - pad, y: bo.y0 - pad, c: 'nwse-resize' },
+          { x: bo.x1 + pad, y: bo.y0 - pad, c: 'nesw-resize' },
+          { x: bo.x0 - pad, y: bo.y1 + pad, c: 'nesw-resize' },
+          { x: bo.x1 + pad, y: bo.y1 + pad, c: 'nwse-resize' },
+        ];
+        const tEd = transformContain(ed.W, ed.H);
+        const tolMonde = 44 / (vueEd.zoom * tEd.s);
+        for (const pc of coins) {
+          if (Math.hypot(pr.x - pc.x, pr.y - pc.y) <= tolMonde) {
+            ed.canvas.style.cursor = pc.c; surCoin = true; break;
+          }
+        }
+      }
+    }
+    if (!surCoin) ed.canvas.style.cursor = '';
     const nouv = trouverElement(pr.x, pr.y, MONDE.W, MONDE.H, true);
     const avant = editeur.survol;
     editeur.survol = nouv;
@@ -5400,6 +5590,9 @@ ed.canvas.addEventListener('pointerup', () => {
   editeur.dragTest = null;
   editeur.panDrag = null;
   editeur.pinceauActif = false;
+  if (editeur.fondDrag) editeur.fondDrag = null;
+  if (editeur.fondResize) editeur.fondResize = null;
+  if (editeur.coinDrag) { editeur.coinDrag = null; reinitBaseSelection(); oselTaille.value = 100; }
   if (editeur.rotationDrag) { editeur.rotationDrag = null; reinitBaseSelection(); oselRot.value = 0; }
   if (editeur.zoneSelection) {
     const z = editeur.zoneSelection;
@@ -5438,6 +5631,9 @@ ed.canvas.addEventListener('pointercancel', () => {
   editeur.dragTest = null;
   editeur.panDrag = null;
   editeur.pinceauActif = false;
+  if (editeur.fondDrag) editeur.fondDrag = null;
+  if (editeur.fondResize) editeur.fondResize = null;
+  if (editeur.coinDrag) { editeur.coinDrag = null; reinitBaseSelection(); oselTaille.value = 100; }
   if (editeur.rotationDrag) { editeur.rotationDrag = null; reinitBaseSelection(); oselRot.value = 0; }
   editeur.zoneSelection = null;
   editeur.dragSelection = null;
@@ -5572,6 +5768,12 @@ function majSelectionUI() {
 document.getElementById('choix-mode').addEventListener('click', (e) => {
   const btn = e.target.closest('button[data-mode]');
   if (!btn) return;
+  // Re-clic sur Sélection déjà active : on désélectionne ce qui est sélectionné
+  if (btn.dataset.mode === 'selection' && editeur.mode === 'selection' && editeur.selection) {
+    selectionner(null);
+    demanderRenduEditeur();
+    return;
+  }
   setTimeout(demanderRenduEditeur, 0);
   terminerTrace();
   if (btn.dataset.mode !== 'selection') selectionner(null);
@@ -5789,6 +5991,10 @@ function appliquerTransformSelection() {
   if (!sel || !sel.base) return;
   demanderRenduEditeur();
   const k = Number(oselTaille.value) / 100;
+  const oselHauteur = document.getElementById('osel-hauteur');
+  // En mode libre : kx = largeur, ky = hauteur (indépendants)
+  const kx = k;
+  const ky = editeur.libre ? (Number(oselHauteur.value) / 100) : k;
   const th = Number(oselRot.value) * Math.PI / 180;
   if (sel.kind === 'groupe') {
     const cos = Math.cos(th), sin = Math.sin(th);
@@ -5807,7 +6013,7 @@ function appliquerTransformSelection() {
       if (r.kind === 'panneau') {
         const np = transfP(mb.x, mb.y);
         r.ref.x = np.x; r.ref.y = np.y;
-        r.ref.taille = Math.max(20, Math.min(140, Math.round(mb.taille * k)));
+        r.ref.taille = Math.max(8, Math.min(400, Math.round(mb.taille * k)));
         r.ref.angle = mb.angle + th;
       } else {
         r.ref.pts.forEach((p, j) => {
@@ -5819,17 +6025,17 @@ function appliquerTransformSelection() {
     return;
   }
   if (sel.kind === 'panneau') {
-    sel.ref.taille = Math.max(20, Math.min(140, Math.round(sel.base.taille * k)));
+    sel.ref.taille = Math.max(8, Math.min(400, Math.round(sel.base.taille * k)));
     sel.ref.angle = sel.base.angle + th;
   } else if (sel.kind === 'batiment') {
-    sel.ref.w = Math.max(0.02, Math.min(0.9, sel.base.w * k));
-    sel.ref.h = Math.max(0.02, Math.min(0.9, sel.base.h * k));
+    sel.ref.w = Math.max(0.01, Math.min(2, sel.base.w * kx));
+    sel.ref.h = Math.max(0.01, Math.min(2, sel.base.h * ky));
     sel.ref.angle = (sel.base.angle || 0) + th;
   } else {
     const cos = Math.cos(th), sin = Math.sin(th);
     sel.ref.pts.forEach((p, i) => {
-      const dx = (sel.base.pts[i].x - sel.base.cx) * MONDE.W * k;
-      const dy = (sel.base.pts[i].y - sel.base.cy) * MONDE.H * k;
+      const dx = (sel.base.pts[i].x - sel.base.cx) * MONDE.W * kx;
+      const dy = (sel.base.pts[i].y - sel.base.cy) * MONDE.H * ky;
       p.x = sel.base.cx + (dx * cos - dy * sin) / MONDE.W;
       p.y = sel.base.cy + (dx * sin + dy * cos) / MONDE.H;
     });
@@ -5842,6 +6048,16 @@ oselTaille.addEventListener('input', appliquerTransformSelection);
 oselRot.addEventListener('input', appliquerTransformSelection);
 oselTaille.addEventListener('change', figerBaseSelection);
 oselRot.addEventListener('change', figerBaseSelection);
+const oselHauteur = document.getElementById('osel-hauteur');
+const oselLibre = document.getElementById('osel-libre');
+oselHauteur.addEventListener('input', appliquerTransformSelection);
+oselHauteur.addEventListener('change', figerBaseSelection);
+oselLibre.addEventListener('change', () => {
+  editeur.libre = oselLibre.checked;
+  document.getElementById('os-ligne-hauteur').hidden = !editeur.libre;
+  // relabel : en mode libre, "Largeur" = largeur seule
+  if (editeur.libre) { oselTaille.value = 100; oselHauteur.value = 100; figerBaseSelection(); }
+});
 // Boutons dupliquer / supprimer dans le widget
 document.getElementById('osel-dupliquer').addEventListener('click', () => {
   const b = document.getElementById('sel-dupliquer'); if (b) b.click();
@@ -5851,10 +6067,65 @@ document.getElementById('osel-supprimer').addEventListener('click', () => {
 });
 // Bouton Sélection : active le mode sélection (widget + barre du haut)
 function activerModeSelection() {
+  // Si on est DÉJÀ en mode sélection : un nouveau clic désélectionne
+  if (editeur.mode === 'selection') {
+    selectionner(null);
+    demanderRenduEditeur();
+    return;
+  }
   const b = document.querySelector('#choix-mode [data-mode=selection]');
   if (b) b.click();
 }
 document.getElementById('osel-mode').addEventListener('click', activerModeSelection);
+// ===== Image de fond (Google Earth) =====
+document.getElementById('btn-importer-fond').addEventListener('click', () => {
+  document.getElementById('fichier-fond').click();
+});
+document.getElementById('fichier-fond').addEventListener('change', (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const lecteur = new FileReader();
+  lecteur.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      // dimensionner l'image pour qu'elle tienne dans la carte en gardant ses proportions
+      const ratio = img.width / img.height;
+      let w = 0.6, h = 0.6 / ratio * (MONDE.W / MONDE.H);
+      if (h > 0.8) { h = 0.8; w = 0.8 * ratio * (MONDE.H / MONDE.W); }
+      editeur.fond = {
+        img,
+        x: (1 - w) / 2, y: (1 - h) / 2, w, h,
+        opacite: 60, verrou: false,
+      };
+      document.getElementById('fond-reglages').hidden = false;
+      document.getElementById('fond-opacite').value = 60;
+      document.getElementById('fond-verrou').checked = false;
+      btnDecorPerso.hidden = false;
+      demanderRenduEditeur();
+    };
+    img.src = ev.target.result;
+  };
+  lecteur.readAsDataURL(f);
+  e.target.value = '';   // permet de réimporter le même fichier
+});
+document.getElementById('fond-opacite').addEventListener('input', (e) => {
+  if (editeur.fond) { editeur.fond.opacite = Number(e.target.value); demanderRenduEditeur(); }
+});
+document.getElementById('fond-verrou').addEventListener('change', (e) => {
+  if (editeur.fond) editeur.fond.verrou = e.target.checked;
+});
+document.getElementById('btn-retirer-fond').addEventListener('click', () => {
+  editeur.fond = null;
+  document.getElementById('fond-reglages').hidden = true;
+  demanderRenduEditeur();
+});
+
+document.getElementById('osel-routes').addEventListener('click', () => {
+  editeur.selRoutes = !editeur.selRoutes;
+  document.getElementById('osel-routes').classList.toggle('actif', editeur.selRoutes);
+  // s'assurer qu'on est en mode sélection
+  if (editeur.mode !== 'selection') activerModeSelection();
+});
 document.getElementById('btn-select-nav').addEventListener('click', activerModeSelection);
 // Undo / Redo (mêmes actions que les boutons de Carte)
 document.getElementById('osel-undo').addEventListener('click', () => {
