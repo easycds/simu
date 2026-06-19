@@ -1,9 +1,20 @@
 
 <!DOCTYPE html>
+<!--
+  ============================================================
+  Simulateur de sécurité routière — Easy auto-école
+  © 2026 Easy auto-école — Tous droits réservés.
+  Reproduction, copie ou diffusion non autorisée interdite.
+  https://easy-auto-ecole.com
+  ============================================================
+-->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="author" content="Easy auto-école">
+<meta name="copyright" content="© 2026 Easy auto-école — Tous droits réservés">
+<meta name="rights" content="Tous droits réservés. Reproduction interdite.">
 <title>Simulateur — Easy auto-école</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -664,6 +675,16 @@
   body.presentation #btn-presentation-sortie { display: inline-flex; }
   #btn-presentation-sortie:hover { background: rgba(0,0,0,0.65); }
 
+  /* Mentions de droits d'auteur */
+  .copyright-accueil {
+    margin-top: 10px; font-size: 11px; color: #b9b6b2; letter-spacing: 0.3px;
+  }
+  .copyright-nav {
+    font-size: 10px; color: #b9b6b2; margin-left: 10px; white-space: nowrap;
+    align-self: center;
+  }
+  @media (max-width: 720px) { .copyright-nav { display: none; } }
+
   /* Horloge style Easy */
   #horloge-easy {
     font-family: 'Fredoka', sans-serif;
@@ -939,6 +960,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
     </button>
     <div class="pied">Easy auto-école · <a href="https://easy-auto-ecole.com" target="_blank" rel="noopener">easy-auto-ecole.com</a> — Simple, easy.</div>
+    <div class="copyright-accueil">© 2026 Easy auto-école — Tous droits réservés</div>
   </div>
 </div>
 
@@ -955,6 +977,7 @@
     <img src="https://easy-auto-ecole.com/wp-content/themes/easyautoecole/assets/img/EAE_Logo-Rouge.png"
          alt="Easy auto-école" onerror="this.hidden=true">
     <span class="nom-outil">Simulateur <em>Easy</em></span>
+    <span class="copyright-nav">© 2026 Easy auto-école — Tous droits réservés</span>
   </span>
   <button id="onglet-scene" class="actif">Situations</button>
   <button id="onglet-editeur">Éditeur de scènes</button>
@@ -1177,6 +1200,8 @@
         <option value="giratoire">Carrefour giratoire</option>
         <option value="priorite_droite">Priorité à droite (AB1)</option>
         <option value="priorite_ponctuelle">Priorité ponctuelle (AB2)</option>
+        <option value="b15">Cédez sens inverse (B15)</option>
+        <option value="c18">Priorité sens inverse (C18)</option>
         <option value="route_prioritaire">Route prioritaire (AB6)</option>
         <option value="route_prioritaire_m7">AB6 + M7 — prioritaire ↰ (tourne à gauche)</option>
         <option value="route_prioritaire_m7b">AB6 + M7 — prioritaire ↱ (tourne à droite)</option>
@@ -1241,6 +1266,7 @@
             <button class="bat-btn" data-bat="parking">🅿️ Parking</button>
             <button class="bat-btn" data-bat="buisson">🌳 Buisson</button>
             <button class="bat-btn" data-bat="terreplein">🟫 Terre-plein</button>
+            <button class="bat-btn" data-bat="voiture">🚗 Voiture garée</button>
           </div>
         </label>
         <p class="bat-aide">Tapez sur la carte pour poser le bâtiment, puis redimensionnez-le avec l'outil Sélection.</p>
@@ -1248,7 +1274,7 @@
       <div id="zone-pinceau" hidden>
         <label class="controle" style="flex-direction:row;align-items:center;gap:8px">Couleur
           <button class="pinc-coul actif" data-coul="goudron" title="Goudron" style="background:#565d66"></button>
-          <button class="pinc-coul" data-coul="herbe" title="Herbe" style="background:#9ec79b"></button>
+          <button class="pinc-coul" data-coul="herbe" title="Herbe" style="background:#8bb888"></button>
         </label>
         <label class="controle" style="flex-direction:row;align-items:center;gap:8px">Forme
           <button class="pinc-forme actif" data-forme="cercle" title="Cercle">●</button>
@@ -1465,11 +1491,68 @@ function dessinerSchemaM7(ctx, ps, py, variante) {
   ctx.restore();
 }
 
-function dessinerPictogramme(ctx, type, taille, etatFeu) {
+/* Flèche verticale stylisée pour B15/C18.
+   sens=-1 vers le haut, sens=+1 vers le bas. largeurRel = largeur du fût relative à t.
+   decY = décalage vertical pour décaler la paire de flèches. */
+function dessinerFlecheVerticale(ctx, cx, t, sens, couleur, largeurRel) {
+  // cx = position horizontale du centre de la flèche ; sens=-1 vers le haut, +1 vers le bas
+  const h = t * 0.62;                             // hauteur totale
+  const w = t * largeurRel;                       // largeur du fût
+  const tete = t * (largeurRel + 0.11);           // demi-largeur de la pointe
+  const yHaut = -h / 2, yBas = h / 2;
+  ctx.save();
+  ctx.fillStyle = couleur;
+  ctx.beginPath();
+  if (sens < 0) {
+    // pointe en haut
+    ctx.moveTo(cx, yHaut);
+    ctx.lineTo(cx + tete, yHaut + tete);
+    ctx.lineTo(cx + w / 2, yHaut + tete);
+    ctx.lineTo(cx + w / 2, yBas);
+    ctx.lineTo(cx - w / 2, yBas);
+    ctx.lineTo(cx - w / 2, yHaut + tete);
+    ctx.lineTo(cx - tete, yHaut + tete);
+  } else {
+    // pointe en bas
+    ctx.moveTo(cx, yBas);
+    ctx.lineTo(cx + tete, yBas - tete);
+    ctx.lineTo(cx + w / 2, yBas - tete);
+    ctx.lineTo(cx + w / 2, yHaut);
+    ctx.lineTo(cx - w / 2, yHaut);
+    ctx.lineTo(cx - w / 2, yBas - tete);
+    ctx.lineTo(cx - tete, yBas - tete);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function dessinerPictogramme(ctx, type, taille, etatFeu, numero) {
   const t = taille, r = t / 2;
   ctx.lineJoin = 'round';
 
   switch (type) {
+    case 'b15': {
+      // B15 — rond, fond blanc, bord rouge.
+      // GAUCHE : flèche NOIRE vers le bas (épaisse) | DROITE : flèche ROUGE vers le haut (fine)
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.94, 0, Math.PI * 2); ctx.fill();
+      ctx.lineWidth = Math.max(3, t * 0.12); ctx.strokeStyle = '#e2231a';
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.94, 0, Math.PI * 2); ctx.stroke();
+      dessinerFlecheVerticale(ctx, -t * 0.17, t, 1, '#111', 0.22);        // noire, bas (gauche)
+      dessinerFlecheVerticale(ctx,  t * 0.18, t, -1, '#e2231a', 0.16);    // rouge, haut (droite, fine)
+      break;
+    }
+    case 'c18': {
+      // C18 — carré, fond bleu.
+      // GAUCHE : flèche ROUGE vers le bas (fine) | DROITE : flèche BLANCHE vers le haut (épaisse)
+      const cote = t * 0.96;
+      ctx.fillStyle = '#0d3fb0';
+      roundRect(ctx, -cote / 2, -cote / 2, cote, cote, t * 0.06); ctx.fill();
+      dessinerFlecheVerticale(ctx, -t * 0.17, t, 1, '#e2231a', 0.18);     // rouge, bas (gauche, fine)
+      dessinerFlecheVerticale(ctx,  t * 0.17, t, -1, '#fff', 0.24);       // blanche, haut (droite, épaisse)
+      break;
+    }
 
     case 'stop': {
       ctx.fillStyle = '#c1121f'; ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(2.5, t * 0.07);
@@ -2249,7 +2332,7 @@ class Panneau extends Entity {
 
 function drawCarrefour(ctx, W, H) {
   const ROUTE = 180, r = ROUTE / 2, TROT = 28;
-  ctx.fillStyle = '#9ec79b'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#8bb888'; ctx.fillRect(0, 0, W, H);
   // Trottoirs : bandes grises entre l'herbe et la chaussée
   ctx.fillStyle = '#c9cdd2';
   ctx.fillRect(0, H/2 - r - TROT, W, ROUTE + 2*TROT);
@@ -2286,7 +2369,7 @@ function drawRondPoint(ctx, W, H, taille = 0.42) {
   const Rmil = Rext - (Rext - Rint) * 0.55;         // séparation des 2 voies
   const dx = Math.sqrt(Rext*Rext - r*r), theta = Math.asin(r / Rext);
   const TROT = 26;
-  ctx.fillStyle = '#9ec79b'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#8bb888'; ctx.fillRect(0, 0, W, H);
   // Trottoirs : bandes le long des branches + couronne autour de l'anneau
   ctx.fillStyle = '#c9cdd2';
   ctx.fillRect(0, cy - r - TROT, W, ROUTE + 2*TROT);
@@ -2315,7 +2398,7 @@ function drawRondPoint(ctx, W, H, taille = 0.42) {
   // Îlot : bordure-trottoir grise puis pelouse à deux tons
   ctx.fillStyle = '#c9cdd2';
   ctx.beginPath(); ctx.arc(cx, cy, Rint, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#9ec79b';
+  ctx.fillStyle = '#8bb888';
   ctx.beginPath(); ctx.arc(cx, cy, Rint - 12, 0, Math.PI*2); ctx.fill();
   ctx.fillStyle = '#7fb37c';
   ctx.beginPath(); ctx.arc(cx, cy, Rint*0.55, 0, Math.PI*2); ctx.fill();
@@ -2376,7 +2459,7 @@ function drawRondPoint(ctx, W, H, taille = 0.42) {
 
 function drawIntersectionT(ctx, W, H) {
   const ROUTE = 180, r = ROUTE / 2, TROT = 28;
-  ctx.fillStyle = '#9ec79b';
+  ctx.fillStyle = '#8bb888';
   ctx.fillRect(0, 0, W, H);
   // Trottoirs
   ctx.fillStyle = '#c9cdd2';
@@ -2424,7 +2507,7 @@ function drawVoieRapide(ctx, W, H) {
   const yIns  = yBas + 2 * LANE;                   // niveau insertion / BAU
   const xA = W * 0.30, xB = W * 0.72, xC = W * 0.88;
 
-  ctx.fillStyle = '#9ec79b';
+  ctx.fillStyle = '#8bb888';
   ctx.fillRect(0, 0, W, H);
 
   // BAU basse, pleine largeur (recouverte localement par l'insertion)
@@ -3114,8 +3197,8 @@ function dessinerBatiment(ctx, type, cx, cy, w, h, angle) {
   ctx.translate(cx, cy);
   if (angle) ctx.rotate(angle);
   const x = -w / 2, y = -h / 2;
-  // ombre portée (sauf buisson/terre-plein qui ont leur propre rendu)
-  if (type !== 'buisson' && type !== 'terreplein') {
+  // ombre portée (sauf buisson/terre-plein/voiture qui ont leur propre rendu)
+  if (type !== 'buisson' && type !== 'terreplein' && type !== 'voiture') {
     ctx.fillStyle = 'rgba(0,0,0,0.15)';
     roundRect(ctx, x + 4, y + 5, w, h, 4); ctx.fill();
   }
@@ -3183,17 +3266,36 @@ function dessinerBatiment(ctx, type, cx, cy, w, h, angle) {
     // Terre-plein : îlot séparateur (bordure grise + intérieur végétal ou hachuré)
     ctx.fillStyle = '#b9bec4';                       // bordure béton
     roundRect(ctx, x, y, w, h, Math.min(w, h) * 0.18); ctx.fill();
-    ctx.fillStyle = '#9ec79b';                       // intérieur herbe
+    ctx.fillStyle = '#8bb888';                       // intérieur herbe
     const m = Math.min(w, h) * 0.16;
     roundRect(ctx, x + m, y + m, w - 2 * m, h - 2 * m, Math.min(w, h) * 0.12); ctx.fill();
     ctx.strokeStyle = '#8a9097'; ctx.lineWidth = Math.max(1, Math.min(w, h) * 0.03);
     roundRect(ctx, x, y, w, h, Math.min(w, h) * 0.18); ctx.stroke();
+  } else if (type === 'voiture') {
+    // Voiture garée vue de dessus (orientée selon w = longueur, h = largeur)
+    const couleur = arguments[6] || '#d24b4b';   // couleur passée en plus
+    // ombre
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    roundRect(ctx, x + 3, y + 4, w, h, Math.min(w, h) * 0.32); ctx.fill();
+    // carrosserie
+    ctx.fillStyle = couleur;
+    roundRect(ctx, x, y, w, h, Math.min(w, h) * 0.32); ctx.fill();
+    // pare-brise avant + arrière (le capot = avant, vers +x)
+    ctx.fillStyle = 'rgba(255,255,255,0.30)';
+    roundRect(ctx, x + w * 0.60, y + h * 0.18, w * 0.18, h * 0.64, h * 0.12); ctx.fill();
+    roundRect(ctx, x + w * 0.24, y + h * 0.18, w * 0.16, h * 0.64, h * 0.12); ctx.fill();
+    // toit
+    ctx.fillStyle = 'rgba(0,0,0,0.10)';
+    roundRect(ctx, x + w * 0.40, y + h * 0.16, w * 0.20, h * 0.68, h * 0.12); ctx.fill();
+    // contour
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = Math.max(1, h * 0.04);
+    roundRect(ctx, x, y, w, h, Math.min(w, h) * 0.32); ctx.stroke();
   }
   ctx.restore();
 }
 
 function drawCartePerso(ctx, W, H, ed, apercu) {
-  ctx.fillStyle = '#9ec79b';
+  ctx.fillStyle = '#8bb888';
   ctx.fillRect(0, 0, W, H);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
@@ -3209,7 +3311,7 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
   // PINCEAU DE REMPLISSAGE — taches goudron/herbe, sous les routes
   if (ed.pinceau && ed.pinceau.length) {
     for (const t of ed.pinceau) {
-      ctx.fillStyle = (t.couleur === 'herbe') ? '#9ec79b' : '#565d66';
+      ctx.fillStyle = (t.couleur === 'herbe') ? '#8bb888' : '#565d66';
       if (t.forme === 'carre') {
         ctx.fillRect(t.x - t.taille / 2, t.y - t.taille / 2, t.taille, t.taille);
       } else {
@@ -3260,7 +3362,7 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
   // PASSE 3b — BÂTIMENTS / décor (AU-DESSUS des routes et marquages)
   if (ed.batiments && ed.batiments.length) {
     for (const b of ed.batiments) {
-      dessinerBatiment(ctx, b.type, b.x * W, b.y * H, b.w * W, b.h * H, b.angle || 0);
+      dessinerBatiment(ctx, b.type, b.x * W, b.y * H, b.w * W, b.h * H, b.angle || 0, b.couleur);
     }
   }
   // PASSE 4 — panneaux du décor
@@ -3270,7 +3372,7 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
     ctx.rotate(p.angle || 0);
     dessinerOmbrePanneau(ctx, p.taille);
     if (p.type !== 'feu') dessinerPoteauPanneau(ctx, p.taille);
-    dessinerPictogramme(ctx, p.type, p.taille, p.etatFeu);
+    dessinerPictogramme(ctx, p.type, p.taille, p.etatFeu, p.numero);
     ctx.restore();
   }
 
@@ -3414,7 +3516,7 @@ const DECORS = {
     // Le MONDE fixe 16:9 affiché en « contain » : exactement le même
     // rendu que l'éditeur, quel que soit le format de l'écran.
     const t = transformContain(W, H);
-    ctx.fillStyle = '#9ec79b';
+    ctx.fillStyle = '#8bb888';
     ctx.fillRect(0, 0, W, H);
     ctx.save();
     ctx.translate(t.ox, t.oy);
@@ -3496,7 +3598,7 @@ function peindreUneVignette(cv) {
   const ctx = cv.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#9ec79b'; ctx.fillRect(0, 0, W, H);   // fond herbe garanti
+  ctx.fillStyle = '#8bb888'; ctx.fillRect(0, 0, W, H);   // fond herbe garanti
 
   // Les décors sont calibrés pour le grand MONDE (routes en pixels absolus).
   // On les dessine d'abord à la taille du monde sur un canvas tampon,
@@ -4090,7 +4192,7 @@ function boucle(temps) {
     majEchelleVehicules();
     for (const e of entites) e.update();
     majRejeu(temps);                         // enregistrement / lecture (après update)
-    sc.ctx.fillStyle = '#9ec79b';              // herbe partout (hors-monde au dézoom)
+    sc.ctx.fillStyle = '#8bb888';              // herbe partout (hors-monde au dézoom)
     sc.ctx.fillRect(0, 0, sc.W, sc.H);
     sc.ctx.save();
     sc.ctx.translate(vue.ox, vue.oy);
@@ -4537,7 +4639,7 @@ function dessinerEditeur() {
   const DPR = Math.min(2, window.devicePixelRatio || 1);
   {
     ed.ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    ed.ctx.fillStyle = '#9ec79b';              // herbe partout
+    ed.ctx.fillStyle = '#8bb888';              // herbe partout
     ed.ctx.fillRect(0, 0, ed.W, ed.H);
     const tEd = transformContain(ed.W, ed.H);
     ed.ctx.save();
@@ -4546,7 +4648,7 @@ function dessinerEditeur() {
     ed.ctx.translate(tEd.ox, tEd.oy);
     ed.ctx.scale(tEd.s, tEd.s);
     // Même fond herbe que la Scène : l'éditeur montre exactement le rendu final.
-    ed.ctx.fillStyle = '#9ec79b';
+    ed.ctx.fillStyle = '#8bb888';
     ed.ctx.fillRect(0, 0, MONDE.W, MONDE.H);
     // GRILLE magnétique (visible seulement dans l'éditeur quand le magnétisme est actif)
     if (editeur.magnetisme && editeur.mode !== 'selection') {
@@ -5478,16 +5580,21 @@ ed.canvas.addEventListener('pointerdown', (e) => {
     }
 
     case 'batiment': {
-      const tailleDef = { maison: 90, immeuble: 120, ecole: 160, parking: 140, buisson: 60, terreplein: 200 }[editeur.typeBatiment] || 100;
+      const tailleDef = { maison: 90, immeuble: 120, ecole: 160, parking: 140, buisson: 60, terreplein: 200, voiture: 74 }[editeur.typeBatiment] || 100;
       const ratioH = editeur.typeBatiment === 'terreplein' ? 0.25
                    : editeur.typeBatiment === 'buisson' ? 1
+                   : editeur.typeBatiment === 'voiture' ? 0.50
                    : 0.75;
+      const COULEURS_VOIT = ['#d24b4b', '#3f6fb0', '#e0e0e0', '#4a4a4a', '#5aa15a', '#e0a93f', '#7d5ba6'];
       const bat = {
         type: editeur.typeBatiment,
         x: pn.x, y: pn.y,
         w: tailleDef / MONDE.W,
         h: (tailleDef * ratioH) / MONDE.H,
       };
+      if (editeur.typeBatiment === 'voiture') {
+        bat.couleur = COULEURS_VOIT[Math.floor(Math.random() * COULEURS_VOIT.length)];
+      }
       editeur.batiments.push(bat);
       if (editeur.miroir !== 'off') {
         const r = refletXY(bat.x, bat.y);
