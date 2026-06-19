@@ -647,6 +647,23 @@
   #btn-replier-outils.replie { background: #6f767d; opacity: 0.85; }
   body.outils-replies .outil-flottant { display: none !important; }
 
+  /* ===== Mode PRÉSENTATION épuré : ne laisser que la scène ===== */
+  body.presentation nav { display: none !important; }
+  body.presentation #vue-scene header { display: none !important; }
+  body.presentation .outil-flottant { display: none !important; }
+  body.presentation #btn-replier-outils { display: none !important; }
+  body.presentation #rouvrir-nav { display: none !important; }
+  /* bouton de sortie discret en haut à droite */
+  #btn-presentation-sortie {
+    position: fixed; top: 10px; right: 12px; z-index: 320;
+    background: rgba(0,0,0,0.45); color: #fff; border: none;
+    border-radius: 999px; padding: 8px 16px; font-size: 14px; cursor: pointer;
+    font-family: 'Fredoka', sans-serif; font-weight: 500;
+    display: none; align-items: center; gap: 6px; backdrop-filter: blur(4px);
+  }
+  body.presentation #btn-presentation-sortie { display: inline-flex; }
+  #btn-presentation-sortie:hover { background: rgba(0,0,0,0.65); }
+
   /* Horloge style Easy */
   #horloge-easy {
     font-family: 'Fredoka', sans-serif;
@@ -943,13 +960,15 @@
   <button id="onglet-editeur">Éditeur de scènes</button>
   <button id="btn-select-nav" class="btn-select-nav" title="Mode Sélection (déplacer un élément)">☝ Sélection</button>
   <button id="btn-vider-nav" class="btn-vider-nav" title="Vider la scène">🗑 Vider</button>
-  <button id="btn-plein-ecran" class="btn-pe-nav" title="Plein écran (présentation)" aria-label="Plein écran">⛶</button>
+  <button id="btn-plein-ecran" class="btn-pe-nav" title="Plein écran (agrandir, outils gardés)" aria-label="Plein écran">⛶</button>
+  <button id="btn-presentation" class="btn-pe-nav" title="Mode présentation épuré (masque tout sauf la scène)" aria-label="Présentation">📽️</button>
   <span id="horloge-easy" title="Heure">--:--</span>
   <button id="btn-replier-nav" title="Replier / déplier la barre" aria-label="Replier">▲</button>
 </nav>
 
 <button id="rouvrir-nav" title="Afficher la barre">▼ menu</button>
 <button id="btn-replier-outils" title="Masquer / afficher les outils flottants">🧰</button>
+<button id="btn-presentation-sortie" title="Quitter le mode présentation">✕ Quitter</button>
 
 <!-- ================= VUE SCÈNE ================= -->
 <div class="vue" id="vue-scene">
@@ -2532,6 +2551,7 @@ const editeur = {
   enCoursMarquage: null,
   largeur: 150,
   magnetisme: true,
+  connexionActive: null,  // extrémité de route sous le curseur (connexion auto)
   arrondi: false,         // routes lissées en courbes
   boutsDroits: false,     // extrémités coupées net (collent au bord)
   jaune: false,           // marquage temporaire jaune (chantier)
@@ -2581,6 +2601,7 @@ function zoomerEditeur(sx, sy, facteur) {
   vueEd.zoom = nz;
 }
 const GRILLE = 20;
+const CONNEXION_SEUIL = 28;   // distance (px monde) pour coller à une extrémité de route
 
 /* Plusieurs scènes : les tableaux de `editeur` SONT ceux de la carte
    active (mêmes références) ; changer de carte = permuter les références. */
@@ -3198,13 +3219,6 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
     }
   }
 
-  // BÂTIMENTS — posés sur le sol (sous les routes pour que la voirie passe devant)
-  if (ed.batiments && ed.batiments.length) {
-    for (const b of ed.batiments) {
-      dessinerBatiment(ctx, b.type, b.x * W, b.y * H, b.w * W, b.h * H, b.angle || 0);
-    }
-  }
-
   // PASSE 0 — trottoirs libres (tracés avec l'outil Trottoir),
   // dessinés SOUS les routes : une route qui les croise les recouvre
   for (const rt of ed.routes) {
@@ -3236,6 +3250,12 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
   }
   // PASSE 3 — marquages
   for (const m of ed.marquages) drawMarquage(ctx, m, W, H);
+  // PASSE 3b — BÂTIMENTS / décor (AU-DESSUS des routes et marquages)
+  if (ed.batiments && ed.batiments.length) {
+    for (const b of ed.batiments) {
+      dessinerBatiment(ctx, b.type, b.x * W, b.y * H, b.w * W, b.h * H, b.angle || 0);
+    }
+  }
   // PASSE 4 — panneaux du décor
   for (const p of ed.panneaux) {
     ctx.save();
@@ -4521,6 +4541,17 @@ function dessinerEditeur() {
     // Même fond herbe que la Scène : l'éditeur montre exactement le rendu final.
     ed.ctx.fillStyle = '#9ec79b';
     ed.ctx.fillRect(0, 0, MONDE.W, MONDE.H);
+    // GRILLE magnétique (visible seulement dans l'éditeur quand le magnétisme est actif)
+    if (editeur.magnetisme && editeur.mode !== 'selection') {
+      ed.ctx.save();
+      ed.ctx.strokeStyle = 'rgba(0,0,0,0.07)';
+      ed.ctx.lineWidth = 1 / (vueEd.zoom * tEd.s);
+      ed.ctx.beginPath();
+      for (let gx = 0; gx <= MONDE.W; gx += GRILLE) { ed.ctx.moveTo(gx, 0); ed.ctx.lineTo(gx, MONDE.H); }
+      for (let gy = 0; gy <= MONDE.H; gy += GRILLE) { ed.ctx.moveTo(0, gy); ed.ctx.lineTo(MONDE.W, gy); }
+      ed.ctx.stroke();
+      ed.ctx.restore();
+    }
     drawCartePerso(ed.ctx, MONDE.W, MONDE.H, editeur, {
       route: (editeur.mode === 'route' || editeur.mode === 'trottoir')
         ? editeur.enCoursRoute : null,
@@ -4532,6 +4563,21 @@ function dessinerEditeur() {
       survol: editeur.mode === 'selection' ? editeur.survol : null,
       invEcran: 1 / (vueEd.zoom * tEd.s),   // pour dessiner cadre/poignées à taille écran constante
     });
+    // Indicateur de CONNEXION : cercle bleu sur l'extrémité où la route va se coller
+    if (editeur.magnetisme && editeur.connexionActive &&
+        (editeur.mode === 'route' || editeur.mode === 'trottoir')) {
+      const cc = editeur.connexionActive;
+      const rr = 9 / (vueEd.zoom * tEd.s);
+      ed.ctx.save();
+      ed.ctx.strokeStyle = '#2563eb';
+      ed.ctx.lineWidth = 2.5 / (vueEd.zoom * tEd.s);
+      ed.ctx.beginPath();
+      ed.ctx.arc(cc.x, cc.y, rr, 0, Math.PI * 2);
+      ed.ctx.stroke();
+      ed.ctx.fillStyle = 'rgba(37,99,235,0.25)';
+      ed.ctx.fill();
+      ed.ctx.restore();
+    }
     // Axe de symétrie miroir (ligne pointillée bleue)
     if (editeur.miroir !== 'off') {
       const invM = 1 / (vueEd.zoom * tEd.s);
@@ -5137,9 +5183,46 @@ function modeAimanteBord() {
 function pointEditeur(e) {
   let p = pointEd(e);                       // coordonnées MONDE
   if (editeur.magnetisme) {
+    // 1) CONNEXION : se coller à une extrémité de route existante si proche (priorité)
+    const co = pointDeConnexion(p);
+    if (co) return co;
+    // 2) sinon, aligner sur la grille
     p = { x: Math.round(p.x / GRILLE) * GRILLE, y: Math.round(p.y / GRILLE) * GRILLE };
+    // 3) si on trace une route, aimanter l'ANGLE par rapport au dernier point (0/45/90°)
+    if ((editeur.mode === 'route' || editeur.mode === 'trottoir') &&
+        editeur.enCoursRoute && editeur.enCoursRoute.pts.length > 0) {
+      p = aimanterAngle(editeur.enCoursRoute.pts[editeur.enCoursRoute.pts.length - 1], p);
+    }
   }
   return p;
+}
+
+/* Renvoie l'extrémité de route la plus proche si elle est dans le seuil, sinon null */
+function pointDeConnexion(p) {
+  const seuil = CONNEXION_SEUIL / (vueEd.zoom || 1);
+  let best = null, bestD = seuil;
+  for (const rt of editeur.routes) {
+    if (!rt.pts || rt.pts.length === 0) continue;
+    for (const idx of [0, rt.pts.length - 1]) {   // seulement les bouts
+      const ex = rt.pts[idx].x * MONDE.W, ey = rt.pts[idx].y * MONDE.H;
+      const d = Math.hypot(p.x - ex, p.y - ey);
+      if (d < bestD) { bestD = d; best = { x: ex, y: ey }; }
+    }
+  }
+  return best;
+}
+
+/* Aligne le point sur un angle multiple de 45° par rapport à l'ancre */
+function aimanterAngle(ancreNorm, p) {
+  const ax = ancreNorm.x * MONDE.W, ay = ancreNorm.y * MONDE.H;
+  const dx = p.x - ax, dy = p.y - ay;
+  const dist = Math.hypot(dx, dy);
+  if (dist < 6) return p;
+  let a = Math.atan2(dy, dx);
+  const pas = Math.PI / 4;                 // 45°
+  a = Math.round(a / pas) * pas;
+  return { x: Math.round((ax + Math.cos(a) * dist) / GRILLE) * GRILLE,
+           y: Math.round((ay + Math.sin(a) * dist) / GRILLE) * GRILLE };
 }
 
 function majBandeauTrace() {
@@ -5342,7 +5425,8 @@ ed.canvas.addEventListener('pointerdown', (e) => {
           boutsDroits: editeur.boutsDroits,
         };
       }
-      editeur.enCoursRoute.pts.push(pnB);   // aimanté au bord
+      // Magnétisme amélioré : connexion/grille/angle si actif, sinon aimantation au bord
+      editeur.enCoursRoute.pts.push(editeur.magnetisme ? pn : pnB);
       break;
     }
 
@@ -5634,7 +5718,16 @@ ed.canvas.addEventListener('pointermove', (e) => {
     return;
   }
   const p = pointEditeur(e);
-  const pc = modeAimanteBord() ? aimanterBord(p) : p;
+  let pc;
+  if (editeur.magnetisme) {
+    pc = p;   // pointEditeur gère déjà connexion/grille/angle
+    // détecter si on est sur un point de connexion (pour l'afficher)
+    const pBrut = pointEd(e);
+    editeur.connexionActive = pointDeConnexion(pBrut);
+  } else {
+    pc = modeAimanteBord() ? aimanterBord(p) : p;
+    editeur.connexionActive = null;
+  }
   editeur.curseur = { x: pc.x / MONDE.W, y: pc.y / MONDE.H };
 
   // Survol : surligner l'élément sous le curseur (mode sélection, hors drag)
@@ -6573,10 +6666,12 @@ document.getElementById('ed-exporter').addEventListener('click', () => {
   terminerTrace();
   const blob = new Blob(
     [JSON.stringify({
-      version: 3,
+      version: 4,
       routes: editeur.routes,
       marquages: editeur.marquages,
       panneaux: editeur.panneaux,
+      pinceau: editeur.pinceau || [],
+      batiments: editeur.batiments || [],
     }, null, 2)],
     { type: 'application/json' }
   );
@@ -6598,14 +6693,22 @@ inputFichier.addEventListener('change', async () => {
       editeur.routes    = data.routes;
       editeur.marquages = Array.isArray(data.marquages) ? data.marquages : [];
       editeur.panneaux  = Array.isArray(data.panneaux)  ? data.panneaux  : [];
+      editeur.pinceau   = Array.isArray(data.pinceau)   ? data.pinceau   : [];
+      editeur.batiments = Array.isArray(data.batiments) ? data.batiments : [];
       // Compatibilité : compléter les champs apparus en v3
       for (const p of editeur.panneaux) {
         if (p.taille == null) p.taille = 52;
         if (p.etatFeu == null) p.etatFeu = 'rouge';
       }
       synchroniserCarte();
+      const carte = editeur.cartes[editeur.idx];
+      carte._undo = [instantaneCarte()];
+      carte._redo = [];
+      if (typeof majBoutonsUndo === 'function') majBoutonsUndo();
       selectionner(null);
       majBoutonPerso();
+      demanderRenduEditeur();
+      alert('Scène importée ✓');
     }
   } catch {
     alert('Fichier invalide : choisissez un export JSON du simulateur.');
@@ -7171,9 +7274,14 @@ const btnSortiePE = document.getElementById('btn-sortie-pe');
 const btnPleinEcran = document.getElementById('btn-plein-ecran');
 function majPleinEcran(actif) {
   document.body.classList.toggle('plein-ecran', actif);
-  if (btnSortiePE) btnSortiePE.hidden = !actif;
+  if (btnSortiePE) btnSortiePE.hidden = !actif;   // bouton de sortie plein écran (scène) comme avant
   // recalculer le canvas après le changement de taille
   setTimeout(() => { sc.resize(); ed.resize(); demanderRenduEditeur(); }, 60);
+}
+
+// Mode PRÉSENTATION épuré (indépendant du plein écran)
+function activerPresentation(actif) {
+  document.body.classList.toggle('presentation', actif);
 }
 async function entrerPleinEcran() {
   const el = document.documentElement;
@@ -7193,6 +7301,10 @@ async function sortirPleinEcran() {
 }
 if (btnPleinEcran) btnPleinEcran.addEventListener('click', entrerPleinEcran);
 if (btnSortiePE) btnSortiePE.addEventListener('click', sortirPleinEcran);
+const btnPresSortie = document.getElementById('btn-presentation-sortie');
+if (btnPresSortie) btnPresSortie.addEventListener('click', () => activerPresentation(false));
+const btnPresentation = document.getElementById('btn-presentation');
+if (btnPresentation) btnPresentation.addEventListener('click', () => activerPresentation(true));
 document.addEventListener('fullscreenchange', () => {
   if (!document.fullscreenElement) majPleinEcran(false);
 });
