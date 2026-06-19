@@ -2716,6 +2716,7 @@ function tracerCheminLisse(ctx, pts, W, H) {
 }
 function tracerRoute(ctx, rt, W, H) {
   ctx.lineCap = rt.boutsDroits ? 'butt' : 'round';   // bouts droits = collent au bord
+  ctx.lineJoin = 'round';                            // jointures lisses (intersections propres)
   (rt.arrondi ? tracerCheminLisse : tracerChemin)(ctx, rt.pts, W, H);
 }
 
@@ -2756,7 +2757,7 @@ function drawMarquage(ctx, m, W, H, alpha = 1) {
       break;
     }
     case 'ligne_continue':
-      ctx.lineWidth = 4; ctx.lineCap = 'round';
+      ctx.lineWidth = 4; ctx.lineCap = 'butt';
       (m.arrondi ? tracerCheminLisse : tracerChemin)(ctx, m.pts, W, H);
       ctx.stroke();
       break;
@@ -3233,19 +3234,25 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
     ctx.stroke();
   }
   // PASSE 1 — trottoirs des routes (bandes grises de part et d'autre)
+  // Bouts ARRONDIS forcés pour que les bordures se fondent proprement aux croisements
   ctx.strokeStyle = '#c9cdd2';
+  ctx.lineJoin = 'round';
   for (const rt of ed.routes) {
     if (rt.trottoir || rt.pts.length < 2) continue;
     ctx.lineWidth = rt.largeur + 30;
-    tracerRoute(ctx, rt, W, H);
+    ctx.lineCap = 'round';
+    (rt.arrondi ? tracerCheminLisse : tracerChemin)(ctx, rt.pts, W, H);
     ctx.stroke();
   }
-  // PASSE 2 — asphalte nu
+  // PASSE 2 — asphalte nu (recouvre les bordures des autres routes au croisement)
   ctx.strokeStyle = '#565d66';
+  ctx.lineJoin = 'round';
   for (const rt of ed.routes) {
     if (rt.trottoir || rt.pts.length < 2) continue;
     ctx.lineWidth = rt.largeur;
-    tracerRoute(ctx, rt, W, H);
+    // bouts arrondis SAUF si l'utilisateur a explicitement choisi bouts droits (route qui finit au bord)
+    ctx.lineCap = rt.boutsDroits ? 'butt' : 'round';
+    (rt.arrondi ? tracerCheminLisse : tracerChemin)(ctx, rt.pts, W, H);
     ctx.stroke();
   }
   // PASSE 3 — marquages
@@ -3601,11 +3608,11 @@ function trouverElement(px, py, W, H, avecRoutes) {
       return { kind: 'marquage', ref: editeur.marquages[i] };
     }
   }
-  if (avecRoutes) {
-    for (let i = editeur.routes.length - 1; i >= 0; i--) {
-      if (hitRoute(editeur.routes[i], px, py, W, H)) {
-        return { kind: 'route', ref: editeur.routes[i] };
-      }
+  for (let i = editeur.routes.length - 1; i >= 0; i--) {
+    const rt = editeur.routes[i];
+    // trottoirs toujours sélectionnables ; routes goudronnées seulement si avecRoutes
+    if ((rt.trottoir || avecRoutes) && hitRoute(rt, px, py, W, H)) {
+      return { kind: 'route', ref: rt };
     }
   }
   return null;
