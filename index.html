@@ -1025,6 +1025,11 @@
         <button data-decor="interT"><span class="nom">Inter. en T</span></button>
         <button data-decor="rondpoint"><span class="nom">Rond-point</span></button>
         <button data-decor="voierapide"><span class="nom">Voie rapide</span></button>
+        <button data-situation="priorite_b15c18"><span class="nom">Priorité B15/C18</span></button>
+        <button data-situation="deux_cedez"><span class="nom">2× Cédez-le-passage</span></button>
+        <button data-situation="quatre_stops"><span class="nom">Carrefour 4 STOP</span></button>
+        <button data-situation="feux_briollay"><span class="nom">Feux — Briollay</span></button>
+        <button data-situation="route_briollay"><span class="nom">Route de Briollay</span></button>
         <button data-decor="perso" id="btn-decor-perso" hidden><span class="nom">Perso</span></button>
       </div>
       <label class="controle" id="zone-giratoire" hidden>Giratoire
@@ -1202,6 +1207,7 @@
         <option value="fleche_rabattement">Flèche de rabattement</option>
         <option value="triangle_cedez">Triangle cédez-le-passage (sol)</option>
         <option value="zigzag_bus">Ligne zigzag (arrêt de bus)</option>
+        <option value="voie_bus">Voie réservée bus (ligne large)</option>
         <option value="texte_sol">Inscription au sol (texte)</option>
         <option value="pmr">Pictogramme PMR</option>
         <option value="fleche_td_gauche">Flèche tout droit + gauche</option>
@@ -1254,24 +1260,6 @@
         <input type="checkbox" id="ed-bouts-droits"> Bouts droits
       </label>
       <button id="ed-vehicule-test">🚗 Véhicule test</button>
-      <div id="zone-modeles">
-        <button class="mod-toggle" id="mod-toggle" aria-expanded="false">
-          <span>Scènes types</span><span class="mod-chevron">▶</span>
-        </button>
-        <div class="mod-grille" id="mod-grille" hidden>
-          <button class="mod-btn" data-modele="croix">Croisement simple</button>
-          <button class="mod-btn" data-modele="priorite_droite">Priorité à droite</button>
-          <button class="mod-btn" data-modele="croix_stop">Carrefour STOP</button>
-          <button class="mod-btn" data-modele="croix_feux">Carrefour à feux</button>
-          <button class="mod-btn" data-modele="te">Intersection T (cédez)</button>
-          <button class="mod-btn" data-modele="te_stop">Intersection T (STOP)</button>
-          <button class="mod-btn" data-modele="rondpoint">Rond-point</button>
-          <button class="mod-btn" data-modele="y_branches">Patte d'oie (Y)</button>
-          <button class="mod-btn" data-modele="decale">Carrefour décalé</button>
-          <button class="mod-btn" data-modele="double_voie">2×2 voies</button>
-          <button class="mod-btn" data-modele="priorite_b15c18">Priorité sens inverse (B15/C18)</button>
-        </div>
-      </div>
       <div id="zone-scenes">
         <div class="zs-titre">Mes scènes</div>
         <button id="zs-sauver">💾 Sauvegarder cette scène</button>
@@ -3174,6 +3162,40 @@ function drawMarquage(ctx, m, W, H, alpha = 1) {
       break;
     }
 
+    case 'voie_bus': {
+      // Voie réservée aux bus (art. 114-3 / 118-3.A) : délimitation par
+      // une ligne large discontinue de type T3 (5u), avec le mot « BUS »
+      // répété le long de la voie. La case « jaune » la rend continue
+      // (couloir réservé sans dépassement, ligne continue 5u).
+      ctx.lineCap = 'butt';
+      ctx.lineWidth = 7;
+      if (!m.jaune) ctx.setLineDash([34, 14]);
+      (m.arrondi ? tracerCheminLisse : tracerChemin)(ctx, m.pts, W, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Mot « BUS » répété, orienté dans le sens de la voie
+      ctx.fillStyle = couleurM;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (let i = 0; i < m.pts.length - 1; i++) {
+        const a = { x: m.pts[i].x * W, y: m.pts[i].y * H };
+        const b = { x: m.pts[i + 1].x * W, y: m.pts[i + 1].y * H };
+        const seg = Math.hypot(b.x - a.x, b.y - a.y);
+        const ang = Math.atan2(b.y - a.y, b.x - a.x);
+        for (let d = 70; d < seg; d += 150) {
+          const cx = a.x + Math.cos(ang) * d, cy = a.y + Math.sin(ang) * d;
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(ang + Math.PI / 2);
+          ctx.font = '900 26px Fredoka, sans-serif';
+          ctx.scale(0.6, 1);
+          ctx.fillText('BUS', 0, 0);
+          ctx.restore();
+        }
+      }
+      break;
+    }
+
     case 'ligne_mixte': {
       // Ligne mixte : une continue + une discontinue accolées
       // (dépassement permis du seul côté discontinu).
@@ -3420,6 +3442,7 @@ function bboxMarquage(m, W, H) {
               : m.type === 'fleche_rabattement' ? 30
               : m.type === 'pmr' ? 26
               : m.type === 'zigzag_bus' ? 16
+              : m.type === 'voie_bus' ? 18
               : m.type === 'velo' ? 30 : 12;
   return { x: x0 - marge, y: y0 - marge, w: x1 - x0 + 2 * marge, h: y1 - y0 + 2 * marge };
 }
@@ -5923,8 +5946,19 @@ ed.canvas.addEventListener('pointerdown', (e) => {
           }
         }
       }
+      // Sur un PETIT objet, les poignées (rotation/coin) chevauchent le
+      // corps : un tap dans le corps doit déplacer l'objet, pas saisir une
+      // poignée. Le redimensionnement/rotation se fait alors aux réglettes.
+      const _tEdSel = transformContain(ed.W, ed.H);
+      const _boSel = editeur.selection ? boiteElement(editeur.selection, MONDE.W, MONDE.H) : null;
+      const _petitSel = _boSel &&
+        Math.min(_boSel.x1 - _boSel.x0, _boSel.y1 - _boSel.y0) * vueEd.zoom * _tEdSel.s < 40;
+      const _dansCorps = _boSel &&
+        pRaw.x >= _boSel.x0 && pRaw.x <= _boSel.x1 &&
+        pRaw.y >= _boSel.y0 && pRaw.y <= _boSel.y1;
+      const _bloquerPoignees = _petitSel && _dansCorps;
       // Poignée de rotation (si une sélection est active et qu'on la saisit)
-      if (editeur.selection && editeur._poigneeRotation) {
+      if (editeur.selection && editeur._poigneeRotation && !_bloquerPoignees) {
         const pr = editeur._poigneeRotation;
         const tEdR = transformContain(ed.W, ed.H);
         const tolR = 30 / (vueEd.zoom * tEdR.s);   // zone tactile large même si la poignée est petite
@@ -5942,7 +5976,7 @@ ed.canvas.addEventListener('pointerdown', (e) => {
         }
       }
       // Poignées de COIN : redimensionnement proportionnel (coins calculés à la volée)
-      if (editeur.selection) {
+      if (editeur.selection && !_bloquerPoignees) {
         const bo = boiteElement(editeur.selection, MONDE.W, MONDE.H);
         if (bo) {
           const pad = 6;
@@ -6199,6 +6233,12 @@ ed.canvas.addEventListener('pointerup', () => {
           refs.push({ kind: 'marquage', ref: m });
         }
       }
+      for (const b of editeur.batiments) {
+        const bx = b.x * MONDE.W, by = b.y * MONDE.H;
+        if (bx >= x0 && bx <= x1 && by >= y0 && by <= y1) {
+          refs.push({ kind: 'batiment', ref: b });
+        }
+      }
       if (refs.length === 1) selectionner(refs[0]);
       else if (refs.length > 1) selectionner({ kind: 'groupe', refs });
     }
@@ -6263,7 +6303,7 @@ document.getElementById('ctx-copier').addEventListener('click', () => {
 });
 document.getElementById('ctx-supprimer').addEventListener('click', () => {
   if (ctxCible) {
-    const tab = ctxCible.kind === 'panneau' ? editeur.panneaux : editeur.marquages;
+    const tab = tableauPourKind(ctxCible.kind);
     tab.splice(tab.indexOf(ctxCible.ref), 1);
     if (editeur.selection && editeur.selection.ref === ctxCible.ref) selectionner(null);
     majBoutonPerso();
@@ -6273,17 +6313,17 @@ document.getElementById('ctx-supprimer').addEventListener('click', () => {
 document.getElementById('ctx-coller').addEventListener('click', () => {
   if (pressePapier && ctxPoint) {
     const copie = JSON.parse(JSON.stringify(pressePapier.data));
-    if (pressePapier.kind === 'panneau') {
+    if (pressePapier.kind === 'panneau' || pressePapier.kind === 'batiment') {
       copie.x = ctxPoint.x;
       copie.y = ctxPoint.y;
-      editeur.panneaux.push(copie);
+      tableauPourKind(pressePapier.kind).push(copie);
     } else {
       const c = centroide(copie.pts);
       for (const pt of copie.pts) {
         pt.x += ctxPoint.x - c.x;
         pt.y += ctxPoint.y - c.y;
       }
-      editeur.marquages.push(copie);
+      tableauPourKind(pressePapier.kind).push(copie);
     }
     majBoutonPerso();
   }
@@ -6654,7 +6694,156 @@ const MODELES = {
       { type: 'buisson', x: 0.46875, y: 0.24348, w: 0.04688, h: 0.05217 },
     ],
   }),
-};
+  deux_cedez: () => ({
+    routes: [
+      { pts: [{x:0.50078,y:0.98261},{x:0.50078,y:-0.00087}], largeur: 150 },
+      { pts: [{x:0,y:0.48696},{x:1,y:0.48696},{x:1,y:0.48696}], largeur: 150 },
+    ],
+    marquages: [
+      { type: 'ligne_continue', pts: [{x:0.49629,y:0.4213},{x:0.49629,y:0.36913}] },
+      { type: 'cedez', pts: [{x:0.49727,y:0.41609},{x:0.44258,y:0.41609}] },
+      { type: 'ligne_continue', pts: [{x:0.50518,y:0.55217},{x:0.50518,y:0.60435}] },
+      { type: 'cedez', pts: [{x:0.5042,y:0.55739},{x:0.55889,y:0.55739}] },
+      { type: 'ligne_discontinue', pts: [{x:-1.5625,y:0.48696},{x:2.5625,y:0.48696}] },
+    ],
+    panneaux: [
+      { type: 'cedez', x: 0.57734, y: 0.56522, taille: 29, etatFeu: 'rouge', angle: 0 },
+      { type: 'cedez', x: 0.425, y: 0.40522, taille: 29, etatFeu: 'rouge', angle: 3.14159 },
+      { type: 'priorite_ponctuelle', x: 0.07852, y: 0.5913, taille: 34, etatFeu: 'rouge', angle: 1.5708 },
+      { type: 'priorite_ponctuelle', x: 0.85703, y: 0.38609, taille: 34, etatFeu: 'rouge', angle: -1.5708 },
+    ],
+    batiments: [
+      { type: 'buisson', x: 0.375, y: 0.6087, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.625, y: 0.69565, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.76562, y: 0.62609, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.375, y: 0.31304, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.34375, y: 0.36522, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.92188, y: 0.31304, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.0625, y: 0.69565, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.10938, y: 0.26087, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.26562, y: 0.6087, w: 0.04688, h: 0.05217 },
+      { type: 'maison', x: 0.64297, y: 0.61391, w: 0.09492, h: 0.07924 },
+    ],
+  }),
+  quatre_stops: () => ({
+    routes: [
+      { pts: [{x:0.50039,y:0.74783},{x:0.50039,y:0.24348}], largeur: 150 },
+      { pts: [{x:0,y:0.48696},{x:1,y:0.48696},{x:1,y:0.48696}], largeur: 150 },
+    ],
+    marquages: [
+      { type: 'stop', pts: [{x:0.55859,y:0.55739},{x:0.50547,y:0.55739}] },
+      { type: 'ligne_continue', pts: [{x:0.5043,y:0.55217},{x:0.5043,y:0.60435}] },
+      { type: 'stop', pts: [{x:0.43711,y:0.55239},{x:0.43711,y:0.49326}] },
+      { type: 'ligne_continue', pts: [{x:0.4418,y:0.49196},{x:0.39492,y:0.49196}] },
+      { type: 'stop', pts: [{x:0.44199,y:0.41609},{x:0.49512,y:0.41609}] },
+      { type: 'ligne_continue', pts: [{x:0.49629,y:0.4213},{x:0.49629,y:0.36913}] },
+      { type: 'stop', pts: [{x:0.56367,y:0.42196},{x:0.56367,y:0.48109}] },
+      { type: 'ligne_continue', pts: [{x:0.55898,y:0.48239},{x:0.60586,y:0.48239}] },
+    ],
+    panneaux: [
+      { type: 'stop', x: 0.41953, y: 0.56957, taille: 36, etatFeu: 'rouge', angle: 1.5708 },
+      { type: 'stop', x: 0.57539, y: 0.57217, taille: 36, etatFeu: 'rouge', angle: 0 },
+      { type: 'stop', x: 0.575, y: 0.40217, taille: 36, etatFeu: 'rouge', angle: -1.5708 },
+      { type: 'stop', x: 0.42305, y: 0.40217, taille: 36, etatFeu: 'rouge', angle: 3.14159 },
+    ],
+    batiments: [
+      { type: 'buisson', x: 0.375, y: 0.6087, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.625, y: 0.69565, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.76562, y: 0.62609, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.375, y: 0.31304, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.34375, y: 0.36522, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.92188, y: 0.31304, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.0625, y: 0.69565, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.10938, y: 0.26087, w: 0.04688, h: 0.05217 },
+    ],
+  }),
+  feux_briollay: () => ({
+    routes: [
+      { pts: [{x:0.47031,y:0.23826},{x:0.46875,y:0.76522}], largeur: 150 },
+      { pts: [{x:0.40625,y:0.46957},{x:-1.5625,y:0.46957}], largeur: 150 },
+      { pts: [{x:-1.5625,y:0.46957},{x:2.5625,y:0.46957}], largeur: 150 },
+    ],
+    marquages: [
+      { type: 'zebra', pts: [{x:0.46133,y:0.18957},{x:0.46133,y:0.34261},{x:0.47852,y:0.34261},{x:0.46133,y:0.17043}] },
+      { type: 'ligne_discontinue', pts: [{x:0.49687,y:0.64723},{x:0.49687,y:0.80376}], arrondi: true },
+      { type: 'velo', pts: [{x:0.49206,y:0.60831},{x:0.50768,y:0.60831}] },
+      { type: 'ligne_guidage', pts: [{x:0.51862,y:0.62483},{x:0.46706,y:0.62483},{x:0.46706,y:0.62483},{x:0.46706,y:0.62483},{x:0.46706,y:0.62483},{x:0.46706,y:0.62483}] },
+      { type: 'ligne_continue', pts: [{x:0.3674,y:0.46986},{x:0.28928,y:0.46986},{x:0.28928,y:0.46986}] },
+      { type: 'velo', pts: [{x:0.3355,y:0.50159},{x:0.3355,y:0.51899}] },
+      { type: 'ligne_guidage', pts: [{x:0.3148,y:0.53029},{x:0.3148,y:0.4729},{x:0.3148,y:0.4729},{x:0.3148,y:0.4729},{x:0.3148,y:0.4729},{x:0.3148,y:0.4729}] },
+      { type: 'ligne_continue', pts: [{x:0.46035,y:0.35779},{x:0.46035,y:0.29257},{x:0.46035,y:0.29257}] },
+      { type: 'velo', pts: [{x:0.43516,y:0.32768},{x:0.42344,y:0.32768}] },
+      { type: 'ligne_guidage', pts: [{x:0.41797,y:0.31279},{x:0.45664,y:0.31279},{x:0.45664,y:0.31279},{x:0.45664,y:0.31279},{x:0.45664,y:0.31279},{x:0.45664,y:0.31279}] },
+      { type: 'ligne_continue', pts: [{x:0.5865,y:0.47188},{x:0.66463,y:0.47188},{x:0.66463,y:0.47188}] },
+      { type: 'velo', pts: [{x:0.60747,y:0.43797},{x:0.60747,y:0.42058}] },
+      { type: 'ligne_guidage', pts: [{x:0.62426,y:0.41014},{x:0.62426,y:0.46754},{x:0.62426,y:0.46754},{x:0.62426,y:0.46754},{x:0.62426,y:0.46754},{x:0.62426,y:0.46754}] },
+      { type: 'passage_pieton', pts: [{x:0.38555,y:0.41174},{x:0.38555,y:0.51609}] },
+      { type: 'passage_pieton', pts: [{x:0.4207,y:0.37783},{x:0.51445,y:0.37783}] },
+      { type: 'passage_pieton', pts: [{x:0.55703,y:0.41},{x:0.55703,y:0.51435}] },
+      { type: 'passage_pieton', pts: [{x:0.51562,y:0.55652},{x:0.42188,y:0.55652}] },
+      { type: 'ligne_discontinue', pts: [{x:0.61094,y:0.50478},{x:2.56406,y:0.50478}], arrondi: true },
+      { type: 'ligne_discontinue', pts: [{x:0.64297,y:0.4413},{x:2.56484,y:0.4413}], arrondi: true },
+      { type: 'ligne_discontinue', pts: [{x:0.29102,y:0.50174},{x:-1.55273,y:0.48435}], arrondi: true },
+      { type: 'ligne_discontinue', pts: [{x:0.34648,y:0.43783},{x:-0.02227,y:0.43435}], arrondi: true },
+      { type: 'zebra', pts: [{x:0.46641,y:0.59348},{x:0.45078,y:0.59348},{x:0.46328,y:0.72913},{x:0.46328,y:0.72913}], arrondi: true },
+      { type: 'fleche_droit', pts: [{x:0.43509,y:0.26009},{x:0.43509,y:0.26066}], arrondi: true },
+      { type: 'fleche_gauche', pts: [{x:0.43509,y:0.26016},{x:0.43509,y:0.26703}], arrondi: true },
+      { type: 'fleche_droite', pts: [{x:0.43509,y:0.26105},{x:0.43509,y:0.2797}], arrondi: true },
+      { type: 'ligne_effet', pts: [{x:0.35625,y:0.47522},{x:0.35625,y:0.53087}], arrondi: true },
+      { type: 'ligne_effet', pts: [{x:0.35625,y:0.53087},{x:0.35586,y:0.53087}], arrondi: true },
+      { type: 'ligne_effet', pts: [{x:0.42188,y:0.34783},{x:0.45312,y:0.34783}], arrondi: true },
+      { type: 'ligne_effet', pts: [{x:0.5875,y:0.41},{x:0.5875,y:0.46565}], arrondi: true },
+      { type: 'ligne_effet', pts: [{x:0.51898,y:0.59},{x:0.46461,y:0.59}], arrondi: true },
+      { type: 'ligne_continue', pts: [{x:0.25,y:0.46957},{x:-1.5625,y:0.46957}], arrondi: true },
+      { type: 'ligne_continue', pts: [{x:0.70312,y:0.46957},{x:2.5625,y:0.46957}], arrondi: true },
+    ],
+    panneaux: [
+      { type: 'feu', x: 0.55352, y: 0.57826, taille: 39, etatFeu: 'rouge', angle: 0 },
+      { type: 'feu', x: 0.37695, y: 0.55913, taille: 39, etatFeu: 'rouge', angle: 1.5708 },
+      { type: 'feu', x: 0.56055, y: 0.3787, taille: 39, etatFeu: 'rouge', angle: -1.5708 },
+      { type: 'feu', x: 0.3875, y: 0.36783, taille: 39, etatFeu: 'rouge', angle: -3.14159 },
+    ],
+  }),
+  route_briollay: () => ({
+    routes: [
+      { pts: [{x:-1.5625,y:0.52174},{x:2.5625,y:0.52174}], largeur: 150 },
+      { pts: [{x:0.51562,y:0.5913},{x:0.51562,y:0.8}], largeur: 150 },
+      { pts: [{x:0.15625,y:0.46957},{x:0.15625,y:0.2087}], largeur: 150 },
+    ],
+    marquages: [
+      { type: 'passage_pieton', pts: [{x:0.61445,y:0.57609},{x:0.61445,y:0.47174}] },
+      { type: 'ligne_guidage', pts: [{x:0.64375,y:0.45899},{x:0.64375,y:0.51638},{x:0.64375,y:0.51638},{x:0.64375,y:0.51638},{x:0.64375,y:0.51638},{x:0.64375,y:0.51638}] },
+      { type: 'ligne_continue', pts: [{x:0.64466,y:0.5213},{x:0.72279,y:0.5213},{x:0.72279,y:0.5213}] },
+      { type: 'ligne_continue', pts: [{x:0.73841,y:0.5213},{x:0.76966,y:0.5213}] },
+      { type: 'velo', pts: [{x:0.66563,y:0.48739},{x:0.66563,y:0.47}] },
+      { type: 'ligne_guidage', pts: [{x:0.68242,y:0.45957},{x:0.68242,y:0.51696},{x:0.68242,y:0.51696},{x:0.68242,y:0.51696},{x:0.68242,y:0.51696},{x:0.68242,y:0.51696}] },
+      { type: 'bande_cyclable', pts: [{x:0.68672,y:0.47522},{x:0.99922,y:0.47522}] },
+      { type: 'passage_pieton', pts: [{x:0.07109,y:0.46599},{x:0.07109,y:0.57034}] },
+      { type: 'ligne_guidage', pts: [{x:0.0418,y:0.58309},{x:0.0418,y:0.5257},{x:0.0418,y:0.5257},{x:0.0418,y:0.5257},{x:0.0418,y:0.5257},{x:0.0418,y:0.5257}] },
+      { type: 'ligne_continue', pts: [{x:0.04089,y:0.52077},{x:-0.03724,y:0.52077},{x:-0.03724,y:0.52077}] },
+      { type: 'ligne_continue', pts: [{x:-0.05286,y:0.52077},{x:-0.08411,y:0.52077}] },
+      { type: 'velo', pts: [{x:0.01992,y:0.55469},{x:0.01992,y:0.57208}] },
+      { type: 'ligne_guidage', pts: [{x:0.00313,y:0.58251},{x:0.00313,y:0.52512},{x:0.00313,y:0.52512},{x:0.00313,y:0.52512},{x:0.00313,y:0.52512},{x:0.00313,y:0.52512}] },
+      { type: 'passage_pieton', pts: [{x:0.20907,y:0.42522},{x:0.11532,y:0.42522}] },
+      { type: 'ligne_guidage', pts: [{x:0.10386,y:0.39261},{x:0.15543,y:0.39261},{x:0.15543,y:0.39261},{x:0.15543,y:0.39261},{x:0.15543,y:0.39261},{x:0.15543,y:0.39261}] },
+      { type: 'ligne_continue', pts: [{x:0.15985,y:0.39159},{x:0.15985,y:0.30464},{x:0.15985,y:0.30464}] },
+      { type: 'ligne_continue', pts: [{x:0.15985,y:0.28725},{x:0.15985,y:0.25246}] },
+      { type: 'velo', pts: [{x:0.12938,y:0.36826},{x:0.11376,y:0.36826}] },
+      { type: 'ligne_guidage', pts: [{x:0.10438,y:0.34957},{x:0.15595,y:0.34957},{x:0.15595,y:0.34957},{x:0.15595,y:0.34957},{x:0.15595,y:0.34957},{x:0.15595,y:0.34957}] },
+      { type: 'passage_pieton', pts: [{x:0.46632,y:0.61652},{x:0.56007,y:0.61652}] },
+      { type: 'ligne_guidage', pts: [{x:0.57153,y:0.64913},{x:0.51997,y:0.64913},{x:0.51997,y:0.64913},{x:0.51997,y:0.64913},{x:0.51997,y:0.64913},{x:0.51997,y:0.64913}] },
+      { type: 'ligne_continue', pts: [{x:0.51554,y:0.65014},{x:0.51554,y:0.7371},{x:0.51554,y:0.7371}] },
+      { type: 'ligne_continue', pts: [{x:0.51554,y:0.75449},{x:0.51554,y:0.78928}] },
+      { type: 'velo', pts: [{x:0.54601,y:0.67348},{x:0.56163,y:0.67348}] },
+      { type: 'ligne_guidage', pts: [{x:0.57101,y:0.69217},{x:0.51944,y:0.69217},{x:0.51944,y:0.69217},{x:0.51944,y:0.69217},{x:0.51944,y:0.69217},{x:0.51944,y:0.69217}] },
+    ],
+    panneaux: [
+      { type: 'feu', x: 0.66445, y: 0.42543, taille: 39, etatFeu: 'rouge', angle: -1.5708 },
+      { type: 'feu', x: 0.59844, y: 0.6263, taille: 39, etatFeu: 'rouge', angle: 0 },
+      { type: 'feu', x: 0.02695, y: 0.61848, taille: 39, etatFeu: 'rouge', angle: -4.71239 },
+      { type: 'feu', x: 0.06992, y: 0.38022, taille: 39, etatFeu: 'rouge', angle: -3.14159 },
+    ],
+  }),};
 
 function brancherModeles() {
   document.querySelectorAll('.mod-btn').forEach(b => {
@@ -6720,7 +6909,6 @@ document.getElementById('zs-sauver').addEventListener('click', sauverSceneCouran
 document.getElementById('zs-charger').addEventListener('click', chargerSceneSelectionnee);
 document.getElementById('zs-supprimer').addEventListener('click', supprimerSceneSelectionnee);
 rafraichirListeScenes();
-brancherModeles();
 function poserCoupPinceau(p) {
   editeur.pinceau.push({
     x: p.x, y: p.y,
@@ -7214,21 +7402,22 @@ function collerPressePapier() {
   const cur = editeur.curseur || { x: 0.5, y: 0.5 };
   const poser = (kind, data, cx, cy) => {
     const copie = JSON.parse(JSON.stringify(data));
-    if (kind === 'panneau') {
+    if (kind === 'panneau' || kind === 'batiment') {
       copie.x = cx; copie.y = cy;
-      editeur.panneaux.push(copie);
+      tableauPourKind(kind).push(copie);
       return { kind, ref: copie };
     } else {
       const c = centroide(copie.pts);
       for (const pt of copie.pts) { pt.x += cx - c.x; pt.y += cy - c.y; }
-      editeur.marquages.push(copie);
+      tableauPourKind(kind).push(copie);
       return { kind, ref: copie };
     }
   };
+  const centreEl = (kind, data) =>
+    (kind === 'panneau' || kind === 'batiment') ? { x: data.x, y: data.y } : centroide(data.pts);
   if (pressePapier.kind === 'groupe') {
     // Recentrer le groupe sur le curseur en conservant les positions relatives
-    const pts = pressePapier.items.map(it => it.kind === 'panneau'
-      ? { x: it.data.x, y: it.data.y } : centroide(it.data.pts));
+    const pts = pressePapier.items.map(it => centreEl(it.kind, it.data));
     const gx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
     const gy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
     const refs = pressePapier.items.map((it, i) =>
@@ -7245,7 +7434,7 @@ function supprimerSelection() {
   const sel = editeur.selection;
   if (!sel) return;
   const ret = (kind, ref) => {
-    const tab = kind === 'panneau' ? editeur.panneaux : editeur.marquages;
+    const tab = tableauPourKind(kind);
     const i = tab.indexOf(ref); if (i >= 0) tab.splice(i, 1);
   };
   if (sel.kind === 'groupe') sel.refs.forEach(r => ret(r.kind, r.ref));
@@ -7300,7 +7489,13 @@ function choisirDecor(nom) {
 
 document.getElementById('choix-decor').addEventListener('click', (e) => {
   const btn = e.target.closest('button[data-decor]');
-  if (btn) choisirDecor(btn.dataset.decor);
+  if (btn) { choisirDecor(btn.dataset.decor); return; }
+  // Situation préchargée : charge la scène complète (décor perso) en un tap
+  const sit = e.target.closest('button[data-situation]');
+  if (sit) {
+    const gen = MODELES[sit.dataset.situation];
+    if (gen) modeleVersScene(gen());   // bascule sur le décor « perso »
+  }
 });
 
 document.getElementById('taille-giratoire').addEventListener('input', (e) => {
