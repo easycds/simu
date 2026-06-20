@@ -342,6 +342,17 @@
   }
   input[type="range"] { width: 100px; accent-color: var(--rouge); }
   input[type="checkbox"] { accent-color: var(--rouge); }
+  input[type="text"] {
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 7px 12px;
+    border: 1.5px solid var(--bordure);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--encre);
+  }
+  input[type="text"]:focus { outline: none; border-color: var(--rouge); }
 
   #sel-actions {
     display: inline-flex;
@@ -1188,9 +1199,20 @@
         <option value="ligne_mixte">Ligne mixte (continue + discontinue)</option>
         <option value="double_continue">Double ligne continue</option>
         <option value="ligne_guidage">Ligne de guidage (carrefour)</option>
+        <option value="fleche_rabattement">Flèche de rabattement</option>
+        <option value="triangle_cedez">Triangle cédez-le-passage (sol)</option>
+        <option value="zigzag_bus">Ligne zigzag (arrêt de bus)</option>
+        <option value="texte_sol">Inscription au sol (texte)</option>
+        <option value="pmr">Pictogramme PMR</option>
+        <option value="fleche_td_gauche">Flèche tout droit + gauche</option>
+        <option value="fleche_td_droite">Flèche tout droit + droite</option>
+        <option value="damier_bus">Damier (voie bus, carrefour)</option>
       </select>
       <label class="controle" style="flex-direction:row;align-items:center;gap:6px" id="zone-jaune">
         <input type="checkbox" id="ed-jaune"> Jaune temporaire (chantier)
+      </label>
+      <label class="controle" id="zone-texte-sol" hidden>Texte à inscrire
+        <input type="text" id="ed-texte-sol" maxlength="14" value="BUS" placeholder="BUS, STOP, ZONE 30…">
       </label>
       <select id="type-panneau-ed" aria-label="Type de panneau (éditeur)" hidden>
         <option value="stop">STOP</option>
@@ -1232,6 +1254,24 @@
         <input type="checkbox" id="ed-bouts-droits"> Bouts droits
       </label>
       <button id="ed-vehicule-test">🚗 Véhicule test</button>
+      <div id="zone-modeles">
+        <button class="mod-toggle" id="mod-toggle" aria-expanded="false">
+          <span>Scènes types</span><span class="mod-chevron">▶</span>
+        </button>
+        <div class="mod-grille" id="mod-grille" hidden>
+          <button class="mod-btn" data-modele="croix">Croisement simple</button>
+          <button class="mod-btn" data-modele="priorite_droite">Priorité à droite</button>
+          <button class="mod-btn" data-modele="croix_stop">Carrefour STOP</button>
+          <button class="mod-btn" data-modele="croix_feux">Carrefour à feux</button>
+          <button class="mod-btn" data-modele="te">Intersection T (cédez)</button>
+          <button class="mod-btn" data-modele="te_stop">Intersection T (STOP)</button>
+          <button class="mod-btn" data-modele="rondpoint">Rond-point</button>
+          <button class="mod-btn" data-modele="y_branches">Patte d'oie (Y)</button>
+          <button class="mod-btn" data-modele="decale">Carrefour décalé</button>
+          <button class="mod-btn" data-modele="double_voie">2×2 voies</button>
+          <button class="mod-btn" data-modele="priorite_b15c18">Priorité sens inverse (B15/C18)</button>
+        </div>
+      </div>
       <div id="zone-scenes">
         <div class="zs-titre">Mes scènes</div>
         <button id="zs-sauver">💾 Sauvegarder cette scène</button>
@@ -1275,6 +1315,7 @@
         <label class="controle" style="flex-direction:row;align-items:center;gap:8px">Couleur
           <button class="pinc-coul actif" data-coul="goudron" title="Goudron" style="background:#565d66"></button>
           <button class="pinc-coul" data-coul="herbe" title="Herbe" style="background:#8bb888"></button>
+          <button class="pinc-coul" data-coul="marquage" title="Marquage (blanc)" style="background:#f3f4f6"></button>
         </label>
         <label class="controle" style="flex-direction:row;align-items:center;gap:8px">Forme
           <button class="pinc-forme actif" data-forme="cercle" title="Cercle">●</button>
@@ -1342,6 +1383,9 @@
         </label>
         <label class="os-ligne">Rotation
           <input type="range" id="osel-rot" min="-180" max="180" step="5" value="0">
+        </label>
+        <label class="os-ligne" id="os-ligne-texte" hidden>Texte
+          <input type="text" id="osel-texte" maxlength="14" placeholder="BUS, STOP, ZONE 30…">
         </label>
         <div class="os-boutons">
           <button id="osel-dupliquer" title="Dupliquer">⧉ Dupliquer</button>
@@ -2617,7 +2661,7 @@ function drawVoieRapide(ctx, W, H) {
    - panneaux  : [{ type, x, y (normalisés), taille, etatFeu }]
    ============================================================ */
 
-const MARQUAGES_2_POINTS = ['stop', 'cedez', 'passage_pieton', 'fleche_droit', 'fleche_gauche', 'fleche_droite', 'velo', 'ralentisseur', 'stationnement', 'ligne_effet', 'sas_velo'];
+const MARQUAGES_2_POINTS = ['stop', 'cedez', 'passage_pieton', 'fleche_droit', 'fleche_gauche', 'fleche_droite', 'velo', 'ralentisseur', 'stationnement', 'ligne_effet', 'sas_velo', 'fleche_rabattement', 'triangle_cedez', 'texte_sol', 'pmr', 'fleche_td_gauche', 'fleche_td_droite'];
 
 const editeur = {
   mode: 'route',
@@ -2626,6 +2670,7 @@ const editeur = {
   libre: false,           // redimensionnement libre (largeur/hauteur indépendants)
   fond: null,             // image de fond Google Earth { img, x, y, w, h, opacite, verrou }
   typeMarquage: 'stop',
+  texteSol: 'BUS',
   typePanneau: 'stop',
   routes: [],
   marquages: [],
@@ -3170,6 +3215,190 @@ function drawMarquage(ctx, m, W, H, alpha = 1) {
       ctx.stroke();
       break;
     }
+
+    case 'fleche_rabattement': {
+      // Flèche de rabattement (schéma B.1) : longue flèche fine et
+      // incurvée annonçant une ligne continue ou un rétrécissement.
+      const a = { x: m.pts[0].x * W, y: m.pts[0].y * H };
+      const b = { x: m.pts[1].x * W, y: m.pts[1].y * H };
+      const len = Math.max(70, Math.hypot(b.x - a.x, b.y - a.y));
+      const ang = Math.atan2(b.y - a.y, b.x - a.x);
+      ctx.save();
+      ctx.translate(a.x, a.y);
+      ctx.rotate(ang);
+      const w0 = len * 0.045, w1 = len * 0.095;
+      ctx.beginPath();
+      ctx.moveTo(0, -w0);
+      ctx.quadraticCurveTo(len * 0.45, -w1 * 1.3, len * 0.78, -w1);
+      ctx.lineTo(len * 0.78, -w1 * 2.6);
+      ctx.lineTo(len, 0);
+      ctx.lineTo(len * 0.78, w1 * 2.6);
+      ctx.lineTo(len * 0.78, w1);
+      ctx.quadraticCurveTo(len * 0.45, w1 * 1.3, 0, w0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      break;
+    }
+
+    case 'triangle_cedez': {
+      // Présignalisation au sol du « cédez le passage » (schéma D.7) :
+      // triangle long et étroit, pointe dirigée vers le conducteur.
+      const a = { x: m.pts[0].x * W, y: m.pts[0].y * H };
+      const b = { x: m.pts[1].x * W, y: m.pts[1].y * H };
+      const len = Math.max(60, Math.hypot(b.x - a.x, b.y - a.y));
+      const ang = Math.atan2(b.y - a.y, b.x - a.x);
+      ctx.save();
+      ctx.translate(a.x, a.y);
+      ctx.rotate(ang);
+      const largeur = len * 0.34;
+      ctx.beginPath();
+      ctx.moveTo(len, 0);
+      ctx.lineTo(0, -largeur / 2);
+      ctx.lineTo(0, largeur / 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      break;
+    }
+
+    case 'zigzag_bus': {
+      // Ligne zigzag jaune : emplacement d'arrêt d'autobus (art. 118-3.C).
+      // Toujours jaune, indépendamment de la case « jaune temporaire ».
+      ctx.strokeStyle = '#f5c518';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      const AMPL = 13, PAS = 16;
+      ctx.beginPath();
+      for (let i = 0; i < m.pts.length - 1; i++) {
+        const a = { x: m.pts[i].x * W, y: m.pts[i].y * H };
+        const b = { x: m.pts[i + 1].x * W, y: m.pts[i + 1].y * H };
+        const seg = Math.hypot(b.x - a.x, b.y - a.y);
+        const ang = Math.atan2(b.y - a.y, b.x - a.x);
+        const nx = -Math.sin(ang), ny = Math.cos(ang);
+        if (i === 0) ctx.moveTo(a.x, a.y);
+        let up = true;
+        for (let d = PAS; d <= seg; d += PAS) {
+          const cx = a.x + Math.cos(ang) * d, cy = a.y + Math.sin(ang) * d;
+          const amp = up ? AMPL : -AMPL;
+          ctx.lineTo(cx + nx * amp, cy + ny * amp);
+          up = !up;
+        }
+        ctx.lineTo(b.x, b.y);
+      }
+      ctx.stroke();
+      break;
+    }
+
+    case 'texte_sol': {
+      // Inscription au sol (BUS, STOP, ZONE 30…) — art. 118-7.
+      // 1ᵉʳ tap : position · 2ᵉ tap : direction et taille.
+      const a = { x: m.pts[0].x * W, y: m.pts[0].y * H };
+      const b = { x: m.pts[1].x * W, y: m.pts[1].y * H };
+      const h = Math.max(36, Math.hypot(b.x - a.x, b.y - a.y));
+      const ang = Math.atan2(b.y - a.y, b.x - a.x);
+      const texte = (m.texte || 'BUS').toUpperCase();
+      ctx.save();
+      ctx.translate(a.x, a.y);
+      ctx.rotate(ang + Math.PI / 2);
+      ctx.fillStyle = couleurM;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `900 ${h}px Fredoka, sans-serif`;
+      ctx.scale(0.62, 1);
+      ctx.fillText(texte, 0, 0);
+      ctx.restore();
+      break;
+    }
+
+    case 'pmr': {
+      // Pictogramme PMR (place de stationnement réservée) — art. 118-2.C.
+      const a = { x: m.pts[0].x * W, y: m.pts[0].y * H };
+      const b = { x: m.pts[1].x * W, y: m.pts[1].y * H };
+      const h = Math.max(40, Math.hypot(b.x - a.x, b.y - a.y));
+      const ang = Math.atan2(b.y - a.y, b.x - a.x);
+      ctx.save();
+      ctx.translate(a.x, a.y);
+      ctx.rotate(ang + Math.PI / 2);
+      ctx.fillStyle = couleurM;
+      ctx.strokeStyle = couleurM;
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      const R = h * 0.30;
+      ctx.lineWidth = Math.max(3, h * 0.10);
+      ctx.beginPath(); ctx.arc(0, h * 0.10, R, Math.PI * 0.15, Math.PI * 1.25); ctx.stroke();
+      ctx.beginPath(); ctx.arc(h * 0.02, -h * 0.34, h * 0.10, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(0, -h * 0.20);
+      ctx.lineTo(h * 0.06, h * 0.02);
+      ctx.lineTo(-R * 0.55, h * 0.02);
+      ctx.moveTo(0, -h * 0.20);
+      ctx.lineTo(-h * 0.14, -h * 0.06);
+      ctx.stroke();
+      ctx.restore();
+      break;
+    }
+
+    case 'fleche_td_gauche':
+    case 'fleche_td_droite': {
+      // Flèche directionnelle combinée : tout droit + tourner (schéma B.3).
+      const a = { x: m.pts[0].x * W, y: m.pts[0].y * H };
+      const b = { x: m.pts[1].x * W, y: m.pts[1].y * H };
+      const len = Math.max(54, Math.hypot(b.x - a.x, b.y - a.y));
+      const ang = Math.atan2(b.y - a.y, b.x - a.x);
+      const w = Math.max(8, len * 0.13);
+      const s = m.type === 'fleche_td_gauche' ? -1 : 1;
+      ctx.save();
+      ctx.translate(a.x, a.y);
+      ctx.rotate(ang);
+      ctx.fillRect(0, -w / 2, len * 0.62, w);
+      ctx.beginPath();
+      ctx.moveTo(len * 0.62, -w * 1.5);
+      ctx.lineTo(len, 0);
+      ctx.lineTo(len * 0.62, w * 1.5);
+      ctx.closePath(); ctx.fill();
+      const x0 = len * 0.40, cou = len * 0.26;
+      ctx.fillRect(x0 - w / 2, s > 0 ? 0 : -cou, w, cou + w / 2);
+      ctx.beginPath();
+      ctx.moveTo(x0 - w * 1.6, s * cou);
+      ctx.lineTo(x0 + w * 1.6, s * cou);
+      ctx.lineTo(x0, s * (cou + w * 2.2));
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+      break;
+    }
+
+    case 'damier_bus': {
+      // Damier blanc : franchissement de carrefour par une voie bus
+      // (art. 118-3.D), carrés ≈ 0,80–1,20 m de côté.
+      if (m.pts.length < 3) {
+        ctx.lineWidth = 5;
+        tracerChemin(ctx, m.pts, W, H);
+        ctx.stroke();
+        break;
+      }
+      ctx.save();
+      ctx.beginPath();
+      m.pts.forEach((p, i) => {
+        const x = p.x * W, y = p.y * H;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      ctx.clip();
+      const xs = m.pts.map(p => p.x * W), ys = m.pts.map(p => p.y * H);
+      const x0 = Math.min(...xs), x1 = Math.max(...xs);
+      const y0 = Math.min(...ys), y1 = Math.max(...ys);
+      const cote = 20;
+      let row = 0;
+      for (let gy = 0; gy < (y1 - y0) + cote; gy += cote, row++) {
+        let col = 0;
+        for (let gx = 0; gx < (x1 - x0) + cote; gx += cote, col++) {
+          if ((row + col) % 2 === 0) ctx.fillRect(x0 + gx, y0 + gy, cote, cote);
+        }
+      }
+      ctx.restore();
+      break;
+    }
   }
   ctx.restore();
 }
@@ -3186,6 +3415,11 @@ function bboxMarquage(m, W, H) {
               : m.type === 'stationnement' ? 56
               : m.type === 'sas_velo' ? 44
               : m.type === 'piste_cyclable' ? 20
+              : m.type === 'texte_sol' ? 30
+              : m.type === 'triangle_cedez' ? 26
+              : m.type === 'fleche_rabattement' ? 30
+              : m.type === 'pmr' ? 26
+              : m.type === 'zigzag_bus' ? 16
               : m.type === 'velo' ? 30 : 12;
   return { x: x0 - marge, y: y0 - marge, w: x1 - x0 + 2 * marge, h: y1 - y0 + 2 * marge };
 }
@@ -3309,8 +3543,10 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
   }
 
   // PINCEAU DE REMPLISSAGE — taches goudron/herbe, sous les routes
+  // (le blanc « marquage » est peint plus haut, AU-DESSUS de l'asphalte)
   if (ed.pinceau && ed.pinceau.length) {
     for (const t of ed.pinceau) {
+      if (t.couleur === 'marquage') continue;
       ctx.fillStyle = (t.couleur === 'herbe') ? '#8bb888' : '#565d66';
       if (t.forme === 'carre') {
         ctx.fillRect(t.x - t.taille / 2, t.y - t.taille / 2, t.taille, t.taille);
@@ -3356,6 +3592,21 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
     ctx.lineCap = rt.boutsDroits ? 'butt' : 'round';
     (rt.arrondi ? tracerCheminLisse : tracerChemin)(ctx, rt.pts, W, H);
     ctx.stroke();
+  }
+  // PASSE 2b — pinceau « marquage » blanc, AU-DESSUS de l'asphalte
+  // (cercles/aplats peints : îlots, ronds-points, zones blanches…)
+  if (ed.pinceau && ed.pinceau.length) {
+    for (const t of ed.pinceau) {
+      if (t.couleur !== 'marquage') continue;
+      ctx.fillStyle = t.jaune ? '#f5c518' : '#f3f4f6';
+      if (t.forme === 'carre') {
+        ctx.fillRect(t.x - t.taille / 2, t.y - t.taille / 2, t.taille, t.taille);
+      } else {
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, t.taille / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
   }
   // PASSE 3 — marquages
   for (const m of ed.marquages) drawMarquage(ctx, m, W, H);
@@ -3660,15 +3911,15 @@ function hitMarquage(m, px, py, W, H) {
   const seuil = m.type === 'passage_pieton' ? 40
               : (m.type === 'ralentisseur' || m.type === 'stationnement') ? 32
               : m.type === 'sas_velo' ? 36
-              : (m.type.startsWith('fleche') || m.type === 'velo') ? 28
+              : (m.type.startsWith('fleche') || m.type === 'velo' || m.type === 'pmr' || m.type === 'texte_sol' || m.type === 'triangle_cedez') ? 28
               : (m.type === 'stop' || m.type === 'cedez') ? 22 : 18;
   for (let i = 0; i < m.pts.length - 1; i++) {
     if (distPointSegment(px, py,
         m.pts[i].x * W, m.pts[i].y * H,
         m.pts[i+1].x * W, m.pts[i+1].y * H) <= seuil) return true;
   }
-  // Zébra : le contour est fermé, on teste aussi le segment de fermeture
-  if (m.type === 'zebra' && m.pts.length > 2) {
+  // Zébra / damier : le contour est fermé, on teste aussi le segment de fermeture
+  if ((m.type === 'zebra' || m.type === 'damier_bus') && m.pts.length > 2) {
     const d = m.pts[m.pts.length - 1], p0 = m.pts[0];
     if (distPointSegment(px, py, d.x * W, d.y * H, p0.x * W, p0.y * H) <= seuil) return true;
   }
@@ -5558,6 +5809,9 @@ ed.canvas.addEventListener('pointerdown', (e) => {
           arrondi: editeur.arrondi,
           jaune: editeur.jaune,
         };
+        if (editeur.typeMarquage === 'texte_sol') {
+          editeur.enCoursMarquage.texte = editeur.texteSol || 'BUS';
+        }
       }
       editeur.enCoursMarquage.pts.push(modeAimanteBord() ? pnB : pn);
       if (deuxPoints && editeur.enCoursMarquage.pts.length === 2) {
@@ -6066,7 +6320,7 @@ const AIDES = {
   panneau: 'Mode Panneau : choisissez le type puis tapez pour poser. Les feux tricolores resteront pilotables dans la Scène (double-tap pour changer la couleur).',
   selection: 'Mode Sélection : tapez un panneau ou un marquage pour le sélectionner, glissez pour le déplacer, ou utilisez Dupliquer / Supprimer / Taille.',
   gomme: 'Mode Gomme : tapez un élément pour le supprimer (panneau, puis marquage, puis route).',
-  pinceau: 'Mode Pinceau : glissez pour peindre du goudron ou de l\'herbe. Choisissez la couleur, la forme (cercle/carré) et la taille. « Effacer la peinture » retire tout.',
+  pinceau: 'Mode Pinceau : glissez pour peindre du goudron, de l\'herbe ou du marquage blanc (cercles/aplats au-dessus des routes). Choisissez la couleur, la forme (cercle/carré) et la taille. « Effacer la peinture » retire tout.',
 };
 
 const LIBELLES_MODE = {
@@ -6084,6 +6338,12 @@ function majSelectionUI() {
   selActions.hidden = !sel;
   selTailleZone.hidden = true;
   selRotZone.hidden = true;
+  const ligneTexte = document.getElementById('os-ligne-texte');
+  const estTexteSol = !!sel && sel.kind === 'marquage' && sel.ref.type === 'texte_sol';
+  if (ligneTexte) {
+    ligneTexte.hidden = !estTexteSol;
+    if (estTexteSol) oselTexte.value = sel.ref.texte || 'BUS';
+  }
   const widget = document.getElementById('outil-selection');
   if (widget) {
     widget.hidden = false;                       // toujours visible dans l'éditeur
@@ -6116,6 +6376,8 @@ document.getElementById('choix-mode').addEventListener('click', (e) => {
   // Réglages contextuels : seuls ceux du mode actif sont visibles
   selectMarquage.hidden  = editeur.mode !== 'marquage';
   document.getElementById('zone-jaune').hidden = editeur.mode !== 'marquage';
+  document.getElementById('zone-texte-sol').hidden =
+    !(editeur.mode === 'marquage' && editeur.typeMarquage === 'texte_sol');
   selectPanneauEd.hidden = editeur.mode !== 'panneau';
   document.getElementById('zone-largeur').hidden =
     editeur.mode !== 'route' && editeur.mode !== 'trottoir';
@@ -6127,6 +6389,12 @@ document.getElementById('choix-mode').addEventListener('click', (e) => {
 selectMarquage.addEventListener('change', () => {
   terminerTrace();
   editeur.typeMarquage = selectMarquage.value;
+  document.getElementById('zone-texte-sol').hidden = editeur.typeMarquage !== 'texte_sol';
+});
+
+const champTexteSol = document.getElementById('ed-texte-sol');
+champTexteSol.addEventListener('input', () => {
+  editeur.texteSol = (champTexteSol.value || 'BUS').toUpperCase().slice(0, 14);
 });
 
 // ===== Pinceau de remplissage =====
@@ -6206,12 +6474,18 @@ function modeleVersScene(modele) {
   }));
   editeur.marquages = (modele.marquages || []).map(m => ({
     type: m.type, pts: m.pts.map(p => ({ x: p.x, y: p.y })),
+    arrondi: !!m.arrondi, jaune: !!m.jaune,
+    ...(m.texte ? { texte: m.texte } : {}),
   }));
   editeur.panneaux = (modele.panneaux || []).map(p => ({
     type: p.type, x: p.x, y: p.y, taille: p.taille || 52, etatFeu: p.etatFeu || 'rouge', angle: p.angle || 0,
   }));
-  editeur.batiments = [];
-  editeur.pinceau = [];
+  editeur.batiments = (modele.batiments || []).map(b => ({
+    type: b.type, x: b.x, y: b.y, w: b.w, h: b.h,
+    ...(b.couleur ? { couleur: b.couleur } : {}),
+    ...(b.angle ? { angle: b.angle } : {}),
+  }));
+  editeur.pinceau = (modele.pinceau || []).map(t => ({ ...t }));
   editeur.enCoursRoute = null;
   editeur.enCoursMarquage = null;
   selectionner(null);
@@ -6337,6 +6611,49 @@ const MODELES = {
       { type: 'terreplein', x: 0.5, y: 0.5, w: 0.9, h: 0.02 },
     ],
   }),
+
+  priorite_b15c18: () => ({
+    routes: [
+      { pts: [{x:0.01562,y:0.50435},{x:0.98438,y:0.50435},{x:1,y:0.50435}], largeur: 150 },
+      { pts: [{x:0.84375,y:0.43478},{x:0.84375,y:0.1913}], largeur: 150 },
+    ],
+    marquages: [
+      { type: 'ligne_discontinue', pts: [{x:-1.5625,y:0.50435},{x:2.5625,y:0.50435}] },
+      { type: 'ligne_discontinue', pts: [{x:0.46875,y:0.55652},{x:0.46875,y:0.53913},{x:0.60938,y:0.53913},{x:0.60938,y:0.57391}] },
+      { type: 'ligne_discontinue', pts: [{x:0.53634,y:0.54412},{x:0.53634,y:0.58084}] },
+      { type: 'ligne_discontinue', pts: [{x:2.39439,y:0.50433},{x:-1.73061,y:0.50433}] },
+      { type: 'ligne_discontinue', pts: [{x:0.36314,y:0.45216},{x:0.36314,y:0.46955},{x:0.22252,y:0.46955},{x:0.22252,y:0.43477}] },
+      { type: 'ligne_discontinue', pts: [{x:0.29555,y:0.46455},{x:0.29555,y:0.42783}] },
+    ],
+    panneaux: [
+      { type: 'b15', x: 0.44037, y: 0.58838, taille: 34, etatFeu: 'rouge', angle: 1.5708 },
+      { type: 'c18', x: 0.64034, y: 0.42575, taille: 31, etatFeu: 'rouge', angle: -1.5708 },
+      { type: 'c18', x: 0.12338, y: 0.58143, taille: 31, etatFeu: 'rouge', angle: -4.71239 },
+      { type: 'b15', x: 0.39413, y: 0.42389, taille: 34, etatFeu: 'rouge', angle: 4.71239 },
+    ],
+    batiments: [
+      { type: 'voiture', x: 0.4967, y: 0.55643, w: 0.04856, h: 0.02703, couleur: '#7d5ba6' },
+      { type: 'voiture', x: 0.56946, y: 0.55557, w: 0.04625, h: 0.02574, couleur: '#e0e0e0' },
+      { type: 'buisson', x: 0.49053, y: 0.63251, w: 0.07969, h: 0.0887 },
+      { type: 'buisson', x: 0.64062, y: 0.64348, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.40625, y: 0.67826, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.26562, y: 0.6087, w: 0.04688, h: 0.05217 },
+      { type: 'immeuble', x: 0.4661, y: 0.37029, w: 0.09375, h: 0.07826 },
+      { type: 'immeuble', x: 0.12596, y: 0.64253, w: 0.09375, h: 0.07826 },
+      { type: 'ecole', x: 0.66016, y: 0.35211, w: 0.125, h: 0.10435 },
+      { type: 'maison', x: 0.16435, y: 0.38902, w: 0.07031, h: 0.0587 },
+      { type: 'maison', x: 0.74713, y: 0.62609, w: 0.07031, h: 0.0587 },
+      { type: 'buisson', x: 0.5625, y: 0.34783, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.9375, y: 0.26087, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.9375, y: 0.26087, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.71875, y: 0.2087, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.29688, y: 0.33043, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.125, y: 0.24348, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.1875, y: 0.8, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.70312, y: 0.78261, w: 0.04688, h: 0.05217 },
+      { type: 'buisson', x: 0.46875, y: 0.24348, w: 0.04688, h: 0.05217 },
+    ],
+  }),
 };
 
 function brancherModeles() {
@@ -6403,6 +6720,7 @@ document.getElementById('zs-sauver').addEventListener('click', sauverSceneCouran
 document.getElementById('zs-charger').addEventListener('click', chargerSceneSelectionnee);
 document.getElementById('zs-supprimer').addEventListener('click', supprimerSceneSelectionnee);
 rafraichirListeScenes();
+brancherModeles();
 function poserCoupPinceau(p) {
   editeur.pinceau.push({
     x: p.x, y: p.y,
@@ -6547,6 +6865,14 @@ oselTaille.addEventListener('input', appliquerTransformSelection);
 oselRot.addEventListener('input', appliquerTransformSelection);
 oselTaille.addEventListener('change', figerBaseSelection);
 oselRot.addEventListener('change', figerBaseSelection);
+const oselTexte = document.getElementById('osel-texte');
+oselTexte.addEventListener('input', () => {
+  const sel = editeur.selection;
+  if (!sel || sel.kind !== 'marquage' || sel.ref.type !== 'texte_sol') return;
+  sel.ref.texte = (oselTexte.value || 'BUS').toUpperCase().slice(0, 14);
+  demanderRenduEditeur();
+});
+oselTexte.addEventListener('change', pousserHistorique);
 const oselHauteur = document.getElementById('osel-hauteur');
 const oselLibre = document.getElementById('osel-libre');
 oselHauteur.addEventListener('input', appliquerTransformSelection);
