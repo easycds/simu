@@ -342,17 +342,6 @@
   }
   input[type="range"] { width: 100px; accent-color: var(--rouge); }
   input[type="checkbox"] { accent-color: var(--rouge); }
-  input[type="text"] {
-    font: inherit;
-    font-size: 13.5px;
-    font-weight: 600;
-    padding: 7px 12px;
-    border: 1.5px solid var(--bordure);
-    border-radius: 999px;
-    background: #fff;
-    color: var(--encre);
-  }
-  input[type="text"]:focus { outline: none; border-color: var(--rouge); }
 
   #sel-actions {
     display: inline-flex;
@@ -551,10 +540,11 @@
   }
   .outil-flottant {
     position: fixed; z-index: 50;
-    display: flex; align-items: center; gap: 6px;
-    background: rgba(255,255,255,0.98);
-    border-radius: 14px; padding: 7px 9px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.16);
+    display: flex; align-items: center; gap: 7px;
+    background: #fff;
+    border: 1px solid var(--bordure,#e3e1de);
+    border-radius: 16px; padding: 8px 10px;
+    box-shadow: 0 -2px 16px rgba(0,0,0,0.08), 0 6px 22px rgba(0,0,0,0.10);
     touch-action: none; user-select: none;
   }
   #outil-crayon { right: 16px; bottom: 18px; left: auto; top: auto; }
@@ -572,10 +562,12 @@
     padding: 0 2px; line-height: 1;
   }
   .outil-flottant .of-toggle {
-    width: 38px; height: 38px; border-radius: 10px;
-    border: 1px solid var(--bordure, #e3e1de); background: #fff;
-    font-size: 18px; cursor: pointer;
+    width: 40px; height: 40px; border-radius: 12px;
+    border: 2px solid var(--bordure, #e3e1de); background: #fff;
+    font-size: 18px; cursor: pointer; font-family: inherit; font-weight: 600;
+    transition: border-color 0.12s, background 0.12s, transform 0.08s;
   }
+  .outil-flottant .of-toggle:active { transform: scale(0.92); }
   .outil-flottant .of-toggle.actif { background: var(--rouge,#ff3131); color: #fff; border-color: var(--rouge,#ff3131); }
   .of-couleurs { display: flex; gap: 4px; }
   .of-couleurs .pastille-c {
@@ -593,11 +585,12 @@
   /* Réglette de distance d'arrêt */
   #outil-rejeu { display: flex; align-items: center; gap: 4px; }
   #outil-rejeu .rj-btn {
-    border: 1px solid var(--bordure,#e3e1de); background: #fff;
-    color: var(--encre,#1c2430); font-weight: 700; font-size: 13px;
-    border-radius: 9px; padding: 8px 10px; cursor: pointer; font-family: inherit;
-    min-width: 38px;
+    border: 2px solid var(--bordure,#e3e1de); background: #fff;
+    color: var(--encre,#1c2430); font-weight: 600; font-size: 13px;
+    border-radius: 12px; padding: 8px 11px; cursor: pointer; font-family: inherit;
+    min-width: 38px; transition: border-color 0.12s, background 0.12s, transform 0.08s;
   }
+  #outil-rejeu .rj-btn:active { transform: scale(0.94); }
   #outil-rejeu .rj-btn:disabled { opacity: 0.4; cursor: default; }
   #outil-rejeu #rj-rec { color: var(--rouge,#ff3131); }
   #outil-rejeu #rj-rec.actif { background: var(--rouge,#ff3131); color: #fff; border-color: var(--rouge,#ff3131); }
@@ -728,17 +721,6 @@
   }
   body.nav-repliee #rouvrir-nav { display: block; }
 
-  /* Image de fond (Google Earth) */
-  #zone-fond { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
-  #btn-importer-fond {
-    padding: 10px; border-radius: 10px; border: 2px solid var(--rouge,#ff3131);
-    background: #fff; color: var(--rouge,#ff3131); font-weight: 700; cursor: pointer; font-family: inherit; font-size: 13px;
-  }
-  #fond-reglages { display: flex; flex-direction: column; gap: 8px; }
-  #fond-reglages .fond-check { display: flex; align-items: center; gap: 6px; font-size: 12px; }
-  #fond-reglages .fond-check input { width: 18px; height: 18px; }
-  #btn-retirer-fond { padding: 8px; border-radius: 9px; border: none; background: #c1121f; color: #fff; font-weight: 600; cursor: pointer; font-family: inherit; }
-  .fond-aide { font-size: 11px; color: #777; line-height: 1.4; }
 
   /* Choix du type de bâtiment */
   #zone-batiment { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
@@ -778,9 +760,9 @@
   .palette-icones button:hover { border-color: var(--rouge,#ff3131); }
   .palette-icones button:active { transform: scale(0.95); }
   .palette-icones button.actif {
-    border-color: var(--rouge,#ff3131); background: rgba(255,49,49,0.08);
-    box-shadow: 0 0 0 1px var(--rouge,#ff3131);
+    border-color: var(--rouge,#ff3131); background: #fff5f5; color: var(--rouge,#ff3131);
   }
+  .palette-icones button:active { transform: scale(0.96); }
   .palette-icones .pi-ico { font-size: 24px; line-height: 1; }
   .palette-icones .pi-lib { font-size: 11px; font-weight: 600; color: var(--encre,#1c2430); text-align: center; }
 
@@ -874,10 +856,12 @@
   #outil-selection .os-corps { display: flex; flex-direction: column; gap: 9px; }
   #outil-selection .os-haut { display: flex; gap: 6px; align-items: center; }
   #outil-selection .os-haut #osel-mode {
-    flex: 1; padding: 7px 8px; border-radius: 9px;
-    border: 1px solid var(--bordure,#e3e1de); background: #fff;
+    flex: 1; padding: 7px 8px; border-radius: 12px;
+    border: 2px solid var(--bordure,#e3e1de); background: #fff;
     font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+    transition: border-color 0.12s, background 0.12s, transform 0.08s;
   }
+  #outil-selection .os-haut #osel-mode:active { transform: scale(0.96); }
   #outil-selection .os-haut #osel-mode.actif { background: var(--rouge,#ff3131); color: #fff; border-color: var(--rouge,#ff3131); }
   #outil-selection .os-haut button { font-family: inherit; }
   #outil-selection .os-haut #osel-undo, #outil-selection .os-haut #osel-redo {
@@ -894,10 +878,12 @@
   #outil-selection .os-ligne input[type=range] { width: 100%; }
   #outil-selection .os-boutons { display: flex; gap: 8px; justify-content: center; margin-top: 2px; }
   #outil-selection .os-boutons button {
-    flex: 1; padding: 7px 0; border-radius: 9px;
-    border: 1px solid var(--bordure,#e3e1de); background: #fff;
+    flex: 1; padding: 7px 0; border-radius: 12px;
+    border: 2px solid var(--bordure,#e3e1de); background: #fff;
     font-size: 15px; cursor: pointer;
+    transition: border-color 0.12s, background 0.12s, transform 0.08s;
   }
+  #outil-selection .os-boutons button:active { transform: scale(0.94); }
   #outil-selection .os-boutons button.danger { color: var(--rouge,#ff3131); }
   body:not(.onglet-editeur) #outil-selection { display: none !important; }
 
@@ -923,6 +909,71 @@
   @media (orientation: portrait) and (max-width: 600px) {
     #rotation-portrait { display: flex; }
   }
+
+  /* ===== Barre du bas : vignettes de marquages / panneaux (façon bêta) ===== */
+  #barre-visuels {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 45;
+    display: none; box-sizing: border-box;
+    height: calc(96px + env(safe-area-inset-bottom, 0px));
+    background: #fff;
+    border-top: 1px solid var(--bordure,#e3e1de);
+    box-shadow: 0 -4px 18px rgba(0,0,0,0.10);
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+  #barre-visuels.visible { display: block; }
+  body.barre-visuels-ouverte #bandeau-trace { bottom: 116px; }
+  .bv-rangee {
+    display: flex; flex-wrap: nowrap; align-items: stretch; gap: 8px;
+    height: 100%;
+    overflow-x: auto; overflow-y: hidden;
+    -webkit-overflow-scrolling: touch; scrollbar-width: thin;
+  }
+  .bv-rangee[hidden] { display: none; }
+  .bv-chip {
+    flex: 0 0 auto;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    width: 70px; padding: 4px;
+    border: 2px solid var(--bordure,#e3e1de); border-radius: 14px;
+    background: #fff; cursor: pointer; font-family: inherit;
+    transition: border-color 0.12s, background 0.12s, transform 0.08s;
+  }
+  .bv-chip:active { transform: scale(0.95); }
+  .bv-chip.actif { border-color: var(--rouge,#ff3131); background: #fff5f5; }
+  /* IMPORTANT : neutraliser la règle globale `canvas { position:absolute; inset:0; width/height:100% }`
+     qui sinon ferait déborder ces vignettes sur tout l'éditeur. */
+  .bv-cv {
+    position: static; inset: auto;
+    width: 46px; height: 46px; flex: 0 0 auto;
+    display: block; border-radius: 8px;
+    cursor: pointer; touch-action: auto;
+  }
+  .bv-lib {
+    font-size: 10px; font-weight: 600; line-height: 1.05;
+    color: var(--encre,#1c2430); text-align: center;
+    max-width: 64px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  /* Panneau d'édition unifié (quand un élément est sélectionné) */
+  .bv-edit { align-items: center; gap: 14px; padding: 0 6px; }
+  .bve-titre { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: var(--encre,#1c2430); }
+  .bve-ctrl {
+    flex: 0 0 auto; display: flex; flex-direction: column; gap: 2px;
+    font-size: 11px; font-weight: 600; color: var(--encre,#1c2430);
+  }
+  .bve-ctrl input[type=range] { width: 150px; accent-color: var(--rouge,#ff3131); }
+  .bve-ctrl input[type=text] {
+    width: 120px; padding: 6px 8px; border: 2px solid var(--bordure,#e3e1de);
+    border-radius: 10px; font-family: inherit; font-size: 13px;
+  }
+  .bve-btn {
+    flex: 0 0 auto; width: 46px; height: 46px; border-radius: 12px;
+    border: 2px solid var(--bordure,#e3e1de); background: #fff;
+    font-size: 18px; cursor: pointer; font-family: inherit;
+    transition: transform 0.08s, border-color 0.12s, background 0.12s;
+  }
+  .bve-btn:active { transform: scale(0.94); }
+  .bve-btn.danger { color: var(--rouge,#ff3131); }
+  /* Pendant l'édition dans la barre du bas, on masque le widget flottant (évite le doublon) */
+  body.bv-edit-actif #outil-selection { display: none !important; }
 </style>
 </head>
 <body>
@@ -1271,20 +1322,6 @@
           <button id="zs-supprimer" class="danger">Supprimer</button>
         </div>
       </div>
-      <div id="zone-fond">
-        <button id="btn-importer-fond">🛰️ Importer une image (Google Earth)</button>
-        <div id="fond-reglages" hidden>
-          <label class="os-ligne">Opacité
-            <input type="range" id="fond-opacite" min="10" max="100" step="5" value="60">
-          </label>
-          <label class="os-ligne fond-check">
-            <input type="checkbox" id="fond-verrou"><span>Verrouiller (ne plus bouger)</span>
-          </label>
-          <button id="btn-retirer-fond" class="danger">🗑 Retirer l'image</button>
-          <p class="fond-aide">Déplacez l'image au doigt, redimensionnez-la avec les coins. Baissez l'opacité pour décalquer par-dessus.</p>
-        </div>
-        <input type="file" id="fichier-fond" accept="image/*" hidden>
-      </div>
       <div id="zone-batiment" hidden>
         <label class="controle">Type de bâtiment
           <div class="bat-choix">
@@ -1303,7 +1340,6 @@
         <label class="controle" style="flex-direction:row;align-items:center;gap:8px">Couleur
           <button class="pinc-coul actif" data-coul="goudron" title="Goudron" style="background:#565d66"></button>
           <button class="pinc-coul" data-coul="herbe" title="Herbe" style="background:#8bb888"></button>
-          <button class="pinc-coul" data-coul="marquage" title="Marquage (blanc)" style="background:#f3f4f6"></button>
         </label>
         <label class="controle" style="flex-direction:row;align-items:center;gap:8px">Forme
           <button class="pinc-forme actif" data-forme="cercle" title="Cercle">●</button>
@@ -1391,6 +1427,25 @@
       <span class="txt" id="bt-txt">Tapez pour poser le premier point</span>
       <button id="bt-annuler-pt" title="Retirer le dernier point">↩ Annuler pt</button>
       <button id="bt-terminer">✓ Terminer</button>
+    </div>
+    <div id="barre-visuels">
+      <div class="bv-rangee" id="bv-marquages" hidden></div>
+      <div class="bv-rangee" id="bv-panneaux" hidden></div>
+      <div class="bv-rangee" id="bv-decor" hidden></div>
+      <div class="bv-rangee bv-edit" id="bv-edition" hidden>
+        <span class="bve-titre" id="bve-titre">Élément</span>
+        <label class="bve-ctrl">Taille
+          <input type="range" id="bve-taille" min="10" max="400" step="5" value="100">
+        </label>
+        <label class="bve-ctrl">Rotation
+          <input type="range" id="bve-rot" min="-180" max="180" step="5" value="0">
+        </label>
+        <label class="bve-ctrl" id="bve-ligne-texte" hidden>Texte
+          <input type="text" id="bve-texte" maxlength="14" placeholder="BUS…">
+        </label>
+        <button class="bve-btn" id="bve-dup" title="Dupliquer">⧉</button>
+        <button class="bve-btn danger" id="bve-suppr" title="Supprimer">🗑</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2656,7 +2711,6 @@ const editeur = {
   miroir: 'off',          // 'off' | 'vertical' | 'horizontal' : duplication symétrique
   selRoutes: false,       // sélectionner aussi les routes (dissocié des panneaux)
   libre: false,           // redimensionnement libre (largeur/hauteur indépendants)
-  fond: null,             // image de fond Google Earth { img, x, y, w, h, opacite, verrou }
   typeMarquage: 'stop',
   texteSol: 'BUS',
   typePanneau: 'stop',
@@ -3162,40 +3216,6 @@ function drawMarquage(ctx, m, W, H, alpha = 1) {
       break;
     }
 
-    case 'voie_bus': {
-      // Voie réservée aux bus (art. 114-3 / 118-3.A) : délimitation par
-      // une ligne large discontinue de type T3 (5u), avec le mot « BUS »
-      // répété le long de la voie. La case « jaune » la rend continue
-      // (couloir réservé sans dépassement, ligne continue 5u).
-      ctx.lineCap = 'butt';
-      ctx.lineWidth = 7;
-      if (!m.jaune) ctx.setLineDash([34, 14]);
-      (m.arrondi ? tracerCheminLisse : tracerChemin)(ctx, m.pts, W, H);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      // Mot « BUS » répété, orienté dans le sens de la voie
-      ctx.fillStyle = couleurM;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      for (let i = 0; i < m.pts.length - 1; i++) {
-        const a = { x: m.pts[i].x * W, y: m.pts[i].y * H };
-        const b = { x: m.pts[i + 1].x * W, y: m.pts[i + 1].y * H };
-        const seg = Math.hypot(b.x - a.x, b.y - a.y);
-        const ang = Math.atan2(b.y - a.y, b.x - a.x);
-        for (let d = 70; d < seg; d += 150) {
-          const cx = a.x + Math.cos(ang) * d, cy = a.y + Math.sin(ang) * d;
-          ctx.save();
-          ctx.translate(cx, cy);
-          ctx.rotate(ang + Math.PI / 2);
-          ctx.font = '900 26px Fredoka, sans-serif';
-          ctx.scale(0.6, 1);
-          ctx.fillText('BUS', 0, 0);
-          ctx.restore();
-        }
-      }
-      break;
-    }
-
     case 'ligne_mixte': {
       // Ligne mixte : une continue + une discontinue accolées
       // (dépassement permis du seul côté discontinu).
@@ -3310,6 +3330,40 @@ function drawMarquage(ctx, m, W, H, alpha = 1) {
         ctx.lineTo(b.x, b.y);
       }
       ctx.stroke();
+      break;
+    }
+
+    case 'voie_bus': {
+      // Voie réservée aux bus (art. 114-3 / 118-3.A) : délimitation par
+      // une ligne large discontinue de type T3 (5u), avec le mot « BUS »
+      // répété le long de la voie. La case « jaune » la rend continue
+      // (couloir réservé sans dépassement, ligne continue 5u).
+      ctx.lineCap = 'butt';
+      ctx.lineWidth = 7;
+      if (!m.jaune) ctx.setLineDash([34, 14]);
+      (m.arrondi ? tracerCheminLisse : tracerChemin)(ctx, m.pts, W, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Mot « BUS » répété, orienté dans le sens de la voie
+      ctx.fillStyle = couleurM;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (let i = 0; i < m.pts.length - 1; i++) {
+        const a = { x: m.pts[i].x * W, y: m.pts[i].y * H };
+        const b = { x: m.pts[i + 1].x * W, y: m.pts[i + 1].y * H };
+        const seg = Math.hypot(b.x - a.x, b.y - a.y);
+        const ang = Math.atan2(b.y - a.y, b.x - a.x);
+        for (let d = 70; d < seg; d += 150) {
+          const cx = a.x + Math.cos(ang) * d, cy = a.y + Math.sin(ang) * d;
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(ang + Math.PI / 2);
+          ctx.font = '900 26px Fredoka, sans-serif';
+          ctx.scale(0.6, 1);
+          ctx.fillText('BUS', 0, 0);
+          ctx.restore();
+        }
+      }
       break;
     }
 
@@ -3557,19 +3611,9 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  // IMAGE DE FOND (Google Earth) — tout en dessous, pour décalquer
-  if (ed.fond && ed.fond.img && ed.fond.img.complete) {
-    ctx.save();
-    ctx.globalAlpha = (ed.fond.opacite != null ? ed.fond.opacite : 60) / 100;
-    ctx.drawImage(ed.fond.img, ed.fond.x * W, ed.fond.y * H, ed.fond.w * W, ed.fond.h * H);
-    ctx.restore();
-  }
-
   // PINCEAU DE REMPLISSAGE — taches goudron/herbe, sous les routes
-  // (le blanc « marquage » est peint plus haut, AU-DESSUS de l'asphalte)
   if (ed.pinceau && ed.pinceau.length) {
     for (const t of ed.pinceau) {
-      if (t.couleur === 'marquage') continue;
       ctx.fillStyle = (t.couleur === 'herbe') ? '#8bb888' : '#565d66';
       if (t.forme === 'carre') {
         ctx.fillRect(t.x - t.taille / 2, t.y - t.taille / 2, t.taille, t.taille);
@@ -3615,21 +3659,6 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
     ctx.lineCap = rt.boutsDroits ? 'butt' : 'round';
     (rt.arrondi ? tracerCheminLisse : tracerChemin)(ctx, rt.pts, W, H);
     ctx.stroke();
-  }
-  // PASSE 2b — pinceau « marquage » blanc, AU-DESSUS de l'asphalte
-  // (cercles/aplats peints : îlots, ronds-points, zones blanches…)
-  if (ed.pinceau && ed.pinceau.length) {
-    for (const t of ed.pinceau) {
-      if (t.couleur !== 'marquage') continue;
-      ctx.fillStyle = t.jaune ? '#f5c518' : '#f3f4f6';
-      if (t.forme === 'carre') {
-        ctx.fillRect(t.x - t.taille / 2, t.y - t.taille / 2, t.taille, t.taille);
-      } else {
-        ctx.beginPath();
-        ctx.arc(t.x, t.y, t.taille / 2, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
   }
   // PASSE 3 — marquages
   for (const m of ed.marquages) drawMarquage(ctx, m, W, H);
@@ -5071,6 +5100,15 @@ function zoomerVers(px, py, facteur) {
   vue.ox = px - (px - vue.ox) * (nz / vue.zoom);   // le point visé reste fixe
   vue.oy = py - (py - vue.oy) * (nz / vue.zoom);
   vue.zoom = nz;
+  contraindreVue();
+}
+/* Empêche de « dézoomer » visuellement : la scène remplit toujours
+   l'écran. À 100 %, elle se recentre (impossible de la faire glisser
+   pour révéler de l'herbe sur les bords). */
+function contraindreVue() {
+  const minOx = sc.W * (1 - vue.zoom), minOy = sc.H * (1 - vue.zoom);
+  vue.ox = Math.min(0, Math.max(minOx, vue.ox));
+  vue.oy = Math.min(0, Math.max(minOy, vue.oy));
 }
 function reinitialiserVue() { vue.zoom = 1; vue.ox = 0; vue.oy = 0; }
 
@@ -5364,6 +5402,7 @@ sc.canvas.addEventListener('pointermove', (e) => {
     vue.zoom = nz;
     vue.ox = m.x - (pinchRef.milieu.x - pinchRef.ox) * (nz / pinchRef.zoom);
     vue.oy = m.y - (pinchRef.milieu.y - pinchRef.oy) * (nz / pinchRef.zoom);
+    contraindreVue();
     return;
   }
 
@@ -5685,6 +5724,7 @@ document.querySelectorAll('.bat-btn').forEach(b => {
     document.querySelectorAll('.bat-btn').forEach(x => x.classList.remove('actif'));
     b.classList.add('actif');
     editeur.typeBatiment = b.dataset.bat;
+    if (typeof majBarreVisuelsActif === 'function') majBarreVisuelsActif();
   });
 });
 
@@ -5732,6 +5772,7 @@ function selectionner(sel) {
   editeur.selection = sel;
   rafraichirBaseSelection();
   majSelectionUI();
+  if (typeof majBarreVisuels === 'function') majBarreVisuels();
   if (typeof demanderRenduEditeur === 'function') demanderRenduEditeur();
 }
 
@@ -5910,55 +5951,8 @@ ed.canvas.addEventListener('pointerdown', (e) => {
     }
 
     case 'selection': {
-      // IMAGE DE FOND : déplacer / redimensionner (si non verrouillée et rien d'autre sélectionné)
-      if (editeur.fond && !editeur.fond.verrou) {
-        const fx = editeur.fond.x * MONDE.W, fy = editeur.fond.y * MONDE.H;
-        const fw = editeur.fond.w * MONDE.W, fh = editeur.fond.h * MONDE.H;
-        const tEd = transformContain(ed.W, ed.H);
-        const tol = 44 / (vueEd.zoom * tEd.s);
-        // coins de l'image -> redimensionnement proportionnel
-        const coinsF = [
-          { x: fx, y: fy }, { x: fx + fw, y: fy },
-          { x: fx, y: fy + fh }, { x: fx + fw, y: fy + fh },
-        ];
-        for (const cf of coinsF) {
-          if (Math.hypot(pRaw.x - cf.x, pRaw.y - cf.y) <= tol) {
-            editeur.fondResize = {
-              ox: editeur.fond.x, oy: editeur.fond.y,
-              ow: editeur.fond.w, oh: editeur.fond.h,
-              ratio: editeur.fond.w / editeur.fond.h,
-              depart: { x: pRaw.x, y: pRaw.y },
-            };
-            ed.canvas.setPointerCapture(e.pointerId);
-            return;
-          }
-        }
-        // corps de l'image -> déplacement (seulement si on ne vise pas un élément sélectionnable au-dessus)
-        if (pRaw.x >= fx && pRaw.x <= fx + fw && pRaw.y >= fy && pRaw.y <= fy + fh) {
-          const elDessus = trouverElement(pRaw.x, pRaw.y, MONDE.W, MONDE.H, editeur.selRoutes);
-          if (!elDessus) {
-            editeur.fondDrag = {
-              ox: editeur.fond.x, oy: editeur.fond.y,
-              depart: { x: pRaw.x, y: pRaw.y },
-            };
-            ed.canvas.setPointerCapture(e.pointerId);
-            return;
-          }
-        }
-      }
-      // Sur un PETIT objet, les poignées (rotation/coin) chevauchent le
-      // corps : un tap dans le corps doit déplacer l'objet, pas saisir une
-      // poignée. Le redimensionnement/rotation se fait alors aux réglettes.
-      const _tEdSel = transformContain(ed.W, ed.H);
-      const _boSel = editeur.selection ? boiteElement(editeur.selection, MONDE.W, MONDE.H) : null;
-      const _petitSel = _boSel &&
-        Math.min(_boSel.x1 - _boSel.x0, _boSel.y1 - _boSel.y0) * vueEd.zoom * _tEdSel.s < 40;
-      const _dansCorps = _boSel &&
-        pRaw.x >= _boSel.x0 && pRaw.x <= _boSel.x1 &&
-        pRaw.y >= _boSel.y0 && pRaw.y <= _boSel.y1;
-      const _bloquerPoignees = _petitSel && _dansCorps;
       // Poignée de rotation (si une sélection est active et qu'on la saisit)
-      if (editeur.selection && editeur._poigneeRotation && !_bloquerPoignees) {
+      if (editeur.selection && editeur._poigneeRotation) {
         const pr = editeur._poigneeRotation;
         const tEdR = transformContain(ed.W, ed.H);
         const tolR = 30 / (vueEd.zoom * tEdR.s);   // zone tactile large même si la poignée est petite
@@ -5976,7 +5970,7 @@ ed.canvas.addEventListener('pointerdown', (e) => {
         }
       }
       // Poignées de COIN : redimensionnement proportionnel (coins calculés à la volée)
-      if (editeur.selection && !_bloquerPoignees) {
+      if (editeur.selection) {
         const bo = boiteElement(editeur.selection, MONDE.W, MONDE.H);
         if (bo) {
           const pad = 6;
@@ -6071,24 +6065,6 @@ ed.canvas.addEventListener('pointermove', (e) => {
       v.x = pr.x - editeur.dragTest.dx;
       v.y = pr.y - editeur.dragTest.dy;
     }
-    demanderRenduEditeur();
-    return;
-  }
-  if (editeur.fondDrag && editeur.fond) {
-    const pr = pointEd(e);
-    const dx = (pr.x - editeur.fondDrag.depart.x) / MONDE.W;
-    const dy = (pr.y - editeur.fondDrag.depart.y) / MONDE.H;
-    editeur.fond.x = editeur.fondDrag.ox + dx;
-    editeur.fond.y = editeur.fondDrag.oy + dy;
-    demanderRenduEditeur();
-    return;
-  }
-  if (editeur.fondResize && editeur.fond) {
-    const pr = pointEd(e);
-    const dx = (pr.x - editeur.fondResize.depart.x) / MONDE.W;
-    const nw = Math.max(0.05, editeur.fondResize.ow + dx);
-    editeur.fond.w = nw;
-    editeur.fond.h = nw / editeur.fondResize.ratio;   // garder les proportions de l'image
     demanderRenduEditeur();
     return;
   }
@@ -6209,8 +6185,6 @@ ed.canvas.addEventListener('pointerup', () => {
   editeur.dragTest = null;
   editeur.panDrag = null;
   editeur.pinceauActif = false;
-  if (editeur.fondDrag) editeur.fondDrag = null;
-  if (editeur.fondResize) editeur.fondResize = null;
   if (editeur.coinDrag) { editeur.coinDrag = null; reinitBaseSelection(); oselTaille.value = 100; }
   if (editeur.rotationDrag) { editeur.rotationDrag = null; reinitBaseSelection(); oselRot.value = 0; }
   if (editeur.zoneSelection) {
@@ -6233,12 +6207,6 @@ ed.canvas.addEventListener('pointerup', () => {
           refs.push({ kind: 'marquage', ref: m });
         }
       }
-      for (const b of editeur.batiments) {
-        const bx = b.x * MONDE.W, by = b.y * MONDE.H;
-        if (bx >= x0 && bx <= x1 && by >= y0 && by <= y1) {
-          refs.push({ kind: 'batiment', ref: b });
-        }
-      }
       if (refs.length === 1) selectionner(refs[0]);
       else if (refs.length > 1) selectionner({ kind: 'groupe', refs });
     }
@@ -6256,8 +6224,6 @@ ed.canvas.addEventListener('pointercancel', () => {
   editeur.dragTest = null;
   editeur.panDrag = null;
   editeur.pinceauActif = false;
-  if (editeur.fondDrag) editeur.fondDrag = null;
-  if (editeur.fondResize) editeur.fondResize = null;
   if (editeur.coinDrag) { editeur.coinDrag = null; reinitBaseSelection(); oselTaille.value = 100; }
   if (editeur.rotationDrag) { editeur.rotationDrag = null; reinitBaseSelection(); oselRot.value = 0; }
   editeur.zoneSelection = null;
@@ -6303,7 +6269,7 @@ document.getElementById('ctx-copier').addEventListener('click', () => {
 });
 document.getElementById('ctx-supprimer').addEventListener('click', () => {
   if (ctxCible) {
-    const tab = tableauPourKind(ctxCible.kind);
+    const tab = ctxCible.kind === 'panneau' ? editeur.panneaux : editeur.marquages;
     tab.splice(tab.indexOf(ctxCible.ref), 1);
     if (editeur.selection && editeur.selection.ref === ctxCible.ref) selectionner(null);
     majBoutonPerso();
@@ -6313,17 +6279,17 @@ document.getElementById('ctx-supprimer').addEventListener('click', () => {
 document.getElementById('ctx-coller').addEventListener('click', () => {
   if (pressePapier && ctxPoint) {
     const copie = JSON.parse(JSON.stringify(pressePapier.data));
-    if (pressePapier.kind === 'panneau' || pressePapier.kind === 'batiment') {
+    if (pressePapier.kind === 'panneau') {
       copie.x = ctxPoint.x;
       copie.y = ctxPoint.y;
-      tableauPourKind(pressePapier.kind).push(copie);
+      editeur.panneaux.push(copie);
     } else {
       const c = centroide(copie.pts);
       for (const pt of copie.pts) {
         pt.x += ctxPoint.x - c.x;
         pt.y += ctxPoint.y - c.y;
       }
-      tableauPourKind(pressePapier.kind).push(copie);
+      editeur.marquages.push(copie);
     }
     majBoutonPerso();
   }
@@ -6360,7 +6326,7 @@ const AIDES = {
   panneau: 'Mode Panneau : choisissez le type puis tapez pour poser. Les feux tricolores resteront pilotables dans la Scène (double-tap pour changer la couleur).',
   selection: 'Mode Sélection : tapez un panneau ou un marquage pour le sélectionner, glissez pour le déplacer, ou utilisez Dupliquer / Supprimer / Taille.',
   gomme: 'Mode Gomme : tapez un élément pour le supprimer (panneau, puis marquage, puis route).',
-  pinceau: 'Mode Pinceau : glissez pour peindre du goudron, de l\'herbe ou du marquage blanc (cercles/aplats au-dessus des routes). Choisissez la couleur, la forme (cercle/carré) et la taille. « Effacer la peinture » retire tout.',
+  pinceau: 'Mode Pinceau : glissez pour peindre du goudron ou de l\'herbe. Choisissez la couleur, la forme (cercle/carré) et la taille. « Effacer la peinture » retire tout.',
 };
 
 const LIBELLES_MODE = {
@@ -6424,6 +6390,7 @@ document.getElementById('choix-mode').addEventListener('click', (e) => {
   document.getElementById('zone-pinceau').hidden = editeur.mode !== 'pinceau';
   document.getElementById('zone-batiment').hidden = editeur.mode !== 'batiment';
   aideEditeur.textContent = AIDES[editeur.mode] || '';
+  majBarreVisuels();
 });
 
 selectMarquage.addEventListener('change', () => {
@@ -6924,7 +6891,169 @@ document.getElementById('ed-jaune').addEventListener('change', (e) => {
 });
 selectPanneauEd.addEventListener('change', () => {
   editeur.typePanneau = selectPanneauEd.value;
+  majBarreVisuelsActif();
 });
+
+/* ===== Barre du bas : vignettes cliquables (marquages / panneaux) =====
+   Construite à partir des listes déroulantes existantes (libellés synchronisés).
+   Dessine chaque vignette avec les vraies fonctions (drawMarquage / dessinerPictogramme). */
+function bvFaireChip(kind, value, label) {
+  const b = document.createElement('button');
+  b.className = 'bv-chip';
+  b.dataset.kind = kind;
+  b.dataset.value = value;
+  b.title = label;
+  const cv = document.createElement('canvas');
+  cv.className = 'bv-cv';
+  cv.dataset.kind = kind;
+  cv.dataset.value = value;
+  b.appendChild(cv);
+  const lib = document.createElement('span');
+  lib.className = 'bv-lib';
+  lib.textContent = label;
+  b.appendChild(lib);
+  b.addEventListener('click', () => bvChoisir(kind, value));
+  return b;
+}
+function construireBarreVisuels() {
+  const rM = document.getElementById('bv-marquages');
+  const rP = document.getElementById('bv-panneaux');
+  if (!rM || !rP) return;
+  for (const opt of document.querySelectorAll('#type-marquage option')) {
+    rM.appendChild(bvFaireChip('marquage', opt.value, opt.textContent));
+  }
+  for (const opt of document.querySelectorAll('#type-panneau-ed option')) {
+    rP.appendChild(bvFaireChip('panneau', opt.value, opt.textContent));
+  }
+  const rD = document.getElementById('bv-decor');
+  if (rD) {
+    const BV_DECORS = [
+      ['maison', 'Maison'], ['immeuble', 'Immeuble'], ['ecole', 'École'],
+      ['parking', 'Parking'], ['buisson', 'Buisson'], ['terreplein', 'Terre-plein'],
+      ['voiture', 'Voiture'],
+    ];
+    for (const [val, lib] of BV_DECORS) rD.appendChild(bvFaireChip('decor', val, lib));
+  }
+}
+function bvPeindreChip(cv) {
+  const kind = cv.dataset.kind, value = cv.dataset.value;
+  const rect = cv.getBoundingClientRect();
+  const Wc = rect.width || 62, Hc = rect.height || 62;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(Wc * dpr);
+  cv.height = Math.round(Hc * dpr);
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, Wc, Hc);
+  if (kind === 'marquage') {
+    // fond goudron pour faire ressortir le marquage blanc
+    ctx.fillStyle = '#565d66';
+    roundRect(ctx, 0, 0, Wc, Hc, 10); ctx.fill();
+    let pts;
+    if (value === 'zebra' || value === 'damier_bus') {
+      pts = [{x:0.18,y:0.26},{x:0.82,y:0.26},{x:0.82,y:0.74},{x:0.18,y:0.74}];
+    } else {
+      pts = [{x:0.15,y:0.5},{x:0.85,y:0.5}];
+    }
+    try { drawMarquage(ctx, { type: value, pts, texte: 'BUS' }, Wc, Hc); } catch (e) {}
+  } else if (kind === 'panneau') {
+    ctx.save();
+    ctx.translate(Wc / 2, Hc / 2);
+    try { dessinerPictogramme(ctx, value, Math.min(Wc, Hc) * 0.78, 'rouge'); } catch (e) {}
+    ctx.restore();
+  } else {
+    // décor : fond herbe + bâtiment dessiné en vrai
+    ctx.fillStyle = '#8bb888';
+    roundRect(ctx, 0, 0, Wc, Hc, 10); ctx.fill();
+    const ratio = { maison: 0.75, immeuble: 0.75, ecole: 0.75, parking: 0.7,
+                    buisson: 1, terreplein: 0.45, voiture: 0.5 }[value] || 0.75;
+    let w = Wc * 0.7, h = w * ratio;
+    if (h > Hc * 0.78) { h = Hc * 0.78; w = h / ratio; }
+    try { dessinerBatiment(ctx, value, Wc / 2, Hc / 2, w, h, 0, '#d24b4b'); } catch (e) {}
+  }
+}
+function bvPeindreVisibles(essai = 0) {
+  const rangee = editeur.mode === 'panneau' ? document.getElementById('bv-panneaux')
+    : editeur.mode === 'batiment' ? document.getElementById('bv-decor')
+    : document.getElementById('bv-marquages');
+  if (!rangee || rangee.hidden) return;
+  let nonPretes = 0;
+  rangee.querySelectorAll('.bv-cv').forEach(cv => {
+    const r = cv.getBoundingClientRect();
+    if (r.width < 4) { nonPretes++; return; }
+    bvPeindreChip(cv);
+  });
+  if (nonPretes > 0 && essai < 12) setTimeout(() => bvPeindreVisibles(essai + 1), 70);
+}
+function bvChoisir(kind, value) {
+  if (kind === 'marquage') {
+    terminerTrace();
+    editeur.typeMarquage = value;
+    const sel = document.getElementById('type-marquage');
+    if (sel) sel.value = value;
+    document.getElementById('zone-texte-sol').hidden =
+      !(editeur.mode === 'marquage' && value === 'texte_sol');
+  } else if (kind === 'panneau') {
+    editeur.typePanneau = value;
+    const sel = document.getElementById('type-panneau-ed');
+    if (sel) sel.value = value;
+  } else {
+    editeur.typeBatiment = value;
+    document.querySelectorAll('.bat-btn').forEach(b =>
+      b.classList.toggle('actif', b.dataset.bat === value));
+  }
+  majBarreVisuelsActif();
+}
+function majBarreVisuelsActif() {
+  document.querySelectorAll('#bv-marquages .bv-chip').forEach(c =>
+    c.classList.toggle('actif', c.dataset.value === editeur.typeMarquage));
+  document.querySelectorAll('#bv-panneaux .bv-chip').forEach(c =>
+    c.classList.toggle('actif', c.dataset.value === editeur.typePanneau));
+  document.querySelectorAll('#bv-decor .bv-chip').forEach(c =>
+    c.classList.toggle('actif', c.dataset.value === editeur.typeBatiment));
+}
+function majBarreVisuels() {
+  const barre = document.getElementById('barre-visuels');
+  if (!barre) return;
+  const estM = editeur.mode === 'marquage';
+  const estP = editeur.mode === 'panneau';
+  const estD = editeur.mode === 'batiment';
+  const estEdit = editeur.mode === 'selection' && !!editeur.selection;
+  const visible = estM || estP || estD || estEdit;
+  barre.classList.toggle('visible', visible);
+  document.body.classList.toggle('barre-visuels-ouverte', visible);
+  document.body.classList.toggle('bv-edit-actif', estEdit);
+  document.getElementById('bv-marquages').hidden = !estM;
+  document.getElementById('bv-panneaux').hidden = !estP;
+  document.getElementById('bv-decor').hidden = !estD;
+  document.getElementById('bv-edition').hidden = !estEdit;
+  if (estEdit) {
+    // relais : on repart d'un état neutre (échelle 100 %, rotation 0)
+    const bt = document.getElementById('bve-taille');
+    const br = document.getElementById('bve-rot');
+    if (bt) bt.value = 100;
+    if (br) br.value = 0;
+    const sel = editeur.selection;
+    const estTexte = sel.kind === 'marquage' && sel.ref.type === 'texte_sol';
+    const lt = document.getElementById('bve-ligne-texte');
+    if (lt) {
+      lt.hidden = !estTexte;
+      if (estTexte) document.getElementById('bve-texte').value = sel.ref.texte || 'BUS';
+    }
+    const titre = document.getElementById('bve-titre');
+    if (titre) {
+      titre.textContent = sel.kind === 'groupe' ? 'Groupe'
+        : sel.kind === 'panneau' ? 'Panneau'
+        : sel.kind === 'batiment' ? 'Décor'
+        : sel.kind === 'route' ? 'Route' : 'Marquage';
+    }
+  }
+  if (estM || estP || estD) {
+    majBarreVisuelsActif();
+    bvPeindreVisibles(0);
+  }
+}
+construireBarreVisuels();
 
 document.getElementById('sel-dupliquer').addEventListener('click', () => {
   const sel = editeur.selection;
@@ -7071,6 +7200,44 @@ oselLibre.addEventListener('change', () => {
   // relabel : en mode libre, "Largeur" = largeur seule
   if (editeur.libre) { oselTaille.value = 100; oselHauteur.value = 100; figerBaseSelection(); }
 });
+
+/* ===== Édition unifiée dans la barre du bas =====
+   Les contrôles du bas sont de simples RELAIS vers le moteur existant
+   (oselTaille / oselRot / dupliquer / supprimer) : aucune logique dupliquée. */
+const bveTaille = document.getElementById('bve-taille');
+const bveRot = document.getElementById('bve-rot');
+const bveTexte = document.getElementById('bve-texte');
+if (bveTaille) {
+  bveTaille.addEventListener('input', () => {
+    oselTaille.value = bveTaille.value;
+    appliquerTransformSelection();
+  });
+  bveTaille.addEventListener('change', () => { figerBaseSelection(); bveTaille.value = 100; });
+}
+if (bveRot) {
+  bveRot.addEventListener('input', () => {
+    oselRot.value = bveRot.value;
+    appliquerTransformSelection();
+  });
+  bveRot.addEventListener('change', () => { figerBaseSelection(); bveRot.value = 0; });
+}
+if (bveTexte) {
+  bveTexte.addEventListener('input', () => {
+    oselTexte.value = bveTexte.value;
+    oselTexte.dispatchEvent(new Event('input'));
+  });
+  bveTexte.addEventListener('change', () => {
+    if (typeof pousserHistorique === 'function') pousserHistorique();
+  });
+}
+const bveDup = document.getElementById('bve-dup');
+if (bveDup) bveDup.addEventListener('click', () => {
+  const b = document.getElementById('osel-dupliquer'); if (b) b.click();
+});
+const bveSuppr = document.getElementById('bve-suppr');
+if (bveSuppr) bveSuppr.addEventListener('click', () => {
+  const b = document.getElementById('osel-supprimer'); if (b) b.click();
+});
 // Boutons dupliquer / supprimer dans le widget
 document.getElementById('osel-dupliquer').addEventListener('click', () => {
   const b = document.getElementById('sel-dupliquer'); if (b) b.click();
@@ -7120,49 +7287,6 @@ document.getElementById('btn-replier-nav').addEventListener('click', () => {
 });
 document.getElementById('rouvrir-nav').addEventListener('click', () => {
   document.body.classList.remove('nav-repliee');
-});
-
-// ===== Image de fond (Google Earth) =====
-document.getElementById('btn-importer-fond').addEventListener('click', () => {
-  document.getElementById('fichier-fond').click();
-});
-document.getElementById('fichier-fond').addEventListener('change', (e) => {
-  const f = e.target.files && e.target.files[0];
-  if (!f) return;
-  const lecteur = new FileReader();
-  lecteur.onload = (ev) => {
-    const img = new Image();
-    img.onload = () => {
-      // dimensionner l'image pour qu'elle tienne dans la carte en gardant ses proportions
-      const ratio = img.width / img.height;
-      let w = 0.6, h = 0.6 / ratio * (MONDE.W / MONDE.H);
-      if (h > 0.8) { h = 0.8; w = 0.8 * ratio * (MONDE.H / MONDE.W); }
-      editeur.fond = {
-        img,
-        x: (1 - w) / 2, y: (1 - h) / 2, w, h,
-        opacite: 60, verrou: false,
-      };
-      document.getElementById('fond-reglages').hidden = false;
-      document.getElementById('fond-opacite').value = 60;
-      document.getElementById('fond-verrou').checked = false;
-      btnDecorPerso.hidden = false;
-      demanderRenduEditeur();
-    };
-    img.src = ev.target.result;
-  };
-  lecteur.readAsDataURL(f);
-  e.target.value = '';   // permet de réimporter le même fichier
-});
-document.getElementById('fond-opacite').addEventListener('input', (e) => {
-  if (editeur.fond) { editeur.fond.opacite = Number(e.target.value); demanderRenduEditeur(); }
-});
-document.getElementById('fond-verrou').addEventListener('change', (e) => {
-  if (editeur.fond) editeur.fond.verrou = e.target.checked;
-});
-document.getElementById('btn-retirer-fond').addEventListener('click', () => {
-  editeur.fond = null;
-  document.getElementById('fond-reglages').hidden = true;
-  demanderRenduEditeur();
 });
 
 document.getElementById('osel-routes').addEventListener('click', () => {
@@ -7402,22 +7526,21 @@ function collerPressePapier() {
   const cur = editeur.curseur || { x: 0.5, y: 0.5 };
   const poser = (kind, data, cx, cy) => {
     const copie = JSON.parse(JSON.stringify(data));
-    if (kind === 'panneau' || kind === 'batiment') {
+    if (kind === 'panneau') {
       copie.x = cx; copie.y = cy;
-      tableauPourKind(kind).push(copie);
+      editeur.panneaux.push(copie);
       return { kind, ref: copie };
     } else {
       const c = centroide(copie.pts);
       for (const pt of copie.pts) { pt.x += cx - c.x; pt.y += cy - c.y; }
-      tableauPourKind(kind).push(copie);
+      editeur.marquages.push(copie);
       return { kind, ref: copie };
     }
   };
-  const centreEl = (kind, data) =>
-    (kind === 'panneau' || kind === 'batiment') ? { x: data.x, y: data.y } : centroide(data.pts);
   if (pressePapier.kind === 'groupe') {
     // Recentrer le groupe sur le curseur en conservant les positions relatives
-    const pts = pressePapier.items.map(it => centreEl(it.kind, it.data));
+    const pts = pressePapier.items.map(it => it.kind === 'panneau'
+      ? { x: it.data.x, y: it.data.y } : centroide(it.data.pts));
     const gx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
     const gy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
     const refs = pressePapier.items.map((it, i) =>
@@ -7434,7 +7557,7 @@ function supprimerSelection() {
   const sel = editeur.selection;
   if (!sel) return;
   const ret = (kind, ref) => {
-    const tab = tableauPourKind(kind);
+    const tab = kind === 'panneau' ? editeur.panneaux : editeur.marquages;
     const i = tab.indexOf(ref); if (i >= 0) tab.splice(i, 1);
   };
   if (sel.kind === 'groupe') sel.refs.forEach(r => ret(r.kind, r.ref));
@@ -7619,18 +7742,25 @@ document.getElementById('btn-pieton').addEventListener('click', () => {
 
 /* ===== Menu contextuel d'un véhicule ===== */
 let vehiculeMenuActif = null;
+let menuVientDOuvrir = false;   // évite que le pointerdown qui OUVRE le menu le referme aussitôt (mobile)
 function ouvrirMenuVehicule(v) {
   vehiculeMenuActif = v;
   const menu = document.getElementById('menu-vehicule');
   if (!menu) return;
   const pt = mondeVersEcran(v.x, v.y);
-  menu.style.left = pt.x + 'px';
-  menu.style.top = pt.y + 'px';      // centré pile sur la voiture
+  // garder le menu (et ses boutons à ±60px) entièrement à l'écran
+  const MARGE = 66;
+  const cx = Math.max(MARGE, Math.min(window.innerWidth - MARGE, pt.x));
+  const cy = Math.max(MARGE, Math.min(window.innerHeight - MARGE, pt.y));
+  menu.style.left = cx + 'px';
+  menu.style.top = cy + 'px';      // centré sur la voiture (recalé si près d'un bord)
   // Le menu tourne avec la voiture (clignotants toujours aux rétros)
   const deg = ((v.angle != null ? v.angle : -Math.PI/2) + Math.PI/2) * 180 / Math.PI;
   menu.style.setProperty('--rot', deg + 'deg');
   menu.querySelectorAll('.mv-btn').forEach(b => b.style.setProperty('--contre', (-deg) + 'deg'));
   menu.hidden = false;
+  menuVientDOuvrir = true;
+  setTimeout(() => { menuVientDOuvrir = false; }, 60);
   majMenuVehicule();
 }
 function majMenuVehicule() {
@@ -7678,9 +7808,9 @@ function mondeVersEcran(mx, my) {
     }
     majMenuVehicule();
   });
-  // fermer si on tape ailleurs sur le canvas
+  // fermer si on tape ailleurs sur le canvas (mais PAS sur le tap qui vient de l'ouvrir)
   sc.canvas.addEventListener('pointerdown', () => {
-    if (vehiculeMenuActif) fermerMenuVehicule();
+    if (vehiculeMenuActif && !menuVientDOuvrir) fermerMenuVehicule();
   });
 })();
 
