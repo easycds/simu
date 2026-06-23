@@ -974,6 +974,36 @@
   .bve-btn.danger { color: var(--rouge,#ff3131); }
   /* Pendant l'édition dans la barre du bas, on masque le widget flottant (évite le doublon) */
   body.bv-edit-actif #outil-selection { display: none !important; }
+
+  /* ===== Fenêtre mot de passe (accès éditeur) ===== */
+  #modal-mdp {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(20,24,30,0.55); padding: 20px;
+  }
+  #modal-mdp[hidden] { display: none; }
+  #modal-mdp .mdp-boite {
+    background: #fff; border-radius: 18px; padding: 22px 22px 18px;
+    width: 100%; max-width: 340px; box-shadow: 0 18px 50px rgba(0,0,0,0.3);
+    font-family: inherit; text-align: center;
+  }
+  #modal-mdp h3 { margin: 0 0 6px; font-size: 19px; font-weight: 700; color: var(--encre,#1c2430); }
+  #modal-mdp p { margin: 0 0 14px; font-size: 13px; color: #555; line-height: 1.4; }
+  #modal-mdp .mdp-champ {
+    width: 100%; box-sizing: border-box; padding: 12px 14px; font-size: 16px;
+    border: 2px solid var(--bordure,#e3e1de); border-radius: 12px; font-family: inherit;
+    text-align: center; outline: none;
+  }
+  #modal-mdp .mdp-champ:focus { border-color: var(--rouge,#ff3131); }
+  #modal-mdp .mdp-erreur { color: var(--rouge,#ff3131); font-weight: 600; margin: 10px 0 0; }
+  #modal-mdp .mdp-actions { display: flex; gap: 10px; margin-top: 16px; }
+  #modal-mdp .mdp-btn {
+    flex: 1; padding: 12px; border-radius: 12px; border: 2px solid var(--bordure,#e3e1de);
+    background: #fff; font-family: inherit; font-weight: 600; font-size: 14px; cursor: pointer;
+    transition: transform 0.08s;
+  }
+  #modal-mdp .mdp-btn:active { transform: scale(0.96); }
+  #modal-mdp .mdp-btn.primaire { background: var(--rouge,#ff3131); color: #fff; border-color: var(--rouge,#ff3131); }
 </style>
 </head>
 <body>
@@ -1340,6 +1370,7 @@
         <label class="controle" style="flex-direction:row;align-items:center;gap:8px">Couleur
           <button class="pinc-coul actif" data-coul="goudron" title="Goudron" style="background:#565d66"></button>
           <button class="pinc-coul" data-coul="herbe" title="Herbe" style="background:#8bb888"></button>
+          <button class="pinc-coul" data-coul="blanc" title="Marquage blanc (par-dessus la route)" style="background:#f5f5f5;border:1px solid #c9cdd2"></button>
         </label>
         <label class="controle" style="flex-direction:row;align-items:center;gap:8px">Forme
           <button class="pinc-forme actif" data-forme="cercle" title="Cercle">●</button>
@@ -1446,6 +1477,19 @@
         <button class="bve-btn" id="bve-dup" title="Dupliquer">⧉</button>
         <button class="bve-btn danger" id="bve-suppr" title="Supprimer">🗑</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div id="modal-mdp" hidden>
+  <div class="mdp-boite">
+    <h3>🔒 Accès éditeur</h3>
+    <p>Espace réservé à l'administrateur.<br>Entrez le mot de passe :</p>
+    <input type="password" id="mdp-champ" class="mdp-champ" placeholder="Mot de passe" autocomplete="off" inputmode="text">
+    <p class="mdp-erreur" id="mdp-erreur" hidden>Mot de passe incorrect.</p>
+    <div class="mdp-actions">
+      <button id="mdp-annuler" class="mdp-btn">Annuler</button>
+      <button id="mdp-valider" class="mdp-btn primaire">Valider</button>
     </div>
   </div>
 </div>
@@ -3611,9 +3655,11 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  // PINCEAU DE REMPLISSAGE — taches goudron/herbe, sous les routes
+  // PINCEAU DE REMPLISSAGE — taches goudron/herbe, SOUS les routes
+  // (le blanc est ignoré ici : il est peint plus bas, PAR-DESSUS les routes)
   if (ed.pinceau && ed.pinceau.length) {
     for (const t of ed.pinceau) {
+      if (t.couleur === 'blanc') continue;
       ctx.fillStyle = (t.couleur === 'herbe') ? '#8bb888' : '#565d66';
       if (t.forme === 'carre') {
         ctx.fillRect(t.x - t.taille / 2, t.y - t.taille / 2, t.taille, t.taille);
@@ -3659,6 +3705,20 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
     ctx.lineCap = rt.boutsDroits ? 'butt' : 'round';
     (rt.arrondi ? tracerCheminLisse : tracerChemin)(ctx, rt.pts, W, H);
     ctx.stroke();
+  }
+  // PINCEAU BLANC — marquage peint à la main, PAR-DESSUS les routes (comme les marquages)
+  if (ed.pinceau && ed.pinceau.length) {
+    ctx.fillStyle = '#f4f4f4';
+    for (const t of ed.pinceau) {
+      if (t.couleur !== 'blanc') continue;
+      if (t.forme === 'carre') {
+        ctx.fillRect(t.x - t.taille / 2, t.y - t.taille / 2, t.taille, t.taille);
+      } else {
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, t.taille / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
   }
   // PASSE 3 — marquages
   for (const m of ed.marquages) drawMarquage(ctx, m, W, H);
@@ -4094,9 +4154,45 @@ function activerOnglet(nom) {
   requestAnimationFrame(() => { sc.resize(); ed.resize(); demanderRenduEditeur(); });
 }
 document.getElementById('onglet-scene').addEventListener('click', () => activerOnglet('scene'));
-document.getElementById('onglet-editeur').addEventListener('click', () => {
+let editeurDebloque = false;
+const MDP_EDITEUR = 'mdpeasy';
+function entrerEditeur() {
   activerOnglet('editeur');
   montrerPopupEditeur();
+}
+function ouvrirModalMdp() {
+  const m = document.getElementById('modal-mdp');
+  const champ = document.getElementById('mdp-champ');
+  champ.value = '';
+  document.getElementById('mdp-erreur').hidden = true;
+  m.hidden = false;
+  setTimeout(() => champ.focus(), 60);
+}
+function fermerModalMdp() { document.getElementById('modal-mdp').hidden = true; }
+function validerMdp() {
+  const champ = document.getElementById('mdp-champ');
+  if (champ.value === MDP_EDITEUR) {
+    editeurDebloque = true;
+    fermerModalMdp();
+    entrerEditeur();
+  } else {
+    document.getElementById('mdp-erreur').hidden = false;
+    champ.value = '';
+    champ.focus();
+  }
+}
+document.getElementById('onglet-editeur').addEventListener('click', () => {
+  if (editeurDebloque) { entrerEditeur(); return; }
+  ouvrirModalMdp();
+});
+document.getElementById('mdp-valider').addEventListener('click', validerMdp);
+document.getElementById('mdp-annuler').addEventListener('click', fermerModalMdp);
+document.getElementById('mdp-champ').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); validerMdp(); }
+  if (e.key === 'Escape') fermerModalMdp();
+});
+document.getElementById('modal-mdp').addEventListener('pointerdown', (e) => {
+  if (e.target.id === 'modal-mdp') fermerModalMdp();   // clic en dehors = annuler
 });
 
 let popupEditeurVue = false;
@@ -6326,7 +6422,7 @@ const AIDES = {
   panneau: 'Mode Panneau : choisissez le type puis tapez pour poser. Les feux tricolores resteront pilotables dans la Scène (double-tap pour changer la couleur).',
   selection: 'Mode Sélection : tapez un panneau ou un marquage pour le sélectionner, glissez pour le déplacer, ou utilisez Dupliquer / Supprimer / Taille.',
   gomme: 'Mode Gomme : tapez un élément pour le supprimer (panneau, puis marquage, puis route).',
-  pinceau: 'Mode Pinceau : glissez pour peindre du goudron ou de l\'herbe. Choisissez la couleur, la forme (cercle/carré) et la taille. « Effacer la peinture » retire tout.',
+  pinceau: 'Mode Pinceau : glissez pour peindre du goudron, de l\'herbe, ou du marquage blanc (qui passe par-dessus les routes). Choisissez la couleur, la forme et la taille. « Effacer la peinture » retire tout.',
 };
 
 const LIBELLES_MODE = {
@@ -6955,7 +7051,14 @@ function bvPeindreChip(cv) {
     } else {
       pts = [{x:0.15,y:0.5},{x:0.85,y:0.5}];
     }
+    // dézoom : on réduit le marquage pour qu'il tienne bien dans la vignette
+    ctx.save();
+    const kz = 0.66;
+    ctx.translate(Wc / 2, Hc / 2);
+    ctx.scale(kz, kz);
+    ctx.translate(-Wc / 2, -Hc / 2);
     try { drawMarquage(ctx, { type: value, pts, texte: 'BUS' }, Wc, Hc); } catch (e) {}
+    ctx.restore();
   } else if (kind === 'panneau') {
     ctx.save();
     ctx.translate(Wc / 2, Hc / 2);
