@@ -144,6 +144,14 @@
     box-sizing: border-box; min-height: 46px;
   }
   #choix-decor button:hover, #choix-vehic button:hover { border-color: var(--rouge); }
+  .btn-save-voitures {
+    width: 100%; margin-top: 10px; padding: 10px; border-radius: 12px;
+    border: 2px solid var(--rouge,#ff3131); background: #fff; color: var(--rouge,#ff3131);
+    font-family: inherit; font-weight: 600; font-size: 12.5px; cursor: pointer;
+    transition: transform 0.08s, background 0.12s, color 0.12s;
+  }
+  .btn-save-voitures:active { transform: scale(0.97); }
+  .btn-save-voitures.ok { background: #16a34a; color: #fff; border-color: #16a34a; }
   #choix-decor button.actif, #choix-vehic button.actif {
     border-color: var(--rouge); box-shadow: 0 0 0 2px rgba(255,49,49,0.18);
   }
@@ -511,6 +519,7 @@
   .btn-pe-nav:hover { background: var(--gris, #f1f0ef); border-color: var(--rouge, #ff3131); }
   /* Bouton « Mode présentation » 📽️ retiré (pour le réactiver : supprimer la ligne ci-dessous) */
   #btn-presentation { display: none !important; }
+  body.onglet-editeur #btn-capture { display: none; }
   /* Menu contextuel d'un véhicule (angle mort / trace / clignotant) */
   #menu-vehicule {
     position: fixed; z-index: 55;
@@ -1085,6 +1094,7 @@
   <button id="onglet-editeur">Éditeur de scènes</button>
   <button id="btn-select-nav" class="btn-select-nav" title="Mode Sélection (déplacer un élément)">☝ Sélection</button>
   <button id="btn-vider-nav" class="btn-vider-nav" title="Vider la scène">🗑 Vider</button>
+  <button id="btn-capture" class="btn-pe-nav" title="Capturer la scène en image (sans les outils)" aria-label="Capture">📷</button>
   <button id="btn-plein-ecran" class="btn-pe-nav" title="Plein écran (agrandir, outils gardés)" aria-label="Plein écran">⛶</button>
   <button id="btn-presentation" class="btn-pe-nav" title="Mode présentation épuré (masque tout sauf la scène)" aria-label="Présentation">📽️</button>
   <span id="horloge-easy" title="Heure">--:--</span>
@@ -1124,6 +1134,7 @@
         <button data-situation="ma_scene_12"><span class="nom">Ma scène 12</span></button>
         <button data-decor="perso" id="btn-decor-perso" hidden><span class="nom">Perso</span></button>
       </div>
+      <button id="btn-save-voitures" class="btn-save-voitures" title="Mémoriser la position actuelle des usagers pour cette scène">💾 Enregistrer les voitures de cette scène</button>
       <label class="controle" id="zone-giratoire" hidden>Giratoire
         <input type="range" id="taille-giratoire" min="28" max="55" step="1" value="42">
       </label>
@@ -7512,6 +7523,8 @@ document.getElementById('ed-effacer').addEventListener('click', () => {
   editeur.routes = [];
   editeur.marquages = [];
   editeur.panneaux = [];
+  editeur.batiments = [];
+  editeur.pinceau = [];
   editeur.vehiculesTest = [];
   synchroniserCarte();
   editeur.enCoursRoute = null;
@@ -7605,6 +7618,8 @@ function activerCarte(i) {
   editeur.routes = c.routes;
   editeur.marquages = c.marquages;
   editeur.panneaux = c.panneaux;
+  editeur.batiments = c.batiments || [];
+  editeur.pinceau = c.pinceau || [];
   majListeCartes();
   majBoutonPerso();
   majBoutonsUndo();
@@ -7696,7 +7711,7 @@ document.getElementById('btn-nouvelle-carte').addEventListener('click', () => {
   synchroniserCarte();
   editeur.cartes.push({
     nom: 'Scène ' + (editeur.cartes.length + 1),
-    routes: [], marquages: [], panneaux: [],
+    routes: [], marquages: [], panneaux: [], batiments: [], pinceau: [],
   });
   activerCarte(editeur.cartes.length - 1);
 });
@@ -7717,15 +7732,63 @@ function choisirDecor(nom) {
   }
 }
 
+/* ===== Mémorisation des voitures par scène ===== */
+let situationActive = 'carrefour';   // clé de la scène courante
+const CLASSES_USAGERS = { Vehicule, Camion, Moto, Cycliste, EDPM, Pieton };
+let voituresParScene = {};
+try {
+  const sv = localStorage.getItem('easy_voitures_scenes');
+  if (sv) voituresParScene = JSON.parse(sv) || {};
+} catch (_) {}
+function sauverVoituresStore() {
+  try { localStorage.setItem('easy_voitures_scenes', JSON.stringify(voituresParScene)); } catch (_) {}
+}
+function instantaneVoitures() {
+  return entites.map(e => ({
+    t: e.constructor.name, x: e.x, y: e.y, a: e.angle,
+    c: e.couleur || null, n: e.numero || null, cl: e.clignotant || null,
+  }));
+}
+function restaurerVoitures(liste) {
+  if (typeof fermerMenuVehicule === 'function') fermerMenuVehicule();
+  entites = [];
+  let maxNum = 0;
+  for (const s of liste) {
+    const Cls = CLASSES_USAGERS[s.t] || Vehicule;
+    let e;
+    try { e = new Cls({ x: s.x, y: s.y, couleur: s.c || undefined }); }
+    catch (_) { e = new Vehicule({ x: s.x, y: s.y }); }
+    e.angle = e.angleCible = s.a;
+    if (s.n) { e.numero = s.n; if (s.n > maxNum) maxNum = s.n; }
+    if (s.cl) e.clignotant = s.cl;
+    entites.push(e);
+  }
+  if (maxNum > nbVehicules) nbVehicules = maxNum;
+}
+function appliquerVoituresScene() {
+  const liste = voituresParScene[situationActive];
+  if (liste && liste.length) restaurerVoitures(liste);
+}
+
 document.getElementById('choix-decor').addEventListener('click', (e) => {
   const btn = e.target.closest('button[data-decor]');
-  if (btn) { choisirDecor(btn.dataset.decor); return; }
+  if (btn) { situationActive = btn.dataset.decor; choisirDecor(btn.dataset.decor); appliquerVoituresScene(); return; }
   // Situation préchargée : charge la scène complète (décor perso) en un tap
   const sit = e.target.closest('button[data-situation]');
   if (sit) {
     const gen = MODELES[sit.dataset.situation];
-    if (gen) modeleVersScene(gen());   // bascule sur le décor « perso »
+    if (gen) { situationActive = sit.dataset.situation; modeleVersScene(gen()); appliquerVoituresScene(); }
   }
+});
+
+document.getElementById('btn-save-voitures').addEventListener('click', () => {
+  voituresParScene[situationActive] = instantaneVoitures();
+  sauverVoituresStore();
+  const b = document.getElementById('btn-save-voitures');
+  const txt = b.textContent;
+  b.textContent = '✓ Voitures enregistrées';
+  b.classList.add('ok');
+  setTimeout(() => { b.textContent = txt; b.classList.remove('ok'); }, 1400);
 });
 
 document.getElementById('taille-giratoire').addEventListener('input', (e) => {
@@ -8190,6 +8253,25 @@ document.getElementById('btn-vider-nav').addEventListener('click', () => {
   nbVehicules = 0;
   nbPietons = 0;
   fermerMenuVehicule();
+});
+
+// Capture de la scène en image PNG (le canvas seul : pas les widgets HTML par-dessus)
+document.getElementById('btn-capture').addEventListener('click', () => {
+  fermerMenuVehicule();
+  try {
+    const url = sc.canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    const d = new Date();
+    const horo = d.getFullYear() + ('0'+(d.getMonth()+1)).slice(-2) + ('0'+d.getDate()).slice(-2)
+               + '-' + ('0'+d.getHours()).slice(-2) + ('0'+d.getMinutes()).slice(-2);
+    a.href = url;
+    a.download = 'scene-easy-' + horo + '.png';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } catch (err) {
+    alert("La capture n'a pas pu être créée.");
+  }
 });
 </script>
 </body>
