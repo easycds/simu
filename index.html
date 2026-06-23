@@ -972,8 +972,14 @@
   }
   .bve-btn:active { transform: scale(0.94); }
   .bve-btn.danger { color: var(--rouge,#ff3131); }
-  /* Pendant l'édition dans la barre du bas, on masque le widget flottant (évite le doublon) */
-  body.bv-edit-actif #outil-selection { display: none !important; }
+  /* Édition gérée par le widget « Sélection » en bas à droite : pas de doublon dans la barre du bas. */
+  #bv-edition { display: none !important; }
+  #bv-pinceau .bvp-groupe { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+  .bvr-check { flex: 0 0 auto; display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--encre,#1c2430); white-space: nowrap; }
+  .bvr-check input { width: 18px; height: 18px; }
+  /* Boutons en double du panneau « Carte » masqués (présents dans les widgets flottants) :
+     Annuler/Rétablir -> widget Historique ; Terminer/Annuler le tracé -> bandeau de tracé. */
+  #ed-undo, #ed-redo, #ed-terminer, #ed-annuler { display: none !important; }
 
   /* ===== Fenêtre mot de passe (accès éditeur) ===== */
   #modal-mdp {
@@ -1327,19 +1333,6 @@
         <option value="obligation_gauche">Obligation à gauche</option>
         <option value="feu">Feu tricolore</option>
       </select>
-      <label class="controle" id="zone-largeur">Largeur route
-        <input type="range" id="ed-largeur" min="50" max="150" step="10" value="150">
-        <span id="ed-largeur-val">150</span>
-      </label>
-      <label class="controle" style="flex-direction:row;align-items:center;gap:6px">
-        <input type="checkbox" id="ed-magnetisme" checked> Magnétisme
-      </label>
-      <label class="controle" style="flex-direction:row;align-items:center;gap:6px">
-        <input type="checkbox" id="ed-arrondi"> Tracés arrondis
-      </label>
-      <label class="controle" style="flex-direction:row;align-items:center;gap:6px">
-        <input type="checkbox" id="ed-bouts-droits"> Bouts droits
-      </label>
       <button id="ed-vehicule-test">🚗 Véhicule test</button>
       <div id="zone-scenes">
         <div class="zs-titre">Mes scènes</div>
@@ -1353,33 +1346,10 @@
         </div>
       </div>
       <div id="zone-batiment" hidden>
-        <label class="controle">Type de bâtiment
-          <div class="bat-choix">
-            <button class="bat-btn actif" data-bat="maison">🏠 Maison</button>
-            <button class="bat-btn" data-bat="immeuble">🏢 Immeuble</button>
-            <button class="bat-btn" data-bat="ecole">🏫 École</button>
-            <button class="bat-btn" data-bat="parking">🅿️ Parking</button>
-            <button class="bat-btn" data-bat="buisson">🌳 Buisson</button>
-            <button class="bat-btn" data-bat="terreplein">🟫 Terre-plein</button>
-            <button class="bat-btn" data-bat="voiture">🚗 Voiture garée</button>
-          </div>
-        </label>
-        <p class="bat-aide">Tapez sur la carte pour poser le bâtiment, puis redimensionnez-le avec l'outil Sélection.</p>
+        <p class="bat-aide">Choisissez le décor dans la <strong>barre du bas</strong>, puis tapez sur la carte pour le poser. Redimensionnez-le ensuite avec l'outil Sélection.</p>
       </div>
       <div id="zone-pinceau" hidden>
-        <label class="controle" style="flex-direction:row;align-items:center;gap:8px">Couleur
-          <button class="pinc-coul actif" data-coul="goudron" title="Goudron" style="background:#565d66"></button>
-          <button class="pinc-coul" data-coul="herbe" title="Herbe" style="background:#8bb888"></button>
-          <button class="pinc-coul" data-coul="blanc" title="Marquage blanc (par-dessus la route)" style="background:#f5f5f5;border:1px solid #c9cdd2"></button>
-        </label>
-        <label class="controle" style="flex-direction:row;align-items:center;gap:8px">Forme
-          <button class="pinc-forme actif" data-forme="cercle" title="Cercle">●</button>
-          <button class="pinc-forme" data-forme="carre" title="Carré">■</button>
-        </label>
-        <label class="controle">Taille du pinceau
-          <input type="range" id="pinc-taille" min="20" max="200" step="5" value="70">
-          <span id="pinc-taille-val">70</span>
-        </label>
+        <p class="bat-aide">Réglez <strong>couleur, forme et taille</strong> dans la barre du bas, puis glissez sur la carte pour peindre.</p>
         <button id="pinc-effacer" class="danger">Effacer la peinture</button>
       </div>
       <span id="sel-actions" hidden>
@@ -1463,6 +1433,30 @@
       <div class="bv-rangee" id="bv-marquages" hidden></div>
       <div class="bv-rangee" id="bv-panneaux" hidden></div>
       <div class="bv-rangee" id="bv-decor" hidden></div>
+      <div class="bv-rangee bv-edit" id="bv-route" hidden>
+        <span class="bve-titre">Route</span>
+        <label class="bve-ctrl" id="zone-largeur">Largeur (<span id="ed-largeur-val">150</span>)
+          <input type="range" id="ed-largeur" min="50" max="150" step="10" value="150">
+        </label>
+        <label class="bvr-check"><input type="checkbox" id="ed-magnetisme" checked> Magnétisme</label>
+        <label class="bvr-check"><input type="checkbox" id="ed-arrondi"> Arrondis</label>
+        <label class="bvr-check"><input type="checkbox" id="ed-bouts-droits"> Bouts droits</label>
+      </div>
+      <div class="bv-rangee bv-edit" id="bv-pinceau" hidden>
+        <span class="bve-titre">Pinceau</span>
+        <div class="bvp-groupe">
+          <button class="pinc-coul actif" data-coul="goudron" title="Goudron" style="background:#565d66"></button>
+          <button class="pinc-coul" data-coul="herbe" title="Herbe" style="background:#8bb888"></button>
+          <button class="pinc-coul" data-coul="blanc" title="Marquage blanc (par-dessus la route)" style="background:#f5f5f5;border:1px solid #c9cdd2"></button>
+        </div>
+        <div class="bvp-groupe">
+          <button class="pinc-forme actif" data-forme="cercle" title="Cercle">●</button>
+          <button class="pinc-forme" data-forme="carre" title="Carré">■</button>
+        </div>
+        <label class="bve-ctrl">Taille (<span id="pinc-taille-val">70</span>)
+          <input type="range" id="pinc-taille" min="20" max="200" step="5" value="70">
+        </label>
+      </div>
       <div class="bv-rangee bv-edit" id="bv-edition" hidden>
         <span class="bve-titre" id="bve-titre">Élément</span>
         <label class="bve-ctrl">Taille
@@ -7121,14 +7115,18 @@ function majBarreVisuels() {
   const estM = editeur.mode === 'marquage';
   const estP = editeur.mode === 'panneau';
   const estD = editeur.mode === 'batiment';
-  const estEdit = editeur.mode === 'selection' && !!editeur.selection;
-  const visible = estM || estP || estD || estEdit;
+  const estPinc = editeur.mode === 'pinceau';
+  const estRoute = editeur.mode === 'route' || editeur.mode === 'trottoir';
+  const estEdit = false;   // édition déléguée au widget « Sélection » en bas à droite
+  const visible = estM || estP || estD || estEdit || estPinc || estRoute;
   barre.classList.toggle('visible', visible);
   document.body.classList.toggle('barre-visuels-ouverte', visible);
   document.body.classList.toggle('bv-edit-actif', estEdit);
   document.getElementById('bv-marquages').hidden = !estM;
   document.getElementById('bv-panneaux').hidden = !estP;
   document.getElementById('bv-decor').hidden = !estD;
+  document.getElementById('bv-pinceau').hidden = !estPinc;
+  document.getElementById('bv-route').hidden = !estRoute;
   document.getElementById('bv-edition').hidden = !estEdit;
   if (estEdit) {
     // relais : on repart d'un état neutre (échelle 100 %, rotation 0)
