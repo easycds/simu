@@ -1250,7 +1250,7 @@
     </div>
   </div>
 </div>
-<div id="accueil">
+<div id="accueil" style="display:none">
   <div class="vague"></div>
   <div class="contenu">
     <div class="logo">easy<span class="baseline">auto-école</span></div>
@@ -5543,16 +5543,15 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
     }
   };
   if (btn) btn.addEventListener('click', entrer);
+  // Plus d'écran d'accueil : on entre directement dans le simulateur
+  entrer();
 
-  // Clic sur le logo easy -> revenir à l'écran d'accueil
+  // Clic sur le logo easy -> retour à « Mes outils »
   const marque = document.querySelector('nav .marque');
   if (marque) {
     marque.style.cursor = 'pointer';
-    marque.title = 'Retour à l\'accueil';
-    marque.addEventListener('click', () => {
-      ac.style.display = '';
-      ac.classList.remove('parti');
-    });
+    marque.title = 'Retour à Mes outils';
+    marque.addEventListener('click', () => { location.href = '/'; });
   }
 })();
 
