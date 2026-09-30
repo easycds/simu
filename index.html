@@ -1227,6 +1227,159 @@
   @media (max-height: 500px) and (max-width: 700px) {
     #horloge-easy { display: none; }
   }
+
+  /* =====================================================================
+     DESIGN SOBRE — gris et blanc, le rouge seulement pour l'élément actif
+     ===================================================================== */
+  nav { border-bottom: 1px solid #e6e7ea !important; }
+  .copyright-nav { display: none !important; }
+  .marque .logo-mark { box-shadow: none !important; }
+  nav button, .pal-ico .lib, .menu-plus-liste { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+  nav button:not(.actif):hover { color: var(--encre) !important; }
+  .btn-pe-nav, .btn-vider-nav, .btn-select-nav:not(.actif), #btn-replier-nav {
+    border: none !important; background: transparent !important; box-shadow: none !important; color: #5b6270 !important;
+  }
+  .btn-pe-nav:hover, .btn-select-nav:not(.actif):hover { background: #f1f2f4 !important; }
+  #btn-legende, #btn-legende.attire-attention { animation: none !important; }
+  #horloge-easy {
+    border: none !important; background: transparent !important; box-shadow: none !important;
+    color: #8a9099 !important; font: 500 15px system-ui, -apple-system, sans-serif !important; letter-spacing: 0 !important;
+  }
+  body:not(.onglet-editeur) #btn-plein-ecran { margin-left: auto; }
+
+  /* menu « ⋯ » */
+  .menu-plus { position: relative; display: inline-flex; }
+  .menu-plus-liste {
+    position: absolute; top: calc(100% + 8px); right: 0; z-index: 300; min-width: 220px;
+    background: #fff; border: 1px solid #e6e7ea; border-radius: 12px; padding: 6px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.12); display: flex; flex-direction: column; gap: 2px;
+  }
+  .menu-plus-liste[hidden] { display: none; }
+  .menu-plus-liste button {
+    display: flex !important; align-items: center; gap: 10px; justify-content: flex-start;
+    width: 100% !important; height: auto !important; margin: 0 !important; padding: 9px 10px !important;
+    border-radius: 8px !important; font-size: 14px !important; color: #1c2430 !important;
+  }
+  .menu-plus-liste button svg { flex: 0 0 auto; width: 18px !important; height: 18px !important; color: #5b6270; }
+  .menu-plus-liste button:hover { background: #f2f3f5 !important; }
+  .menu-plus-liste .mp-lib { font-weight: 500; }
+
+  /* palettes : icônes au trait, ombres légères */
+  .palette-rail, .palette-panneau, .outil-flottant, #outil-selection {
+    box-shadow: 0 2px 12px rgba(0,0,0,.08) !important; border-color: #e6e7ea !important;
+  }
+  .pal-ico { color: #3d4450; }
+  .pal-ico svg { width: 22px; height: 22px; display: block; }
+  .pal-ico.actif svg { color: #fff; }
+  .pal-ico .lib { font-size: 9.5px; margin-top: 2px; }
+  .rail-sep { height: 1px; background: #e6e7ea; margin: 4px 6px; }
+
+  /* outils flottants : crayon visible seulement quand il est actif */
+  #outil-numeros { display: none !important; }
+  #outil-crayon { display: none !important; }
+  body.stylo-on:not(.onglet-editeur) #outil-crayon { display: flex !important; }
+  body:not(.onglet-editeur) #btn-replier-outils { display: none !important; }
+
+  /* écran bas (téléphone en paysage) : palette compacte, sans libellés */
+  @media (max-height: 500px) {
+    .pal-ico { min-height: 36px !important; }
+    .pal-ico .lib { display: none; }
+    .rail-sep { margin: 2px 6px; }
+    .palette-rail { max-height: calc(100dvh - 70px); overflow-y: auto; }
+  }
+
+  /* thème sombre */
+  body.theme-sombre nav { border-bottom-color: #2c323a !important; }
+  body.theme-sombre .btn-pe-nav, body.theme-sombre .btn-vider-nav,
+  body.theme-sombre .btn-select-nav:not(.actif), body.theme-sombre #btn-replier-nav { color: #b8bec7 !important; }
+  body.theme-sombre .btn-pe-nav:hover { background: #2a3038 !important; }
+  body.theme-sombre .menu-plus-liste { background: #1b2026; border-color: #2c323a; }
+  body.theme-sombre .menu-plus-liste button { color: #e7e9ec !important; }
+  body.theme-sombre .menu-plus-liste button:hover { background: #2a3038 !important; }
+  body.theme-sombre .pal-ico { color: #d5d9df; }
+
+  /* Bandeau de tracé : en haut, et il ne bloque plus les clics sur la carte */
+  #bandeau-trace { top: 12px !important; bottom: auto !important; }
+  #bandeau-trace .compte, #bandeau-trace .txt { pointer-events: none; }
+  #bt-annuler-pt::first-letter { }
+  #prise-en-main, #prise-en-main *, #toast-easy, #toast-easy *, #panneau-legende .aide-simple li { text-transform: none !important; }
+  /* ===== Textes / prise en main ===== */
+  #choix-decor .grp-titre {
+    grid-column: 1 / -1; font: 600 11px system-ui, sans-serif; letter-spacing: .06em;
+    text-transform: uppercase; color: #8a9099; margin: 6px 2px 0;
+  }
+  #choix-decor .grp-titre:first-child { margin-top: 0; }
+  #btn-beta { display: none !important; }
+  .beta-zone { display: flex !important; flex-direction: column; align-items: stretch; gap: 7px;
+               padding: 0 !important; background: none !important; border: none !important; }
+  [data-pal="autres"] { display: none !important; }
+  #panneau-legende .aide-simple { list-style: none; padding: 0; margin: 6px 0 0; display: flex; flex-direction: column; gap: 8px; }
+  #panneau-legende .aide-simple li { font: 400 13.5px/1.4 system-ui, sans-serif; color: #3d4450; padding-left: 14px; position: relative; }
+  #panneau-legende .aide-simple li::before { content: ''; position: absolute; left: 0; top: 7px; width: 6px; height: 6px; border-radius: 50%; background: var(--rouge); }
+  body.theme-sombre #panneau-legende .aide-simple li { color: #d5d9df; }
+  #toast-easy {
+    position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 20px); z-index: 400;
+    display: flex; align-items: center; gap: 14px; padding: 10px 12px 10px 16px;
+    background: #1c2430; color: #fff; border-radius: 12px; font: 500 14px system-ui, sans-serif;
+    box-shadow: 0 8px 26px rgba(0,0,0,.25); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+  }
+  #toast-easy.visible { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+  #toast-easy button { border: none; background: rgba(255,255,255,.14); color: #fff; font: 600 13px system-ui, sans-serif;
+                       padding: 7px 12px; border-radius: 8px; cursor: pointer; }
+  #prise-en-main {
+    position: fixed; inset: 0; z-index: 500; display: flex; align-items: flex-start; justify-content: center; padding-top: 90px !important;
+    padding: 24px; background: rgba(20,24,30,.28); font-family: system-ui, sans-serif;
+  }
+  #prise-en-main .pem-carte {
+    width: min(420px, 100%); background: #fff; border-radius: 16px; padding: 20px 22px 16px;
+    box-shadow: 0 16px 40px rgba(0,0,0,.2);
+  }
+  #prise-en-main .pem-etape { font-size: 12px; color: #8a9099; letter-spacing: .04em; }
+  #prise-en-main .pem-titre { font-size: 18px; font-weight: 650; color: #1c2430; margin: 4px 0 6px; }
+  #prise-en-main .pem-texte { font-size: 14.5px; line-height: 1.45; color: #4b5260; }
+  #prise-en-main .pem-bas { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; }
+  #prise-en-main .pem-points { display: flex; gap: 6px; }
+  #prise-en-main .pem-points i { width: 7px; height: 7px; border-radius: 50%; background: #d9dbdf; }
+  #prise-en-main .pem-points i.on { background: var(--rouge); }
+  #prise-en-main button { border: none; border-radius: 10px; padding: 9px 16px; font: 600 14px system-ui, sans-serif; cursor: pointer; }
+  #prise-en-main .pem-passer { background: none; color: #8a9099; }
+  #prise-en-main .pem-suivant { background: var(--rouge); color: #fff; }
+
+  /* ===== Éditeur : barre d'outils en haut, style sobre ===== */
+  #outils-haut {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 46;
+    display: none; gap: 2px; padding: 4px; background: #fff; border: 1px solid #e6e7ea; border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.08); font-family: system-ui, -apple-system, sans-serif; max-width: calc(100% - 180px); overflow-x: auto;
+  }
+  body.onglet-editeur #outils-haut { display: flex; }
+  #outils-haut button {
+    display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 60px; padding: 6px 8px;
+    border: none; background: transparent; border-radius: 10px; color: #3d4450; font: 500 11px system-ui, sans-serif; cursor: pointer;
+    text-transform: none !important;
+  }
+  #outils-haut button svg { width: 20px; height: 20px; }
+  #outils-haut button:hover { background: #f2f3f5; }
+  #outils-haut button.actif { background: var(--rouge); color: #fff; }
+  #bandeau-trace { top: 78px !important; }
+  [data-paled="outils"] { display: none !important; }
+  #btn-select-nav { display: none !important; }
+  body.onglet-editeur #btn-replier-outils { display: none !important; }
+  #popup-editeur { display: none !important; }
+  #outil-selection.sans-sel { display: none !important; }
+  #outil-selection button { text-transform: none !important; }
+  body.theme-sombre #outils-haut { background: #1b2026; border-color: #2c323a; }
+  body.theme-sombre #outils-haut button { color: #d5d9df; }
+  body.theme-sombre #outils-haut button:hover { background: #2a3038; }
+  @media (max-height: 500px) {
+    #outils-haut { top: 6px; }
+    #outils-haut button { min-width: 44px; padding: 5px 6px; }
+    #outils-haut button span { display: none; }
+    #bandeau-trace { top: 56px !important; }
+    #barre-visuels { height: 70px !important; padding: 4px 8px !important; }
+    #barre-visuels label, #barre-visuels .bve-titre { white-space: nowrap; font-size: 12px !important; }
+    #barre-visuels .bve-ctrl { flex-direction: row !important; align-items: center; gap: 6px; }
+    #barre-visuels .bve-ctrl input[type=range] { width: 110px; }
+  }
 </style>
 </head>
 <body>
@@ -1293,8 +1446,8 @@
     <span class="nom-outil">Simulateur <em>Easy</em></span>
     <span class="copyright-nav">© 2026 Easy CDS</span>
   </span>
-  <button id="onglet-scene" class="actif">Situations</button>
-  <button id="onglet-editeur">Éditeur de scènes</button>
+  <button id="onglet-scene" class="actif">Simulation</button>
+  <button id="onglet-editeur">Créer une scène</button>
   <button id="btn-select-nav" class="btn-select-nav" title="Mode Sélection (déplacer un élément)"><svg width="17" height="17" viewBox="0 0 24 24" style="vertical-align:-3px;margin-right:6px"><path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Sélection</button>
   <button id="btn-vider-nav" class="btn-vider-nav" title="Vider la scène" aria-label="Vider la scène">🗑</button>
   <button id="btn-capture" class="btn-pe-nav" title="Capturer la scène en image (sans les outils)" aria-label="Capture"><svg width="19" height="19" viewBox="0 0 24 24"><path d="M3 9a2 2 0 0 1 2-2h2l1.5-2h7L19 7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -1306,19 +1459,15 @@
   <button id="btn-replier-nav" title="Replier / déplier la barre" aria-label="Replier"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
 </nav>
 
-<div id="panneau-legende" aria-label="Légende des contrôles">
-  <h4>La scène en un coup d'œil</h4>
-  <ul>
-    <li><span class="ic">✋</span> Glisser la carrosserie : déplacer et orienter un usager</li>
-    <li><span class="ic">🪢</span> Tirer le point devant le capot : faire avancer en douceur (la « laisse »)</li>
-    <li><span class="ic">👆</span> Double-tap sur un véhicule : menu angle mort, trajet, clignotant</li>
-    <li><span class="ic">🚦</span> Double-tap sur un feu : changer sa couleur</li>
-    <li><span class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 20l4-1L19 8a2 2 0 0 0-3-3L5 16l-1 4z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg></span> Crayon : dessiner sur la scène</li>
-    <li><span class="ic"><svg viewBox="0 0 24 24" width="17" height="17"><g fill="currentColor" font-family="Fredoka,sans-serif" font-size="8" font-weight="700"><text x="0.5" y="8.5">1</text><text x="0.5" y="16">2</text><text x="0.5" y="23.5">3</text></g><g stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="9.5" y1="5.5" x2="22" y2="5.5"/><line x1="9.5" y1="13" x2="22" y2="13"/><line x1="9.5" y1="20.5" x2="22" y2="20.5"/></g></svg></span> Numéroter les usagers</li>
-    <li><span class="ic">🤏</span> Pincer / molette (sur le vide) : zoom et déplacement de la vue</li>
-    <li><span class="ic">🔄</span> 2ᵉ doigt posé en tenant un objet : rotation fine</li>
-    <li><span class="ic">🌙</span> Nuit : ambiance nocturne et faisceaux de phares</li>
-    <li><span class="ic">👁️</span> Vision : champ de vision réel — il rétrécit avec la vitesse</li>
+<div id="panneau-legende" aria-label="Aide">
+  <h4>Prise en main</h4>
+  <ul class="aide-simple">
+    <li><b>Glissez</b> un véhicule pour le déplacer et l'orienter.</li>
+    <li><b>Tirez la poignée</b> devant le capot pour le faire avancer.</li>
+    <li><b>Touchez deux fois</b> un véhicule : clignotants, angles morts, trajectoire.</li>
+    <li><b>Touchez deux fois</b> un feu pour changer sa couleur.</li>
+    <li><b>Pincez</b> ou utilisez la molette sur le vide pour zoomer.</li>
+    <li><b>Crayon</b> pour dessiner, <b>numéros</b> pour repérer les usagers.</li>
   </ul>
 </div>
 
@@ -1334,29 +1483,31 @@
   <div class="palette" id="palette-scene">
     <div class="palette-rail" id="palette-rail">
       <div class="palette-grip" id="palette-grip" title="Déplacer la palette"></div>
-      <button class="pal-ico" data-pal="decor" title="Décor">🛣️<span class="lib">décor</span></button>
+      <button class="pal-ico" data-pal="decor" title="Lieux">🛣️<span class="lib">lieux</span></button>
       <button class="pal-ico" data-pal="ajouter" title="Usagers">🚗<span class="lib">usagers</span></button>
       <button class="pal-ico" data-pal="pedago" title="Pédagogie">🎓<span class="lib">pédago</span></button>
       <button class="pal-ico" data-pal="autres" title="Infos / vider">⋯<span class="lib">autres</span></button>
     </div>
 
     <div class="palette-panneau" id="pal-decor" data-pour="decor">
-      <h4>Décor</h4>
+      <h4>Lieux</h4>
       <div id="choix-decor">
+        <div class="grp-titre">Carrefours types</div>
         <button data-decor="carrefour" class="actif"><span class="nom">Carrefour</span></button>
-        <button data-decor="interT"><span class="nom">Inter. en T</span></button>
+        <button data-decor="interT"><span class="nom">Intersection en T</span></button>
         <button data-decor="rondpoint"><span class="nom">Rond-point</span></button>
-        <button data-situation="priorite_b15c18"><span class="nom">Priorité B15/C18</span></button>
-        <button data-situation="s_2cdlp"><span class="nom">2× Cédez-le-passage</span></button>
-        <button data-situation="s_4stops"><span class="nom">Carrefour 4 STOP</span></button>
-        <button data-situation="s_briollay1"><span class="nom">Feux Briollay 1</span></button>
-        <button data-situation="s_briollay2"><span class="nom">Feux Briollay 2</span></button>
-        <button data-situation="s_feux7sonnettes"><span class="nom">Feux 7 Sonnettes</span></button>
-        <button data-situation="s_manoeuvres1"><span class="nom">Manœuvres 1</span></button>
-        <button data-decor="perso" id="btn-decor-perso" hidden><span class="nom">Perso</span></button>
+        <button data-situation="priorite_b15c18"><span class="nom">Passage étroit</span></button>
+        <button data-situation="s_2cdlp"><span class="nom">Cédez-le-passage</span></button>
+        <button data-situation="s_4stops"><span class="nom">STOP</span></button>
+        <div class="grp-titre">Nos secteurs</div>
+        <button data-situation="s_briollay1"><span class="nom">Briollay – feux 1</span></button>
+        <button data-situation="s_briollay2"><span class="nom">Briollay – feux 2</span></button>
+        <button data-situation="s_feux7sonnettes"><span class="nom">Les 7 Sonnettes – feux</span></button>
+        <button data-situation="s_manoeuvres1"><span class="nom">Manœuvres</span></button>
+        <button data-decor="perso" id="btn-decor-perso" hidden><span class="nom">Ma scène</span></button>
       </div>
-      <button id="btn-save-voitures" class="btn-save-voitures" title="Mémoriser la position actuelle des usagers pour cette scène">💾 Enregistrer les voitures de cette scène</button>
-      <label class="controle" id="zone-giratoire" hidden>Giratoire
+      <button id="btn-save-voitures" class="btn-save-voitures" title="Mémoriser la position actuelle des usagers pour cette scène">Mémoriser la position des véhicules</button>
+      <label class="controle" id="zone-giratoire" hidden>Taille du giratoire
         <input type="range" id="taille-giratoire" min="28" max="55" step="1" value="42">
       </label>
     </div>
@@ -1364,20 +1515,20 @@
     <div class="palette-panneau" id="pal-ajouter" data-pour="ajouter">
       <h4>Usagers</h4>
       <div id="choix-vehic">
-        <button id="btn-voiture-easy"><span class="nom">Voiture Easy</span></button>
+        <button id="btn-voiture-easy"><span class="nom">Voiture école</span></button>
         <button id="btn-vehicule"><span class="nom">Voiture</span></button>
         <button id="btn-camion"><span class="nom">Poids lourd</span></button>
         <button id="btn-moto"><span class="nom">Moto</span></button>
-        <button id="btn-moto2"><span class="nom">Moto sombre</span></button>
-        <button id="btn-cycliste"><span class="nom">Cycliste</span></button>
-        <button id="btn-edpm"><span class="nom">Trottinette</span></button>
+        <button id="btn-moto2"><span class="nom">Moto (tenue sombre)</span></button>
+        <button id="btn-cycliste"><span class="nom">Vélo</span></button>
+        <button id="btn-edpm"><span class="nom">Trottinette électrique</span></button>
         <button id="btn-pieton"><span class="nom">Piéton</span></button>
       </div>
-      <label class="controle" id="zone-taille-vehic">Taille des véhicules
+      <label class="controle" id="zone-taille-vehic">Échelle des véhicules
         <input type="range" id="taille-vehicules" min="50" max="150" step="5" value="100">
         <span id="taille-vehic-val">100 %</span>
       </label>
-      <label class="controle" id="zone-laisse">Portée de la laisse
+      <label class="controle" id="zone-laisse">Longueur de la poignée
         <input type="range" id="reglage-laisse" min="100" max="700" step="25" value="100">
         <span id="laisse-val">100 %</span>
       </label>
@@ -1385,15 +1536,15 @@
 
     <div class="palette-panneau" id="pal-pedago" data-pour="pedago">
       <h4>Pédagogie</h4>
-      <button id="btn-distance-arret" title="Réglette de distance d'arrêt">📏 Distance d'arrêt</button>
-      <button id="btn-laisse-seule" title="Les véhicules ne se déplacent que par leur poignée de traction">Laisse seule</button>
-      <button id="btn-effacer-traces">Effacer traces</button>
+      <button id="btn-distance-arret" title="Réglette de distance d'arrêt">Distance d'arrêt</button>
+      <button id="btn-laisse-seule" title="Les véhicules ne se déplacent que par leur poignée de traction">Déplacer uniquement par la poignée</button>
+      <button id="btn-effacer-traces">Effacer les tracés</button>
       <button id="btn-beta" title="Fonctions expérimentales">🧪 Bêta</button>
       <span class="beta-zone" id="beta-zone">
-        <button id="btn-nuit">🌙 Nuit</button>
-        <button id="btn-feux-route" title="Basculer feux de croisement / feux de route">🔦 Feux route</button>
-        <button id="btn-vision">👁 Vision</button>
-        <label class="controle" id="vision-vitesse-zone" hidden>
+        <button id="btn-nuit">Conduite de nuit</button>
+        <button id="btn-feux-route" title="Basculer feux de croisement / feux de route">Feux de route</button>
+        <button id="btn-vision">Champ de vision</button>
+        <label class="controle" id="vision-vitesse-zone" hidden>Vitesse
           <input type="range" id="vision-vitesse" min="0" max="130" step="10" value="0">
           <span id="vision-kmh">0 km/h</span>
         </label>
@@ -1427,13 +1578,13 @@
     </div>
     <div id="outil-rejeu" class="outil-flottant">
       <div class="of-grip" id="rejeu-grip" title="Déplacer">⋮⋮</div>
-      <button id="rj-trajet" class="rj-btn" title="Trajet libre : choisir un véhicule puis dessiner son chemin au doigt">✏ Trajet</button>
-      <button id="rj-points" class="rj-btn" title="Trajet point par point : taper le véhicule, puis poser des points. Re-cliquer pour valider.">⋯ Points</button>
-      <button id="rj-arret" class="rj-btn" title="Le prochain point posé sera un arrêt (la voiture marque une pause)">⏸ Arrêt</button>
+      <button id="rj-trajet" class="rj-btn" title="Trajet libre : choisir un véhicule puis dessiner son chemin au doigt">Dessiner un trajet</button>
+      <button id="rj-points" class="rj-btn" title="Trajet point par point : taper le véhicule, puis poser des points. Re-cliquer pour valider.">Point par point</button>
+      <button id="rj-arret" class="rj-btn" title="Le prochain point posé sera un arrêt (la voiture marque une pause)">Ajouter un arrêt</button>
       <span id="rj-duree-zone"><input type="number" id="rj-duree" min="1" max="10" step="1" value="2" title="Durée de l'arrêt (secondes)"> s</span>
-      <button id="rj-depart" class="rj-btn" title="Régler un délai avant que la voiture sélectionnée démarre">⏱ Départ</button>
-      <button id="rj-rec" class="rj-btn" title="Enregistrer : bougez les véhicules à la main">● REC</button>
-      <button id="rj-play" class="rj-btn" title="Rejouer en boucle" disabled>▶</button>
+      <button id="rj-depart" class="rj-btn" title="Régler un délai avant que la voiture sélectionnée démarre">Départ différé</button>
+      <button id="rj-rec" class="rj-btn" title="Enregistrer : bougez les véhicules à la main">● Enregistrer</button>
+      <button id="rj-play" class="rj-btn" title="Rejouer en boucle" disabled>▶ Lire</button>
       <button id="rj-pause" class="rj-btn" title="Pause" disabled>⏸</button>
       <button id="rj-stop" class="rj-btn" title="Stop / revenir au début" disabled>■</button>
       <button id="rj-annuler" class="rj-btn" title="Annuler le dernier trajet tracé">↶</button>
@@ -1495,12 +1646,12 @@
         <button data-mode="route" class="actif"><span class="pi-ico">🛣️</span><span class="pi-lib">Route</span></button>
         <button data-mode="selection"><span class="pi-ico">☝</span><span class="pi-lib">Sélection</span></button>
         <button data-mode="trottoir"><span class="pi-ico">🚶</span><span class="pi-lib">Trottoir</span></button>
-        <button data-mode="pinceau"><span class="pi-ico">🖌️</span><span class="pi-lib">Sol</span></button>
+        <button data-mode="pinceau"><span class="pi-ico">🖌️</span><span class="pi-lib">Peinture au sol</span></button>
         <button data-mode="marquage"><span class="pi-ico">〰️</span><span class="pi-lib">Marquage</span></button>
         <button data-mode="panneau"><span class="pi-ico">🚸</span><span class="pi-lib">Panneau</span></button>
         <button data-mode="batiment"><span class="pi-ico">🏠</span><span class="pi-lib">Bâtiment</span></button>
         <button data-mode="gomme"><span class="pi-ico">🧽</span><span class="pi-lib">Gomme</span></button>
-        <button data-mode="main"><span class="pi-ico">✋</span><span class="pi-lib">Déplacer</span></button>
+        <button data-mode="main"><span class="pi-ico">✋</span><span class="pi-lib">Déplacer la vue</span></button>
       </div>
       <div id="zone-miroir">
         <span class="zm-titre">Symétrie miroir</span>
@@ -1612,7 +1763,7 @@
       <div class="ligne">
         <button id="ed-undo" title="Annuler (Ctrl+Z)">↶</button>
         <button id="ed-redo" title="Rétablir (Ctrl+Y)">↷</button>
-        <button id="ed-zoom-reset" title="Réinitialiser le zoom">🔍 100 %</button>
+        <button id="ed-zoom-reset" title="Voir toute la carte">Voir toute la carte</button>
       </div>
       <button id="ed-terminer">Terminer le tracé</button>
       <button id="ed-annuler">Annuler dernier point</button>
@@ -1624,7 +1775,7 @@
 
     <div class="palette-panneau" id="paled-utiliser" data-pour="utiliser">
       <h4>Situations</h4>
-      <button id="ed-utiliser" class="actif">Utiliser dans la scène →</button>
+      <button id="ed-utiliser" class="actif">Ouvrir dans la simulation →</button>
     </div>
   </div>
   <input type="file" id="ed-fichier" accept=".json,application/json" hidden>
@@ -1634,8 +1785,8 @@
       <div class="of-grip" id="selection-grip" title="Déplacer">⋮⋮</div>
       <div class="os-corps">
         <div class="os-haut">
-          <button id="osel-mode" title="Mode Sélection">☝ Sélection</button>
-          <button id="osel-routes" title="Inclure les routes dans la sélection">🛣️ Routes</button>
+          <button id="osel-mode" title="Mode Sélection">Sélection</button>
+          <button id="osel-routes" title="Inclure les routes dans la sélection">Routes</button>
           <button id="osel-undo" title="Revenir en arrière">↶</button>
           <button id="osel-redo" title="Revenir en avant">↷</button>
         </div>
@@ -1656,7 +1807,7 @@
           <input type="text" id="osel-texte" maxlength="14" placeholder="BUS, STOP, ZONE 30…">
         </label>
         <div class="os-boutons">
-          <button id="osel-dupliquer" title="Dupliquer">⧉ Dupliquer</button>
+          <button id="osel-dupliquer" title="Dupliquer">Dupliquer</button>
           <button id="osel-supprimer" class="danger" title="Supprimer">🗑</button>
         </div>
       </div>
@@ -1669,8 +1820,8 @@
     <div id="bandeau-trace">
       <span class="compte" id="bt-compte">0 point</span>
       <span class="txt" id="bt-txt">Tapez pour poser le premier point</span>
-      <button id="bt-annuler-pt" title="Retirer le dernier point">↩ Annuler pt</button>
-      <button id="bt-terminer">✓ Terminer</button>
+      <button id="bt-annuler-pt" title="Retirer le dernier point">Retirer le dernier point</button>
+      <button id="bt-terminer">Terminer la route</button>
     </div>
     <div id="barre-visuels">
       <div class="bv-rangee" id="bv-marquages" hidden></div>
@@ -1681,15 +1832,15 @@
         <label class="bve-ctrl" id="zone-largeur">Largeur (<span id="ed-largeur-val">150</span>)
           <input type="range" id="ed-largeur" min="50" max="150" step="10" value="150">
         </label>
-        <label class="bvr-check"><input type="checkbox" id="ed-magnetisme" checked> Magnétisme</label>
+        <label class="bvr-check"><input type="checkbox" id="ed-magnetisme" checked> Alignement automatique</label>
         <label class="bvr-check"><input type="checkbox" id="ed-arrondi"> Arrondis</label>
-        <label class="bvr-check"><input type="checkbox" id="ed-bouts-droits"> Bouts droits</label>
+        <label class="bvr-check"><input type="checkbox" id="ed-bouts-droits"> Extrémités droites</label>
       </div>
       <div class="bv-rangee bv-edit" id="bv-pinceau" hidden>
         <span class="bve-titre">Pinceau</span>
         <div class="bvp-groupe">
           <button class="pinc-coul actif" data-coul="goudron" title="Goudron" style="background:#565d66"></button>
-          <button class="pinc-coul" data-coul="herbe" title="Herbe" style="background:#8bb888"></button>
+          <button class="pinc-coul" data-coul="herbe" title="Herbe" style="background:#8ab583"></button>
           <button class="pinc-coul" data-coul="blanc" title="Marquage blanc (par-dessus la route)" style="background:#f5f5f5;border:1px solid #c9cdd2"></button>
         </div>
         <div class="bvp-groupe">
@@ -1905,10 +2056,10 @@ function dessinerPictogramme(ctx, type, taille, etatFeu, numero) {
       // GAUCHE : flèche NOIRE vers le bas (épaisse) | DROITE : flèche ROUGE vers le haut (fine)
       ctx.fillStyle = '#fff';
       ctx.beginPath(); ctx.arc(0, 0, r * 0.94, 0, Math.PI * 2); ctx.fill();
-      ctx.lineWidth = Math.max(3, t * 0.12); ctx.strokeStyle = '#e2231a';
+      ctx.lineWidth = Math.max(3, t * 0.12); ctx.strokeStyle = '#c8102e';
       ctx.beginPath(); ctx.arc(0, 0, r * 0.94, 0, Math.PI * 2); ctx.stroke();
       dessinerFlecheVerticale(ctx, -t * 0.17, t, 1, '#111', 0.22);        // noire, bas (gauche)
-      dessinerFlecheVerticale(ctx,  t * 0.18, t, -1, '#e2231a', 0.16);    // rouge, haut (droite, fine)
+      dessinerFlecheVerticale(ctx,  t * 0.18, t, -1, '#c8102e', 0.16);    // rouge, haut (droite, fine)
       break;
     }
     case 'c18': {
@@ -1917,29 +2068,47 @@ function dessinerPictogramme(ctx, type, taille, etatFeu, numero) {
       const cote = t * 0.96;
       ctx.fillStyle = '#0d3fb0';
       roundRect(ctx, -cote / 2, -cote / 2, cote, cote, t * 0.06); ctx.fill();
-      dessinerFlecheVerticale(ctx, -t * 0.17, t, 1, '#e2231a', 0.18);     // rouge, bas (gauche, fine)
+      dessinerFlecheVerticale(ctx, -t * 0.17, t, 1, '#c8102e', 0.18);     // rouge, bas (gauche, fine)
       dessinerFlecheVerticale(ctx,  t * 0.17, t, -1, '#fff', 0.24);       // blanche, haut (droite, épaisse)
       break;
     }
 
     case 'stop': {
-      ctx.fillStyle = '#c1121f'; ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(2.5, t * 0.07);
-      ctx.beginPath();
-      for (let i = 0; i < 8; i++) {
-        const a = Math.PI / 8 + i * Math.PI / 4;
-        const px = r * Math.cos(a), py = r * Math.sin(a);
-        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-      }
-      ctx.closePath(); ctx.fill(); ctx.stroke();
+      // AB4 redessiné : tranche sombre, liseré blanc, rouge normalisé, « STOP » resserré
+      const oct = (k) => {
+        ctx.beginPath();
+        for (let i = 0; i < 8; i++) {
+          const a = Math.PI / 8 + i * Math.PI / 4;
+          i === 0 ? ctx.moveTo(r * k * Math.cos(a), r * k * Math.sin(a)) : ctx.lineTo(r * k * Math.cos(a), r * k * Math.sin(a));
+        }
+        ctx.closePath();
+      };
+      ctx.fillStyle = '#5b1016'; oct(1); ctx.fill();
+      ctx.fillStyle = '#fff'; oct(0.94); ctx.fill();
+      const gs = ctx.createLinearGradient(0, -r, 0, r);
+      gs.addColorStop(0, '#d7192b'); gs.addColorStop(1, '#bd1122');
+      ctx.fillStyle = gs; oct(0.85); ctx.fill();
       ctx.fillStyle = '#fff';
-      ctx.font = `bold ${Math.round(t * 0.30)}px system-ui, sans-serif`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('STOP', 0, 1);
+      if (t >= 18) {
+        ctx.save();
+        ctx.font = `800 ${t * 0.36}px "Arial Narrow", "Helvetica Neue", Arial, system-ui, sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const lw = ctx.measureText('STOP').width || 1;
+        ctx.scale((t * 0.66) / lw, 1);
+        ctx.fillText('STOP', 0, t * 0.02);
+        ctx.restore();
+      } else {
+        ctx.fillRect(-t * 0.3, -t * 0.07, t * 0.6, t * 0.14);
+      }
+      ctx.save(); oct(0.85); ctx.clip();
+      ctx.fillStyle = 'rgba(255,255,255,0.10)';
+      ctx.beginPath(); ctx.ellipse(-r * 0.3, -r * 0.55, r * 0.9, r * 0.35, -0.3, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
       break;
     }
 
     case 'cedez': {
-      ctx.fillStyle = '#fff'; ctx.strokeStyle = '#c1121f'; ctx.lineWidth = Math.max(4, t * 0.13);
+      ctx.fillStyle = '#fff'; ctx.strokeStyle = '#c8102e'; ctx.lineWidth = Math.max(4, t * 0.13);
       ctx.beginPath();
       ctx.moveTo(0, r); ctx.lineTo(-r * 0.95, -r * 0.62); ctx.lineTo(r * 0.95, -r * 0.62);
       ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -1947,7 +2116,7 @@ function dessinerPictogramme(ctx, type, taille, etatFeu, numero) {
     }
 
     case 'sens_interdit': {
-      ctx.fillStyle = '#c1121f'; ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(2, t * 0.06);
+      ctx.fillStyle = '#c8102e'; ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(2, t * 0.06);
       ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       ctx.fillStyle = '#fff';
       roundRect(ctx, -r * 0.62, -r * 0.16, r * 1.24, r * 0.32, 3); ctx.fill();
@@ -1974,7 +2143,7 @@ function dessinerPictogramme(ctx, type, taille, etatFeu, numero) {
     }
 
     case 'giratoire': {
-      ctx.fillStyle = '#fff'; ctx.strokeStyle = '#c1121f'; ctx.lineWidth = Math.max(3.5, t * 0.115);
+      ctx.fillStyle = '#fff'; ctx.strokeStyle = '#c8102e'; ctx.lineWidth = Math.max(3.5, t * 0.115);
       ctx.beginPath();
       ctx.moveTo(0, -r); ctx.lineTo(-r * 0.95, r * 0.62); ctx.lineTo(r * 0.95, r * 0.62);
       ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -2039,7 +2208,7 @@ function dessinerPictogramme(ctx, type, taille, etatFeu, numero) {
 
     case 'priorite_droite': { // AB1 — triangle danger, croix noire
       ctx.fillStyle = '#fff';
-      ctx.strokeStyle = '#c1121f';
+      ctx.strokeStyle = '#c8102e';
       ctx.lineWidth = Math.max(3.5, t * 0.115);
       ctx.beginPath();
       ctx.moveTo(0, -r);
@@ -2059,7 +2228,7 @@ function dessinerPictogramme(ctx, type, taille, etatFeu, numero) {
 
     case 'priorite_ponctuelle': { // AB2 — triangle danger, croix : verticale ÉPAISSE (prioritaire), horizontale fine
       ctx.fillStyle = '#fff';
-      ctx.strokeStyle = '#c1121f';
+      ctx.strokeStyle = '#c8102e';
       ctx.lineWidth = Math.max(3.5, t * 0.115);
       ctx.beginPath();
       ctx.moveTo(0, -r);
@@ -2184,6 +2353,44 @@ function dessinerPoteauPanneau(ctx, taille) {
   ctx.restore();
 }
 
+/* Panneau complet (style unifié) : ombre portée de la forme exacte du panneau,
+   mât visible côté usager, pictogramme mis en cache (rapide même avec beaucoup de panneaux). */
+const _cachePanneaux = new Map();
+function dessinerPanneauComplet(ctx, type, taille, etatFeu, numero) {
+  if (type === 'feu') {                    // feu : peut clignoter → pas de cache
+    dessinerOmbrePanneau(ctx, taille);
+    dessinerPictogramme(ctx, type, taille, etatFeu, numero);
+    return;
+  }
+  const m = ctx.getTransform();
+  const ech = Math.max(0.25, Math.round(Math.hypot(m.a, m.b) * 4) / 4);
+  const cle = type + '|' + taille + '|' + (numero || '') + '|' + ech;
+  let cv = _cachePanneaux.get(cle);
+  const cote = taille * 1.3;
+  if (!cv) {
+    cv = document.createElement('canvas');
+    cv.width = cv.height = Math.ceil(cote * ech);
+    const c2 = cv.getContext('2d');
+    c2.setTransform(ech, 0, 0, ech, cote * ech / 2, cote * ech / 2);
+    try { dessinerPictogramme(c2, type, taille, etatFeu, numero); } catch (e) {}
+    if (_cachePanneaux.size > 300) _cachePanneaux.clear();
+    _cachePanneaux.set(cle, cv);
+  }
+  const r = taille / 2;
+  // mât (côté usager qui arrive)
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  ctx.beginPath(); ctx.arc(taille * 0.05, r * 1.02 + taille * 0.07, Math.max(2, taille * 0.07), 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#8f969d';
+  ctx.beginPath(); ctx.arc(0, r * 1.02, Math.max(2, taille * 0.065), 0, Math.PI * 2); ctx.fill();
+  // ombre de la forme exacte, décalée vers le bas-droite de l'écran
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.22)';
+  ctx.shadowOffsetX = taille * 0.06 * ech;
+  ctx.shadowOffsetY = taille * 0.09 * ech;
+  ctx.shadowBlur = 1.5 * ech;
+  ctx.drawImage(cv, -cote / 2, -cote / 2, cote, cote);
+  ctx.restore();
+}
 function dessinerOmbrePanneau(ctx, taille) {
   const r = taille / 2;
   ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -2490,8 +2697,16 @@ class Vehicule extends Entity {
   drawAccessoires(ctx) {
     const L = this.longueur;
 
-    // Poignée de traction ("laisse") : pointillé capot -> poignée
-    {
+    // Poignée de traction ("laisse") : complète seulement sur le véhicule touché
+    let dernierV = null;
+    for (let i = entites.length - 1; i >= 0; i--) if (entites[i] instanceof Vehicule) { dernierV = entites[i]; break; }
+    if (this !== dernierV && !this.enLaisse) {
+      const pr = this.poigneeRepos();
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.beginPath(); ctx.arc(pr.x, pr.y, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    } else {
       const fx = this.x + Math.cos(this.angle) * (L / 2);
       const fy = this.y + Math.sin(this.angle) * (L / 2);
       const pg = (this.enLaisse && this.poignee) ? this.poignee : this.poigneeRepos();
@@ -2881,8 +3096,7 @@ class Panneau extends Entity {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
-    dessinerOmbrePanneau(ctx, this.taille);
-    dessinerPictogramme(ctx, this.type, this.taille, this.etatFeu);
+    dessinerPanneauComplet(ctx, this.type, this.taille, this.etatFeu);
     ctx.restore();
   }
 }
@@ -2893,12 +3107,12 @@ class Panneau extends Entity {
 
 function drawCarrefour(ctx, W, H) {
   const ROUTE = 180, r = ROUTE / 2, TROT = 28;
-  ctx.fillStyle = '#8bb888'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#8ab583'; ctx.fillRect(0, 0, W, H);
   // Trottoirs : bandes grises entre l'herbe et la chaussée
-  ctx.fillStyle = '#c9cdd2';
+  ctx.fillStyle = '#d9dbdf';
   ctx.fillRect(0, H/2 - r - TROT, W, ROUTE + 2*TROT);
   ctx.fillRect(W/2 - r - TROT, 0, ROUTE + 2*TROT, H);
-  ctx.fillStyle = '#565d66';
+  ctx.fillStyle = '#666c75';
   ctx.fillRect(0, H/2 - r, W, ROUTE);
   ctx.fillRect(W/2 - r, 0, ROUTE, H);
   ctx.strokeStyle = '#eef0f3'; ctx.lineWidth = 3;
@@ -2930,13 +3144,13 @@ function drawRondPoint(ctx, W, H, taille = 0.42) {
   const Rmil = Rext - (Rext - Rint) * 0.55;         // séparation des 2 voies
   const dx = Math.sqrt(Rext*Rext - r*r), theta = Math.asin(r / Rext);
   const TROT = 26;
-  ctx.fillStyle = '#8bb888'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#8ab583'; ctx.fillRect(0, 0, W, H);
   // Trottoirs : bandes le long des branches + couronne autour de l'anneau
-  ctx.fillStyle = '#c9cdd2';
+  ctx.fillStyle = '#d9dbdf';
   ctx.fillRect(0, cy - r - TROT, W, ROUTE + 2*TROT);
   ctx.fillRect(cx - r - TROT, 0, ROUTE + 2*TROT, H);
   ctx.beginPath(); ctx.arc(cx, cy, Rext + TROT, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#565d66';
+  ctx.fillStyle = '#666c75';
   ctx.fillRect(0, cy - r, W, ROUTE);
   ctx.fillRect(cx - r, 0, ROUTE, H);
   ctx.beginPath(); ctx.arc(cx, cy, Rext, 0, Math.PI*2); ctx.fill();
@@ -2957,11 +3171,11 @@ function drawRondPoint(ctx, W, H, taille = 0.42) {
   }
   ctx.stroke();
   // Îlot : bordure-trottoir grise puis pelouse à deux tons
-  ctx.fillStyle = '#c9cdd2';
+  ctx.fillStyle = '#d9dbdf';
   ctx.beginPath(); ctx.arc(cx, cy, Rint, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#8bb888';
+  ctx.fillStyle = '#8ab583';
   ctx.beginPath(); ctx.arc(cx, cy, Rint - 12, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#7fb37c';
+  ctx.fillStyle = '#7fa978';
   ctx.beginPath(); ctx.arc(cx, cy, Rint*0.55, 0, Math.PI*2); ctx.fill();
 
   // Ligne discontinue séparant les deux voies de l'anneau
@@ -3020,14 +3234,14 @@ function drawRondPoint(ctx, W, H, taille = 0.42) {
 
 function drawIntersectionT(ctx, W, H) {
   const ROUTE = 180, r = ROUTE / 2, TROT = 28;
-  ctx.fillStyle = '#8bb888';
+  ctx.fillStyle = '#8ab583';
   ctx.fillRect(0, 0, W, H);
   // Trottoirs
-  ctx.fillStyle = '#c9cdd2';
+  ctx.fillStyle = '#d9dbdf';
   ctx.fillRect(0, H/2 - r - TROT, W, ROUTE + 2*TROT);
   ctx.fillRect(W/2 - r - TROT, H/2, ROUTE + 2*TROT, H/2);
   // Chaussées
-  ctx.fillStyle = '#565d66';
+  ctx.fillStyle = '#666c75';
   ctx.fillRect(0, H/2 - r, W, ROUTE);
   ctx.fillRect(W/2 - r, H/2, ROUTE, H/2);
   // Bordures : le bord HAUT est continu (pas de branche nord)
@@ -3068,15 +3282,15 @@ function drawVoieRapide(ctx, W, H) {
   const yIns  = yBas + 2 * LANE;                   // niveau insertion / BAU
   const xA = W * 0.30, xB = W * 0.72, xC = W * 0.88;
 
-  ctx.fillStyle = '#8bb888';
+  ctx.fillStyle = '#8ab583';
   ctx.fillRect(0, 0, W, H);
 
   // BAU basse, pleine largeur (recouverte localement par l'insertion)
-  ctx.fillStyle = '#565d66';
+  ctx.fillStyle = '#666c75';
   ctx.fillRect(0, yIns, W, BAU);
 
   // Bretelle d'accès : courbe épaisse montant du bas de l'écran
-  ctx.strokeStyle = '#565d66';
+  ctx.strokeStyle = '#666c75';
   ctx.lineWidth = LANE;
   ctx.lineCap = 'butt';
   ctx.beginPath();
@@ -3085,7 +3299,7 @@ function drawVoieRapide(ctx, W, H) {
   ctx.stroke();
 
   // Voie d'accélération avec biseau de rabattement
-  ctx.fillStyle = '#565d66';
+  ctx.fillStyle = '#666c75';
   ctx.beginPath();
   ctx.moveTo(xA - LANE, yIns);
   ctx.lineTo(xC, yIns);
@@ -3099,7 +3313,7 @@ function drawVoieRapide(ctx, W, H) {
   ctx.fillRect(0, yHaut, W, BAU + 2 * LANE);
 
   // Terre-plein central + glissières
-  ctx.fillStyle = '#7fb37c';
+  ctx.fillStyle = '#7fa978';
   ctx.fillRect(0, yMed - MED / 2, W, MED);
   ctx.strokeStyle = '#9aa1a9';
   ctx.lineWidth = 4;
@@ -3183,7 +3397,7 @@ const MARQUAGES_2_POINTS = ['stop', 'cedez', 'passage_pieton', 'fleche_droit', '
 const editeur = {
   mode: 'route',
   miroir: 'off',          // 'off' | 'vertical' | 'horizontal' : duplication symétrique
-  selRoutes: false,       // sélectionner aussi les routes (dissocié des panneaux)
+  selRoutes: true,        // sélectionner aussi les routes (dissocié des panneaux)
   libre: false,           // redimensionnement libre (largeur/hauteur indépendants)
   typeMarquage: 'stop',
   texteSol: 'BUS',
@@ -3238,14 +3452,27 @@ function pointEd(e) {                         // écran -> coordonnées MONDE
     y: ((sy - vueEd.pany) / vueEd.zoom - t.oy) / t.s,
   };
 }
+const ZOOM_MIN_ED = 0.4;
+/* Cadre toute la carte au-dessus de la barre d'outils du bas */
+function voirToutEditeur() {
+  const t = transformContain(ed.W, ed.H);
+  // on garde toujours la place de la barre d'outils du haut et de la barre du bas
+  const haut = ed.H < 520 ? 52 : 70, bas = ed.H < 520 ? 70 : 100;
+  const hUtile = Math.max(100, ed.H - haut - bas);
+  const cs = Math.min(ed.W / MONDE.W, hUtile / MONDE.H) * 0.97;
+  vueEd.zoom = Math.max(ZOOM_MIN_ED, cs / t.s);
+  vueEd.panx = (ed.W - MONDE.W * t.s * vueEd.zoom) / 2 - t.ox * vueEd.zoom;
+  vueEd.pany = haut + (hUtile - MONDE.H * t.s * vueEd.zoom) / 2 - t.oy * vueEd.zoom;
+  demanderRenduEditeur();
+}
 function zoomerEditeur(sx, sy, facteur) {
-  const nz = Math.min(4, Math.max(1, vueEd.zoom * facteur));
+  const nz = Math.min(4, Math.max(ZOOM_MIN_ED, vueEd.zoom * facteur));
   vueEd.panx = sx - (sx - vueEd.panx) * (nz / vueEd.zoom);
   vueEd.pany = sy - (sy - vueEd.pany) * (nz / vueEd.zoom);
   vueEd.zoom = nz;
 }
 const GRILLE = 20;
-const CONNEXION_SEUIL = 28;   // distance (px monde) pour coller à une extrémité de route
+const CONNEXION_SEUIL = 40;   // distance (px monde) pour coller à une extrémité de route
 
 /* Plusieurs scènes : les tableaux de `editeur` SONT ceux de la carte
    active (mêmes références) ; changer de carte = permuter les références. */
@@ -4013,7 +4240,7 @@ function dessinerBatiment(ctx, type, cx, cy, w, h, angle) {
     roundRect(ctx, x + w * 0.30, y + h * 0.30, w * 0.40, h * 0.60, 2); ctx.fill();
   } else if (type === 'parking') {
     // surface goudron + lignes de stationnement blanches
-    ctx.fillStyle = '#565d66';
+    ctx.fillStyle = '#666c75';
     roundRect(ctx, x, y, w, h, 3); ctx.fill();
     ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1, w * 0.015);
     const n = Math.max(2, Math.round(w / 22));
@@ -4051,7 +4278,7 @@ function dessinerBatiment(ctx, type, cx, cy, w, h, angle) {
     // Terre-plein : îlot séparateur (bordure grise + intérieur végétal ou hachuré)
     ctx.fillStyle = '#b9bec4';                       // bordure béton
     roundRect(ctx, x, y, w, h, Math.min(w, h) * 0.18); ctx.fill();
-    ctx.fillStyle = '#8bb888';                       // intérieur herbe
+    ctx.fillStyle = '#8ab583';                       // intérieur herbe
     const m = Math.min(w, h) * 0.16;
     roundRect(ctx, x + m, y + m, w - 2 * m, h - 2 * m, Math.min(w, h) * 0.12); ctx.fill();
     ctx.strokeStyle = '#8a9097'; ctx.lineWidth = Math.max(1, Math.min(w, h) * 0.03);
@@ -4080,7 +4307,7 @@ function dessinerBatiment(ctx, type, cx, cy, w, h, angle) {
 }
 
 function drawCartePerso(ctx, W, H, ed, apercu) {
-  ctx.fillStyle = '#8bb888';
+  ctx.fillStyle = '#8ab583';
   ctx.fillRect(0, 0, W, H);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
@@ -4090,7 +4317,7 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
   if (ed.pinceau && ed.pinceau.length) {
     for (const t of ed.pinceau) {
       if (t.couleur === 'blanc') continue;
-      ctx.fillStyle = (t.couleur === 'herbe') ? '#8bb888' : '#565d66';
+      ctx.fillStyle = (t.couleur === 'herbe') ? '#8ab583' : '#666c75';
       if (t.forme === 'carre') {
         ctx.fillRect(t.x - t.taille / 2, t.y - t.taille / 2, t.taille, t.taille);
       } else {
@@ -4109,14 +4336,14 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
     ctx.lineWidth = rt.largeur + 6;
     tracerRoute(ctx, rt, W, H);
     ctx.stroke();
-    ctx.strokeStyle = '#c9cdd2';
+    ctx.strokeStyle = '#d9dbdf';
     ctx.lineWidth = rt.largeur;
     tracerRoute(ctx, rt, W, H);
     ctx.stroke();
   }
   // PASSE 1 — trottoirs des routes (bandes grises de part et d'autre)
   // Bouts ARRONDIS forcés pour que les bordures se fondent proprement aux croisements
-  ctx.strokeStyle = '#c9cdd2';
+  ctx.strokeStyle = '#d9dbdf';
   ctx.lineJoin = 'round';
   for (const rt of ed.routes) {
     if (rt.trottoir || rt.pts.length < 2) continue;
@@ -4126,7 +4353,7 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
     ctx.stroke();
   }
   // PASSE 2 — asphalte nu (recouvre les bordures des autres routes au croisement)
-  ctx.strokeStyle = '#565d66';
+  ctx.strokeStyle = '#666c75';
   ctx.lineJoin = 'round';
   for (const rt of ed.routes) {
     if (rt.trottoir || rt.pts.length < 2) continue;
@@ -4163,9 +4390,7 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
     ctx.save();
     ctx.translate(p.x * W, p.y * H);
     ctx.rotate(p.angle || 0);
-    dessinerOmbrePanneau(ctx, p.taille);
-    if (p.type !== 'feu') dessinerPoteauPanneau(ctx, p.taille);
-    dessinerPictogramme(ctx, p.type, p.taille, p.etatFeu, p.numero);
+    dessinerPanneauComplet(ctx, p.type, p.taille, p.etatFeu, p.numero);
     ctx.restore();
   }
 
@@ -4177,7 +4402,7 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
     if (apercu.curseur) pts.push(apercu.curseur);
     if (pts.length >= 2) {
       ctx.globalAlpha = 0.55;
-      ctx.strokeStyle = apercu.route.trottoir ? '#c9cdd2' : '#565d66';
+      ctx.strokeStyle = apercu.route.trottoir ? '#d9dbdf' : '#666c75';
       ctx.lineCap = apercu.route.boutsDroits ? 'butt' : 'round'; ctx.lineJoin = 'round';
       ctx.lineWidth = apercu.route.largeur;
       (apercu.route.arrondi ? tracerCheminLisse : tracerChemin)(ctx, pts, W, H);
@@ -4233,7 +4458,7 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
       ctx.strokeStyle = '#FF3030';
       ctx.lineWidth = 1.5 * e;               // cadre fin (constant à l'écran)
       ctx.strokeRect(x, y, w, h);
-      const hs = 6 * e;                      // poignées plus petites (constantes à l'écran)
+      const hs = 7 * e;                      // poignées (constantes à l'écran)
       ctx.lineWidth = 1.5 * e;
       const coins = [[x, y, 'tl'], [x + w, y, 'tr'], [x, y + h, 'bl'], [x + w, y + h, 'br']];
       editeur._poigneesCoin = [];
@@ -4265,6 +4490,14 @@ function drawCartePerso(ctx, W, H, ed, apercu) {
       ctx.fillText('\u21BB', rotX, rotY + 0.5 * e);
       // mémoriser la position écran de la poignée pour le hit-test
       editeur._poigneeRotation = { x: rotX, y: rotY, r: 10 * e };
+      // points de la route / du marquage : ronds blancs à attraper
+      if (apercu.selection.kind === 'route' || apercu.selection.kind === 'marquage') {
+        for (const pt of apercu.selection.ref.pts) {
+          ctx.beginPath(); ctx.arc(pt.x * W, pt.y * H, 8 * e, 0, Math.PI * 2);
+          ctx.fillStyle = '#fff'; ctx.fill();
+          ctx.lineWidth = 2.5 * e; ctx.strokeStyle = '#FF3030'; ctx.stroke();
+        }
+      }
       ctx.restore();
     }
   }
@@ -4309,7 +4542,7 @@ const DECORS = {
     // Le MONDE fixe 16:9 affiché en « contain » : exactement le même
     // rendu que l'éditeur, quel que soit le format de l'écran.
     const t = transformContain(W, H);
-    ctx.fillStyle = '#8bb888';
+    ctx.fillStyle = '#8ab583';
     ctx.fillRect(0, 0, W, H);
     ctx.save();
     ctx.translate(t.ox, t.oy);
@@ -4330,7 +4563,7 @@ function peindreUneVignetteVehic(cv) {
   cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
   const ctx = cv.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.fillStyle = '#565d66'; ctx.fillRect(0, 0, W, H);   // fond asphalte
+  ctx.fillStyle = '#666c75'; ctx.fillRect(0, 0, W, H);   // fond asphalte
   // Instancier le véhicule au centre, orienté vers le haut
   let v;
   try {
@@ -4391,7 +4624,7 @@ function peindreUneVignette(cv) {
   const ctx = cv.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#8bb888'; ctx.fillRect(0, 0, W, H);   // fond herbe garanti
+  ctx.fillStyle = '#8ab583'; ctx.fillRect(0, 0, W, H);   // fond herbe garanti
 
   // Les décors sont calibrés pour le grand MONDE (routes en pixels absolus).
   // On les dessine d'abord à la taille du monde sur un canvas tampon,
@@ -4661,7 +4894,7 @@ function montrerPopupEditeur() {
    BOUCLE DE RENDU
    ============================================================ */
 
-const couleursVehicules = ['#2563eb', '#dc2626', '#16a34a', '#7c3aed', '#ea580c'];
+const couleursVehicules = ['#4b6a9b', '#8a9099', '#e4e6ea'];   // palette sobre : la voiture Easy ressort
 const couleursPietons   = ['#0e7490', '#b45309', '#4d7c0f', '#9d174d'];
 
 let entites = [
@@ -4670,6 +4903,7 @@ let entites = [
 ];
 entites[1].angle = entites[1].angleCible = 0;
 entites[0].numero = 1;
+entites.push(entites.shift());   // la voiture Easy au premier plan (poignée visible)
 entites[1].numero = 2;
 let nbVehicules = 2, nbPietons = 0;
 
@@ -5070,7 +5304,7 @@ function boucle(temps) {
     const doitDessiner = sceneAnimee() || maint < actifJusqua || maint - dernierRendu > 1000;
     if (!doitDessiner) { requestAnimationFrame(boucle); return; }
     dernierRendu = maint;
-    sc.ctx.fillStyle = '#8bb888';              // herbe partout (hors-monde au dézoom)
+    sc.ctx.fillStyle = '#8ab583';              // herbe partout (hors-monde au dézoom)
     sc.ctx.fillRect(0, 0, sc.W, sc.H);
     sc.ctx.save();
     sc.ctx.translate(vue.ox, vue.oy);
@@ -5349,7 +5583,7 @@ function majBoutonsRejeu() {
   const aDesImages = rejeu.frames.length > 0 || entites.some(e => e.trajet && e.trajet.length >= 2);
   bRec.classList.toggle('actif', rejeu.mode === 'rec');
   bPlay.classList.toggle('actif', rejeu.mode === 'play');
-  bRec.textContent = rejeu.mode === 'rec' ? '● ...' : '● REC';
+  bRec.textContent = rejeu.mode === 'rec' ? '● Enregistrement…' : '● Enregistrer';
   bPlay.disabled = !aDesImages || rejeu.mode === 'rec' || rejeu.mode === 'play';
   bPause.disabled = rejeu.mode !== 'play';
   bStop.disabled = rejeu.mode === 'arret' && rejeu.idx === 0;
@@ -5518,7 +5752,7 @@ function dessinerEditeur() {
   const DPR = Math.min(2, window.devicePixelRatio || 1);
   {
     ed.ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    ed.ctx.fillStyle = '#8bb888';              // herbe partout
+    ed.ctx.fillStyle = '#8ab583';              // herbe partout
     ed.ctx.fillRect(0, 0, ed.W, ed.H);
     const tEd = transformContain(ed.W, ed.H);
     ed.ctx.save();
@@ -5527,7 +5761,7 @@ function dessinerEditeur() {
     ed.ctx.translate(tEd.ox, tEd.oy);
     ed.ctx.scale(tEd.s, tEd.s);
     // Même fond herbe que la Scène : l'éditeur montre exactement le rendu final.
-    ed.ctx.fillStyle = '#8bb888';
+    ed.ctx.fillStyle = '#8ab583';
     ed.ctx.fillRect(0, 0, MONDE.W, MONDE.H);
     // GRILLE magnétique (visible seulement dans l'éditeur quand le magnétisme est actif)
     if (editeur.magnetisme && editeur.mode !== 'selection') {
@@ -6133,7 +6367,7 @@ ed.canvas.addEventListener('pointermove', (e) => {
     const [a, b] = [...pointeursEd.values()];
     const d = Math.hypot(b.x - a.x, b.y - a.y);
     const mx = (a.x + b.x) / 2 - r.left, my = (a.y + b.y) / 2 - r.top;
-    const nz = Math.min(4, Math.max(1, pinchEd.zoom * (d / pinchEd.dist)));
+    const nz = Math.min(4, Math.max(ZOOM_MIN_ED, pinchEd.zoom * (d / pinchEd.dist)));
     vueEd.zoom = nz;
     vueEd.panx = mx - (pinchEd.mx - r.left - pinchEd.panx) * (nz / pinchEd.zoom);
     vueEd.pany = my - (pinchEd.my - r.top  - pinchEd.pany) * (nz / pinchEd.zoom);
@@ -6202,18 +6436,86 @@ function pointEditeur(e) {
 }
 
 /* Renvoie l'extrémité de route la plus proche si elle est dans le seuil, sinon null */
-function pointDeConnexion(p) {
+/* Panneau posé près d'une route : il se range au bord de la chaussée, du côté
+   où on l'a posé, et se tourne face aux véhicules qui arrivent (circulation à droite). */
+function activerModeEd(m) {
+  const b = document.querySelector('#choix-mode button[data-mode="' + m + '"]');
+  if (b) b.click();
+}
+/* Élément « évident » sous le doigt (zones de clic serrées pour ne pas gêner la pose) */
+function elementSousDoigt(p, mode) {
+  for (let i = editeur.panneaux.length - 1; i >= 0; i--) {
+    const pa = editeur.panneaux[i];
+    if (Math.hypot(p.x - pa.x * MONDE.W, p.y - pa.y * MONDE.H) <= pa.taille / 2) return { kind: 'panneau', ref: pa };
+  }
+  if (mode !== 'panneau') {
+    for (let i = editeur.batiments.length - 1; i >= 0; i--) {
+      if (hitBatiment(editeur.batiments[i], p.x, p.y, MONDE.W, MONDE.H)) return { kind: 'batiment', ref: editeur.batiments[i] };
+    }
+  }
+  if (mode === 'route' || mode === 'trottoir' || mode === 'marquage') {
+    for (let i = editeur.marquages.length - 1; i >= 0; i--) {
+      const m = editeur.marquages[i];
+      for (let k = 0; k < m.pts.length - 1; k++) {
+        if (distPointSegment(p.x, p.y, m.pts[k].x * MONDE.W, m.pts[k].y * MONDE.H,
+                             m.pts[k + 1].x * MONDE.W, m.pts[k + 1].y * MONDE.H) <= 10) return { kind: 'marquage', ref: m };
+      }
+    }
+  }
+  return null;
+}
+function orienterPanneau(p) {
+  let best = null;
+  for (const rt of editeur.routes) {
+    if (!rt.pts || rt.pts.length < 2) continue;
+    for (let i = 0; i < rt.pts.length - 1; i++) {
+      const ax = rt.pts[i].x * MONDE.W, ay = rt.pts[i].y * MONDE.H;
+      const bx = rt.pts[i + 1].x * MONDE.W, by = rt.pts[i + 1].y * MONDE.H;
+      const vx = bx - ax, vy = by - ay, L = Math.hypot(vx, vy) || 1;
+      const k = Math.max(0, Math.min(1, ((p.x - ax) * vx + (p.y - ay) * vy) / (L * L)));
+      const qx = ax + k * vx, qy = ay + k * vy;
+      const d = Math.hypot(p.x - qx, p.y - qy);
+      if (d <= rt.largeur / 2 + 45 && (!best || d < best.d)) best = { d, qx, qy, ux: vx / L, uy: vy / L, larg: rt.largeur };
+    }
+  }
+  if (!best) return { x: p.x, y: p.y, angle: 0 };
+  const nx = -best.uy, ny = best.ux;                       // normale « à droite » du sens A→B
+  const cote = ((p.x - best.qx) * nx + (p.y - best.qy) * ny) >= 0 ? 1 : -1;
+  const ecart = best.larg / 2 + 26;
+  const cap = cote > 0 ? Math.atan2(best.uy, best.ux) : Math.atan2(-best.uy, -best.ux);   // sens des usagers qui le voient
+  return { x: best.qx + nx * cote * ecart, y: best.qy + ny * cote * ecart, angle: cap + Math.PI / 2 };
+}
+function pointDeConnexion(p, exclure) {
   const seuil = CONNEXION_SEUIL / (vueEd.zoom || 1);
   let best = null, bestD = seuil;
   for (const rt of editeur.routes) {
-    if (!rt.pts || rt.pts.length === 0) continue;
+    if (!rt.pts || rt.pts.length === 0 || rt === exclure) continue;
     for (const idx of [0, rt.pts.length - 1]) {   // seulement les bouts
       const ex = rt.pts[idx].x * MONDE.W, ey = rt.pts[idx].y * MONDE.H;
       const d = Math.hypot(p.x - ex, p.y - ey);
       if (d < bestD) { bestD = d; best = { x: ex, y: ey }; }
     }
   }
-  return best;
+  if (best) return best;
+  // Raccord en T : en traçant une route, un point posé SUR une autre route
+  // se colle à son axe (plus besoin de viser le bon endroit)
+  if (editeur.mode === 'route' || editeur.mode === 'trottoir' || editeur.dragPointRoute) {
+    let bT = null, dT = Infinity;
+    for (const rt of editeur.routes) {
+      if (rt === exclure || !rt.pts || rt.pts.length < 2) continue;
+      for (let i = 0; i < rt.pts.length - 1; i++) {
+        const ax = rt.pts[i].x * MONDE.W, ay = rt.pts[i].y * MONDE.H;
+        const bx = rt.pts[i + 1].x * MONDE.W, by = rt.pts[i + 1].y * MONDE.H;
+        const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy || 1;
+        const k = Math.max(0, Math.min(1, ((p.x - ax) * vx + (p.y - ay) * vy) / L2));
+        const qx = ax + k * vx, qy = ay + k * vy;
+        const d = Math.hypot(p.x - qx, p.y - qy);
+        if (d <= rt.largeur / 2 && d < dT) { dT = d; bT = { x: qx, y: qy }; }
+      }
+    }
+    return bT;
+  }
+  return null;
 }
 
 /* Aligne le point sur un angle multiple de 45° par rapport à l'ancre */
@@ -6225,8 +6527,11 @@ function aimanterAngle(ancreNorm, p) {
   let a = Math.atan2(dy, dx);
   const pas = Math.PI / 4;                 // 45°
   a = Math.round(a / pas) * pas;
-  return { x: Math.round((ax + Math.cos(a) * dist) / GRILLE) * GRILLE,
-           y: Math.round((ay + Math.sin(a) * dist) / GRILLE) * GRILLE };
+  // reste parfaitement droit même si le point de départ n'est pas sur la grille
+  const c = Math.cos(a), sn = Math.sin(a);
+  const hor = Math.abs(sn) < 1e-6, ver = Math.abs(c) < 1e-6;
+  return { x: ver ? ax : hor ? Math.round((ax + c * dist) / GRILLE) * GRILLE : ax + c * dist,
+           y: hor ? ay : ver ? Math.round((ay + sn * dist) / GRILLE) * GRILLE : ay + sn * dist };
 }
 
 function majBandeauTrace() {
@@ -6403,6 +6708,26 @@ ed.canvas.addEventListener('pointerdown', (e) => {
   clearTimeout(timerAppui);
   timerAppui = null;
 
+  // Mode intelligent : dans un outil de pose, toucher un élément existant
+  // le sélectionne directement (plus besoin de repasser par « Sélection »)
+  if (['route', 'trottoir', 'marquage', 'panneau', 'batiment'].includes(editeur.mode) &&
+      !editeur.enCoursRoute && !editeur.enCoursMarquage) {
+    const el = elementSousDoigt(pRaw, editeur.mode);
+    if (el) {
+      editeur._outilPrecedent = editeur.mode;
+      activerModeEd('selection');
+      selectionner(el);
+      editeur.dragSelection = {
+        depart: { x: pRaw.x, y: pRaw.y },
+        origines: (el.kind === 'panneau' || el.kind === 'batiment')
+          ? { x: el.ref.x, y: el.ref.y }
+          : el.ref.pts.map(pt => ({ x: pt.x, y: pt.y })),
+      };
+      ed.canvas.setPointerCapture(e.pointerId);
+      return;
+    }
+  }
+
   switch (editeur.mode) {
 
     case 'pinceau': {
@@ -6467,11 +6792,13 @@ ed.canvas.addEventListener('pointerdown', (e) => {
     }
 
     case 'panneau': {
+      const pose = orienterPanneau(pRaw);
       const nouveauPanneau = {
         type: editeur.typePanneau,
-        x: pn.x, y: pn.y,
+        x: pose.x / MONDE.W, y: pose.y / MONDE.H,
         taille: 52,
         etatFeu: 'rouge',
+        angle: pose.angle,
       };
       editeur.panneaux.push(nouveauPanneau);
       ajouterRefletPanneau(nouveauPanneau);
@@ -6533,6 +6860,19 @@ ed.canvas.addEventListener('pointerdown', (e) => {
     }
 
     case 'selection': {
+      // Points de la route / du marquage sélectionné : on les attrape pour les déplacer
+      if (editeur.selection && (editeur.selection.kind === 'route' || editeur.selection.kind === 'marquage')) {
+        const tP = transformContain(ed.W, ed.H);
+        const tolP = 26 / (vueEd.zoom * tP.s);
+        const pts = editeur.selection.ref.pts;
+        for (let i = 0; i < pts.length; i++) {
+          if (Math.hypot(pRaw.x - pts[i].x * MONDE.W, pRaw.y - pts[i].y * MONDE.H) <= tolP) {
+            editeur.dragPointRoute = { ref: editeur.selection.ref, i, route: editeur.selection.kind === 'route' };
+            ed.canvas.setPointerCapture(e.pointerId);
+            return;
+          }
+        }
+      }
       // Poignée de rotation (si une sélection est active et qu'on la saisit)
       if (editeur.selection && editeur._poigneeRotation) {
         const pr = editeur._poigneeRotation;
@@ -6647,6 +6987,17 @@ ed.canvas.addEventListener('pointermove', (e) => {
       v.x = pr.x - editeur.dragTest.dx;
       v.y = pr.y - editeur.dragTest.dy;
     }
+    demanderRenduEditeur();
+    return;
+  }
+  if (editeur.dragPointRoute) {
+    let q = pointEd(e);
+    const dp = editeur.dragPointRoute;
+    if (editeur.magnetisme && dp.route) {
+      const c = pointDeConnexion(q, dp.ref);
+      q = c || { x: Math.round(q.x / GRILLE) * GRILLE, y: Math.round(q.y / GRILLE) * GRILLE };
+    }
+    dp.ref.pts[dp.i] = { x: q.x / MONDE.W, y: q.y / MONDE.H };
     demanderRenduEditeur();
     return;
   }
@@ -6766,9 +7117,12 @@ ed.canvas.addEventListener('pointerup', () => {
   }
   editeur.dragTest = null;
   editeur.panDrag = null;
+  const peignait = editeur.pinceauActif;
   editeur.pinceauActif = false;
-  if (editeur.coinDrag) { editeur.coinDrag = null; reinitBaseSelection(); oselTaille.value = 100; }
-  if (editeur.rotationDrag) { editeur.rotationDrag = null; reinitBaseSelection(); oselRot.value = 0; }
+  if (peignait) pousserHistorique();
+  if (editeur.dragPointRoute) { editeur.dragPointRoute = null; reinitBaseSelection(); majBoutonPerso(); }
+  if (editeur.coinDrag) { editeur.coinDrag = null; reinitBaseSelection(); oselTaille.value = 100; pousserHistorique(); }
+  if (editeur.rotationDrag) { editeur.rotationDrag = null; reinitBaseSelection(); oselRot.value = 0; pousserHistorique(); }
   if (editeur.zoneSelection) {
     const z = editeur.zoneSelection;
     const x0 = Math.min(z.x0, z.x1), x1 = Math.max(z.x0, z.x1);
@@ -6805,9 +7159,12 @@ ed.canvas.addEventListener('pointercancel', () => {
   }
   editeur.dragTest = null;
   editeur.panDrag = null;
+  const peignait = editeur.pinceauActif;
   editeur.pinceauActif = false;
-  if (editeur.coinDrag) { editeur.coinDrag = null; reinitBaseSelection(); oselTaille.value = 100; }
-  if (editeur.rotationDrag) { editeur.rotationDrag = null; reinitBaseSelection(); oselRot.value = 0; }
+  if (peignait) pousserHistorique();
+  if (editeur.dragPointRoute) { editeur.dragPointRoute = null; reinitBaseSelection(); majBoutonPerso(); }
+  if (editeur.coinDrag) { editeur.coinDrag = null; reinitBaseSelection(); oselTaille.value = 100; pousserHistorique(); }
+  if (editeur.rotationDrag) { editeur.rotationDrag = null; reinitBaseSelection(); oselRot.value = 0; pousserHistorique(); }
   editeur.zoneSelection = null;
   editeur.dragSelection = null;
 });
@@ -7535,7 +7892,7 @@ function bvPeindreChip(cv) {
   ctx.clearRect(0, 0, Wc, Hc);
   if (kind === 'marquage') {
     // fond goudron pour faire ressortir le marquage blanc
-    ctx.fillStyle = '#565d66';
+    ctx.fillStyle = '#666c75';
     roundRect(ctx, 0, 0, Wc, Hc, 10); ctx.fill();
     let pts;
     if (value === 'zebra' || value === 'damier_bus') {
@@ -7558,7 +7915,7 @@ function bvPeindreChip(cv) {
     ctx.restore();
   } else {
     // décor : fond herbe + bâtiment dessiné en vrai
-    ctx.fillStyle = '#8bb888';
+    ctx.fillStyle = '#8ab583';
     roundRect(ctx, 0, 0, Wc, Hc, 10); ctx.fill();
     const ratio = { maison: 0.75, immeuble: 0.75, ecole: 0.75, parking: 0.7,
                     buisson: 1, terreplein: 0.45, voiture: 0.5 }[value] || 0.75;
@@ -8111,7 +8468,7 @@ function activerCarte(i) {
 }
 selectCarte.addEventListener('change', () => activerCarte(Number(selectCarte.value)));
 document.getElementById('ed-zoom-reset').addEventListener('click', () => {
-  vueEd.zoom = 1; vueEd.panx = 0; vueEd.pany = 0;
+  voirToutEditeur();
 });
 document.getElementById('ed-undo').addEventListener('click', annulerEditeur);
 document.getElementById('ed-redo').addEventListener('click', retablirEditeur);
@@ -8779,12 +9136,34 @@ document.addEventListener('webkitfullscreenchange', () => {
 });
 
 document.getElementById('btn-vider-nav').addEventListener('click', () => {
-  if (!confirm('Vider la scène ? Tous les usagers seront retirés.')) return;
+  // Pas de fenêtre de confirmation : on vide, avec « Annuler » pendant 6 s
+  const sauvegarde = { entites: entites.slice(), nbV: nbVehicules, nbP: nbPietons, annot: annotations.slice() };
   entites = [];
   nbVehicules = 0;
   nbPietons = 0;
+  annotations.length = 0;
   fermerMenuVehicule();
+  afficherToast('Scène vidée', 'Annuler', () => {
+    entites = sauvegarde.entites; nbVehicules = sauvegarde.nbV; nbPietons = sauvegarde.nbP;
+    annotations.length = 0; annotations.push(...sauvegarde.annot);
+  });
 });
+function afficherToast(texte, action, fn) {
+  let t = document.getElementById('toast-easy');
+  if (!t) {
+    t = document.createElement('div'); t.id = 'toast-easy';
+    t.innerHTML = '<span class="tt"></span><button type="button"></button>';
+    document.body.appendChild(t);
+  }
+  t.querySelector('.tt').textContent = texte;
+  const b = t.querySelector('button');
+  b.textContent = action || '';
+  b.hidden = !action;
+  b.onclick = () => { if (fn) fn(); t.classList.remove('visible'); };
+  t.classList.add('visible');
+  clearTimeout(t._m);
+  t._m = setTimeout(() => t.classList.remove('visible'), 6000);
+}
 
 // Capture de la scène en image PNG (le canvas seul : pas les widgets HTML par-dessus)
 document.getElementById('btn-capture').addEventListener('click', () => {
@@ -8838,6 +9217,164 @@ document.getElementById('btn-capture').addEventListener('click', () => {
     try { localStorage.setItem('easy_theme', s ? 'sombre' : 'clair'); } catch (_) {}
   });
 })();
+
+/* ===== DESIGN SOBRE : réorganisation de l'interface ===== */
+(function designSobre() {
+  const ic = (d) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
+  const ICONES = {
+    decor:    '<path d="M8 3 5 21M16 3l3 18"/><path d="M12 4v3M12 10.5v3M12 17v3"/>',
+    ajouter:  '<path d="M5 17v-5l2.2-5h9.6L19 12v5"/><path d="M4 17h16M4.5 12h15"/><circle cx="8" cy="17" r="1.6"/><circle cx="16" cy="17" r="1.6"/>',
+    pedago:   '<path d="M2 9.5 12 5l10 4.5-10 4.5z"/><path d="M6 11.5v4.5c3.5 2.3 8.5 2.3 12 0v-4.5M21 10v5"/>',
+    autres:   '<circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/>',
+    scenes:   '<path d="M3 6.5h6l2 2h10V19H3z"/>',
+    outils:   '<path d="M14.5 6.5a4 4 0 0 0-5.4 5l-5.6 5.6a1.6 1.6 0 0 0 2.3 2.3l5.6-5.6a4 4 0 0 0 5-5.4l-2.4 2.4-2.1-.4-.4-2.1z"/>',
+    reglages: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
+    carte:    '<path d="M5 3.5h11l3 3V20.5H5z"/><path d="M8 3.5V9h7V3.5M8 20.5V14h8v6.5"/>',
+    utiliser: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  };
+  document.querySelectorAll('.pal-ico').forEach((b) => {
+    const cle = b.dataset.pal || b.dataset.paled;
+    const n = b.firstChild;
+    if (ICONES[cle] && n && n.nodeType === 3) {
+      const t = document.createElement('span');
+      t.innerHTML = ic(ICONES[cle]);
+      b.replaceChild(t.firstChild, n);
+    }
+  });
+
+  // Emojis de la barre → icônes au trait
+  const vider = document.getElementById('btn-vider-nav');
+  if (vider) vider.innerHTML = ic('<path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13"/>');
+  const pres = document.getElementById('btn-presentation');
+  if (pres) pres.innerHTML = ic('<rect x="3" y="4.5" width="18" height="12" rx="1.5"/><path d="M12 16.5V20M8 20h8"/>');
+
+  // Menu « ⋯ » : vider, capture, thème, présentation
+  const nav = document.querySelector('nav');
+  const horloge = document.getElementById('horloge-easy');
+  const wrap = document.createElement('div');
+  wrap.className = 'menu-plus';
+  const bPlus = document.createElement('button');
+  bPlus.className = 'btn-pe-nav'; bPlus.id = 'btn-plus'; bPlus.title = 'Plus d\'options'; bPlus.setAttribute('aria-label', 'Plus');
+  bPlus.innerHTML = ic(ICONES.autres);
+  const liste = document.createElement('div');
+  liste.className = 'menu-plus-liste'; liste.hidden = true;
+  for (const [id, lib] of [['btn-capture', 'Capturer la scène'], ['btn-theme', 'Thème clair / sombre'],
+                           ['btn-vider-nav', 'Vider la scène']]) {
+    const b = document.getElementById(id);
+    if (!b) continue;
+    const l = document.createElement('span'); l.className = 'mp-lib'; l.textContent = lib;
+    b.appendChild(l);
+    liste.appendChild(b);
+  }
+  wrap.append(bPlus, liste);
+  nav.insertBefore(wrap, horloge);
+  bPlus.addEventListener('click', (e) => { e.stopPropagation(); liste.hidden = !liste.hidden; });
+  document.addEventListener('pointerdown', (e) => { if (!wrap.contains(e.target)) liste.hidden = true; }, true);
+  liste.addEventListener('click', () => setTimeout(() => { liste.hidden = true; }, 0));
+
+  // Crayon et numéros rangés dans la palette de gauche
+  const rail = document.getElementById('palette-rail');
+  const sep = document.createElement('div'); sep.className = 'rail-sep';
+  rail.appendChild(sep);
+  for (const [id, lib] of [['btn-stylo', 'crayon'], ['btn-numeros', 'numéros']]) {
+    const b = document.getElementById(id);
+    if (!b) continue;
+    b.className = 'pal-ico' + (b.classList.contains('actif') ? ' actif' : '');
+    const l = document.createElement('span'); l.className = 'lib'; l.textContent = lib;
+    b.appendChild(l);
+    rail.appendChild(b);
+  }
+  // la barre de couleurs du crayon n'apparaît que crayon actif
+  const stylo = document.getElementById('btn-stylo');
+  const majStylo = () => document.body.classList.toggle('stylo-on', stylo.classList.contains('actif'));
+  new MutationObserver(majStylo).observe(stylo, { attributes: true, attributeFilter: ['class'] });
+  majStylo();
+})();
+
+/* ===== Routes sélectionnables par défaut (bouton du widget à jour) ===== */
+(function(){ const b = document.getElementById('osel-routes'); if (b) b.classList.add('actif'); })();
+
+/* ===== Prise en main : 3 bulles au premier lancement ===== */
+(function priseEnMain() {
+  let vu = false;
+  try { vu = localStorage.getItem('easy_prise_en_main') === '1'; } catch (_) {}
+  if (vu) return;
+  const etapes = [
+    ['Déplacer', 'Glissez un véhicule avec le doigt pour le déplacer et l’orienter.'],
+    ['Faire avancer', 'Tirez la poignée devant le capot : le véhicule suit en douceur.'],
+    ['Clignotants et angles morts', 'Touchez deux fois un véhicule pour ouvrir son menu.'],
+  ];
+  let i = 0;
+  const o = document.createElement('div');
+  o.id = 'prise-en-main';
+  o.innerHTML = '<div class="pem-carte"><div class="pem-etape"></div><div class="pem-titre"></div><div class="pem-texte"></div>' +
+    '<div class="pem-bas"><div class="pem-points"><i></i><i></i><i></i></div><div>' +
+    '<button class="pem-passer" type="button">Passer</button> <button class="pem-suivant" type="button">Suivant</button></div></div></div>';
+  const fin = () => { o.remove(); try { localStorage.setItem('easy_prise_en_main', '1'); } catch (_) {} };
+  const maj = () => {
+    o.querySelector('.pem-etape').textContent = 'Étape ' + (i + 1) + ' sur ' + etapes.length;
+    o.querySelector('.pem-titre').textContent = etapes[i][0];
+    o.querySelector('.pem-texte').textContent = etapes[i][1];
+    o.querySelectorAll('.pem-points i').forEach((p, k) => p.classList.toggle('on', k === i));
+    o.querySelector('.pem-suivant').textContent = i === etapes.length - 1 ? 'C’est parti' : 'Suivant';
+  };
+  o.querySelector('.pem-passer').onclick = fin;
+  o.querySelector('.pem-suivant').onclick = () => { if (i < etapes.length - 1) { i++; maj(); } else fin(); };
+  maj();
+  document.body.appendChild(o);
+})();
+
+/* ===== Éditeur : cadrer toute la carte à l'ouverture ===== */
+(function(){
+  const bt = document.getElementById('onglet-editeur');
+  let fait = false;
+  const cadrer = () => { if (!fait && !vues.editeur.classList.contains('cachee')) { fait = true; setTimeout(voirToutEditeur, 120); } };
+  new MutationObserver(cadrer).observe(vues.editeur, { attributes: true, attributeFilter: ['class'] });
+})();
+
+/* ===== Éditeur : barre d'outils en haut (un clic = un outil) ===== */
+(function barreOutilsHaut() {
+  const ic = (d) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
+  const OUTILS = [
+    ['selection', 'Sélection', '<path d="M5 3l14 8-6 1.5L10 19z"/>'],
+    ['route', 'Route', '<path d="M8 3 5 21M16 3l3 18"/><path d="M12 4v3M12 10.5v3M12 17v3"/>'],
+    ['trottoir', 'Trottoir', '<path d="M4 20V8h16v12"/><path d="M4 12h16M9 8v12M15 8v12"/>'],
+    ['marquage', 'Marquage', '<path d="M4 12h3M10.5 12h3M17 12h3"/><path d="M4 6h16M4 18h16"/>'],
+    ['panneau', 'Panneau', '<path d="M12 3 21 18H3z"/><path d="M12 18v3"/>'],
+    ['batiment', 'Décor', '<path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/>'],
+    ['pinceau', 'Peinture', '<path d="M4 20c2 0 4-1 4-3a2 2 0 0 0-4 0"/><path d="M8 17 19 6a2 2 0 0 0-3-3L5 14"/>'],
+    ['gomme', 'Gomme', '<path d="M8 20h12"/><path d="M4 16 14 6l5 5-9 9H8z"/>'],
+    ['main', 'Vue', '<path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/>'],
+  ];
+  const zone = document.querySelector('#vue-editeur .zone-canvas');
+  if (!zone) return;
+  const barre = document.createElement('div');
+  barre.id = 'outils-haut';
+  for (const [m, lib, d] of OUTILS) {
+    if (!document.querySelector('#choix-mode button[data-mode="' + m + '"]')) continue;
+    const b = document.createElement('button');
+    b.type = 'button'; b.dataset.outil = m; b.title = lib;
+    b.innerHTML = ic(d) + '<span>' + lib + '</span>';
+    b.addEventListener('click', () => { editeur._outilPrecedent = null; activerModeEd(m); });
+    barre.appendChild(b);
+  }
+  zone.appendChild(barre);
+  const maj = () => barre.querySelectorAll('button').forEach(b => b.classList.toggle('actif', b.dataset.outil === editeur.mode));
+  new MutationObserver(maj).observe(document.getElementById('choix-mode'), { attributes: true, subtree: true, attributeFilter: ['class'] });
+  maj();
+})();
+
+/* ===== Mode intelligent : après une sélection automatique, toucher le vide
+   ramène à l'outil de pose précédent ===== */
+ed.canvas.addEventListener('pointerup', () => {
+  setTimeout(() => {
+    if (editeur.mode === 'selection' && !editeur.selection && editeur._outilPrecedent) {
+      const m = editeur._outilPrecedent;
+      editeur._outilPrecedent = null;
+      activerModeEd(m);
+    }
+  }, 0);
+});
 </script>
 </body>
 </html>
