@@ -1364,6 +1364,7 @@
     <div class="palette-panneau" id="pal-ajouter" data-pour="ajouter">
       <h4>Usagers</h4>
       <div id="choix-vehic">
+        <button id="btn-voiture-easy"><span class="nom">Voiture Easy</span></button>
         <button id="btn-vehicule"><span class="nom">Voiture</span></button>
         <button id="btn-camion"><span class="nom">Poids lourd</span></button>
         <button id="btn-moto"><span class="nom">Moto</span></button>
@@ -2272,10 +2273,105 @@ function dessinerAnglesMorts(ctx, L, l) {
   ctx.restore();
 }
 
+/* ===== Voiture école Easy (vue de dessus) =====
+   Clio noire, marquage rouge sur l'arrière et les flancs, sourire rouge
+   sur le capot, panneau AUTO-ÉCOLE sur le toit. Repère : avant = +X. */
+function dessinerVoitureEasy(ctx, L, l) {
+  const NOIR = '#16181c', ROUGE = '#ff3131', VITRE = '#3b4552';
+  const r = Math.min(10, l * 0.28);
+  // ombre portée
+  ctx.fillStyle = 'rgba(0,0,0,0.20)';
+  roundRect(ctx, -L/2 + 3, -l/2 + 4, L, l, r); ctx.fill();
+  // carrosserie noire
+  ctx.fillStyle = NOIR;
+  roundRect(ctx, -L/2, -l/2, L, l, r); ctx.fill();
+
+  // marquage rouge (arrière + flancs), découpé à la forme de la carrosserie
+  ctx.save();
+  roundRect(ctx, -L/2, -l/2, L, l, r); ctx.clip();
+  ctx.fillStyle = ROUGE;
+  for (const c of [-1, 1]) {           // vague rouge sur chaque flanc
+    ctx.beginPath();
+    ctx.moveTo(-L * 0.52, c * l * 0.52);
+    ctx.lineTo(L * 0.10, c * l * 0.52);
+    ctx.bezierCurveTo(L * 0.02, c * l * 0.40, -L * 0.10, c * l * 0.30, -L * 0.30, c * l * 0.30);
+    ctx.lineTo(-L * 0.52, c * l * 0.30);
+    ctx.closePath();
+    ctx.fill();
+  }
+  // hayon / bouclier arrière rouge
+  ctx.beginPath();
+  ctx.moveTo(-L * 0.52, -l * 0.52);
+  ctx.lineTo(-L * 0.40, -l * 0.52);
+  ctx.quadraticCurveTo(-L * 0.44, 0, -L * 0.40, l * 0.52);
+  ctx.lineTo(-L * 0.52, l * 0.52);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = 1.2;
+  roundRect(ctx, -L/2, -l/2, L, l, r); ctx.stroke();
+
+  // habitacle : pare-brise, lunette arrière, vitres latérales, toit noir
+  ctx.fillStyle = VITRE;
+  roundRect(ctx, L * 0.10, -l * 0.36, L * 0.15, l * 0.72, 4); ctx.fill();   // pare-brise
+  roundRect(ctx, -L * 0.35, -l * 0.32, L * 0.09, l * 0.64, 3); ctx.fill();  // lunette
+  for (const c of [-1, 1]) {                                                  // vitres latérales
+    roundRect(ctx, -L * 0.28, c > 0 ? l * 0.30 : -l * 0.40, L * 0.40, l * 0.10, 2); ctx.fill();
+  }
+  ctx.fillStyle = '#0f1114';
+  roundRect(ctx, -L * 0.27, -l * 0.30, L * 0.37, l * 0.60, 4); ctx.fill();  // toit
+  // reflet léger sur le pare-brise
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  roundRect(ctx, L * 0.14, -l * 0.30, L * 0.04, l * 0.60, 2); ctx.fill();
+
+  // panneau AUTO-ÉCOLE sur le toit (en travers)
+  const pw = Math.max(5, L * 0.10), ph = l * 0.66;
+  ctx.fillStyle = ROUGE;
+  roundRect(ctx, -L * 0.09 - pw / 2, -ph / 2, pw, ph, 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 0.8; ctx.stroke();
+  if (l > 22) {
+    ctx.save();
+    ctx.translate(-L * 0.09, 0);
+    ctx.rotate(Math.PI / 2);
+    ctx.fillStyle = '#fff';
+    ctx.font = '700 ' + (pw * 0.62).toFixed(1) + 'px Fredoka, system-ui, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('AUTO-ÉCOLE', 0, pw * 0.04, ph * 0.9);
+    ctx.restore();
+  }
+
+  // sourire rouge sur le capot (comme le logo Easy)
+  ctx.save();
+  ctx.translate(L * 0.26, 0);          // reculé vers le pare-brise, loin des phares
+  ctx.rotate(-Math.PI / 2);
+  ctx.strokeStyle = ROUGE;
+  ctx.lineWidth = Math.max(2, l * 0.10);
+  ctx.lineCap = 'round';
+  const rs = l * 0.30;
+  ctx.beginPath();
+  ctx.arc(0, -rs * 0.30, rs, Math.PI * 0.28, Math.PI * 0.72, false);
+  ctx.stroke();
+  ctx.restore();
+
+  // phares avant (blancs) et feux arrière (rouges)
+  ctx.fillStyle = '#e8f1ff';
+  for (const c of [-1, 1]) { roundRect(ctx, L * 0.44, c > 0 ? l * 0.22 : -l * 0.36, L * 0.05, l * 0.14, 2); ctx.fill(); }
+  ctx.fillStyle = '#7f1010';
+  for (const c of [-1, 1]) { roundRect(ctx, -L * 0.50, c > 0 ? l * 0.22 : -l * 0.36, L * 0.04, l * 0.14, 2); ctx.fill(); }
+
+  // rétroviseurs noirs
+  ctx.fillStyle = NOIR; ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 1;
+  for (const c of [-1, 1]) {
+    roundRect(ctx, L * 0.07, c === -1 ? -l/2 - 8 : l/2 + 1, 11, 7, 2);
+    ctx.fill(); ctx.stroke();
+  }
+}
+
 class Vehicule extends Entity {
-  constructor({ x, y, couleur = '#2563eb' }) {
+  constructor({ x, y, couleur = '#2563eb', variante = null }) {
     super(x, y);
-    this.couleur = couleur;
+    this.variante = variante;            // 'easy' = voiture école aux couleurs Easy
+    this.couleur = variante === 'easy' ? '#ff3131' : couleur;
     this._L = 74; this._l = 38;          // dimensions de base (monde)
     this.angle = this.angleCible = -Math.PI / 2;
     this.clignotant = null;
@@ -2317,6 +2413,13 @@ class Vehicule extends Entity {
     ctx.rotate(this.angle);
     if (this.afficherAngleMort) {
       dessinerAnglesMorts(ctx, L, l);
+    }
+    if (this.variante === 'easy') {
+      dessinerVoitureEasy(ctx, L, l);
+      this.dessinerClignotants(ctx, L, l, temps);
+      ctx.restore();
+      this.drawAccessoires(ctx);
+      return;
     }
     ctx.fillStyle = 'rgba(0,0,0,0.18)';
     roundRect(ctx, -L/2 + 3, -l/2 + 4, L, l, 10); ctx.fill();
@@ -2372,6 +2475,15 @@ class Vehicule extends Entity {
     }
     ctx.restore();
     this.drawAccessoires(ctx);
+  }
+
+  dessinerClignotants(ctx, L, l, temps) {
+    if (!(this.clignotant && (temps % 800) < 400)) return;
+    ctx.fillStyle = '#f59e0b';
+    const pos = [];
+    if (this.clignotant !== 'gauche') pos.push([L/2-6, l/2-6], [-L/2+6, l/2-6]);
+    if (this.clignotant !== 'droite') pos.push([L/2-6, -l/2+6], [-L/2+6, -l/2+6]);
+    for (const [cx, cy] of pos) { ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill(); }
   }
 
   /* Laisse + pastille de numéro : partagés avec le poids lourd */
@@ -4553,7 +4665,7 @@ const couleursVehicules = ['#2563eb', '#dc2626', '#16a34a', '#7c3aed', '#ea580c'
 const couleursPietons   = ['#0e7490', '#b45309', '#4d7c0f', '#9d174d'];
 
 let entites = [
-  new Vehicule({ x: sc.W / 2 + 46, y: sc.H * 0.82, couleur: couleursVehicules[0] }),
+  new Vehicule({ x: sc.W / 2 + 46, y: sc.H * 0.82, variante: 'easy' }),   // voiture école Easy
   new Vehicule({ x: sc.W * 0.15,  y: sc.H / 2 + 46, couleur: couleursVehicules[1] }),
 ];
 entites[1].angle = entites[1].angleCible = 0;
@@ -8186,6 +8298,17 @@ document.getElementById('btn-vehicule').addEventListener('click', () => {
     x: sc.W / 2 + (Math.random() - 0.5) * 120,
     y: sc.H * 0.85,
     couleur: couleursVehicules[nbVehicules % couleursVehicules.length],
+  });
+  nbVehicules++;
+  v.numero = nbVehicules;
+  entites.push(v);
+});
+
+document.getElementById('btn-voiture-easy').addEventListener('click', () => {
+  const v = new Vehicule({
+    x: sc.W / 2 + (Math.random() - 0.5) * 120,
+    y: sc.H * 0.85,
+    variante: 'easy',
   });
   nbVehicules++;
   v.numero = nbVehicules;
