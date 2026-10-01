@@ -1288,7 +1288,7 @@ function toutRefaire(msg) { reconstruire(); dessinerCouche(); majAide(); valider
 /* ---------------- pointeur ---------------- */
 cv.addEventListener('pointerdown', (e) => {
   if (e.button > 0 || mode === 'seance' || pinch) return;
-  cv.setPointerCapture(e.pointerId);
+  try { cv.setPointerCapture(e.pointerId); } catch (er) {}
   fermerMenu();
   const p = versMonde(e);
   geste = { id: e.pointerId, x0: e.clientX, y0: e.clientY, bouge: false, p0: p };
@@ -2210,7 +2210,7 @@ const COUL_USAGERS = ['#3b82c4', '#e0b43a', '#d64545', '#e8e8e8', '#2f9e6b', '#5
 const DIM = { ecole: [74, 38], voiture: [74, 38], camion: [150, 46], moto: [44, 18], velo: [36, 14], pieton: [16, 16] };
 const usagers = () => (scene.usagers || (scene.usagers = []));
 const aPoignee = (u) => u.type !== 'pieton';
-const longLaisse = (u) => DIM[u.type][0] / 2 + 26;
+const longLaisse = (u) => DIM[u.type][0] / 2 + Math.max(26, 30 / S);   // sur petit écran, la poignée s'éloigne un peu du capot
 
 /* ---------- dessin ---------- */
 function dessinerCamion(g, x, y, ang, coul) {
@@ -2266,8 +2266,9 @@ function dessinerLaisse(g, u, complete) {
   const fx = u.x + Math.cos(u.ang) * L / 2, fy = u.y + Math.sin(u.ang) * L / 2;
   g.save(); g.strokeStyle = '#fff'; g.globalAlpha = 0.8; g.lineWidth = 2.5; g.setLineDash([6, 5]);
   g.beginPath(); g.moveTo(fx, fy); g.lineTo(hx, hy); g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
-  g.fillStyle = '#fff'; g.beginPath(); g.arc(hx, hy, 13, 0, 7); g.fill();
-  g.fillStyle = '#2f9e6b'; g.beginPath(); g.arc(hx, hy, 7, 0, 7); g.fill();
+  const R = Math.max(13, 15 / S);                       // au moins ~15 px à l'écran, assez gros pour le doigt
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(hx, hy, R, 0, 7); g.fill();
+  g.fillStyle = '#2f9e6b'; g.beginPath(); g.arc(hx, hy, R * 0.55, 0, 7); g.fill();
   g.restore();
 }
 
@@ -2343,7 +2344,7 @@ function usagerSous(p) {
   return best;
 }
 function laisseSous(p) {
-  let best = null, bd = 30;
+  let best = null, bd = Math.max(30, 28 / S);          // zone de prise ≥ 28 px à l'écran
   for (const u of usagers()) if (aPoignee(u)) { const [hx, hy] = poignee(u), d = Math.hypot(p[0] - hx, p[1] - hy); if (d < bd) { bd = d; best = u; } }
   return best;
 }
@@ -2362,7 +2363,7 @@ function caleSurVoie(u) {
   if (P && Math.hypot(P.x - u.x, P.y - u.y) < 40) { u.x = P.x; u.y = P.y; u.ang = P.cap; }
 }
 function seanceDown(e) {
-  cv.setPointerCapture(e.pointerId);
+  try { cv.setPointerCapture(e.pointerId); } catch (er) {}
   const p = versMonde(e);
   const G = seance.geste = { id: e.pointerId, x0: e.clientX, y0: e.clientY, p0: p, p, bouge: false };
   fermerMenu();
@@ -2419,10 +2420,18 @@ function seanceUp(e) {
 function majSelSeance() {
   const b = $('selbar-seance'), u = seance.sel;
   if (!u || seance.lecture || mode !== 'seance' || seance.presentation) { b.classList.remove('ouvert'); return; }
-  // la barre se place À L'ARRIÈRE du véhicule, pour ne jamais cacher la poignée
-  const d = DIM[u.type][0] / 2 + 46, [sx, sy] = versEcran(u.x - Math.cos(u.ang) * d, u.y - Math.sin(u.ang) * d);
+  // la barre ne doit JAMAIS couvrir la poignée ni le véhicule : on essaie derrière, puis sur les côtés, sinon en haut
   b.classList.add('ouvert'); const w = b.offsetWidth || 220, h = b.offsetHeight || 52;
-  b.style.left = Math.max(w / 2 + 12, Math.min(VW - w / 2 - 12, sx)) + 'px'; b.style.top = Math.max(76 + h, Math.min(VH - 90, sy + h / 2)) + 'px';
+  const L = DIM[u.type][0], [hx, hy] = versEcran(...poignee(u)), [cx, cy] = versEcran(u.x, u.y), r = (L / 2) * S + 24;
+  const ca = Math.cos(u.ang), sa = Math.sin(u.ang), cands = [];
+  for (const [dx, dy] of [[-ca, -sa], [-sa, ca], [sa, -ca]]) cands.push([cx + dx * (r + h * 0.7 + 10), cy + dy * (r + h * 0.7 + 10)]);
+  const libre = ([x, y]) => {
+    const x0 = x - w / 2, y0 = y - h / 2, dans = (px, py, m) => px > x0 - m && px < x0 + w + m && py > y0 - m && py < y0 + h + m;
+    return x0 >= 8 && x0 + w <= VW - 8 && y0 >= 64 && y0 + h <= VH - 66 && !dans(hx, hy, 34) && !dans(cx, cy, r * 0.6);
+  };
+  let pos = cands.find(libre);
+  if (!pos) pos = [VW / 2, (VW < 900 || VH < 520 ? 60 : 84) + h / 2 + 4];
+  b.style.left = pos[0] + 'px'; b.style.top = (pos[1] + h / 2) + 'px';
   $('ss-cligG').classList.toggle('on', u.cligno === 'gauche' || u.cligno === 'warning'); $('ss-cligD').classList.toggle('on', u.cligno === 'droite' || u.cligno === 'warning');
   $('ss-frein').classList.toggle('on', !!u.frein);
   ['ss-cligG', 'ss-cligD', 'ss-frein'].forEach((id) => ($(id).style.display = aPoignee(u) ? '' : 'none'));
