@@ -1399,7 +1399,7 @@ function finGeste(e) {
     const t = construireTrace(g.pts);
     if (t) {
       const avant = new Set(geo.carrefours.map((c) => c.cle));
-      scene.routes.push({ id: scene.id++, pts: t.pts.map(([x, y]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10]) });
+      scene.routes.push({ id: scene.id++, pts: t.pts.map(([x, y]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10]), axe: 'aucune' });   // route nue : le moniteur pose ses lignes
       reconstruire(); dessinerCouche(); majAide();
       const neufs = geo.carrefours.filter((c) => !avant.has(c.cle));
       valider(neufs.length ? 'Nouveau carrefour : touche-le pour le régler' : null);
@@ -1436,9 +1436,9 @@ function finGeste(e) {
     if (choixTiroir.sol === 'axe') {
       const n = routeLaPlusProche(p);
       if (n && n.d < LR / 2) {
-        const r = n.g.r, suite = { discontinue: 'continue', continue: 'aucune', aucune: 'discontinue' };
+        const r = n.g.r, suite = { aucune: 'discontinue', discontinue: 'continue', continue: 'aucune' };
         r.axe = suite[r.axe || 'discontinue'];
-        dessinerCouche(); valider('Ligne du milieu : ' + r.axe);
+        dessinerCouche(); valider({ aucune: 'Ligne du milieu enlevée', discontinue: 'Ligne du milieu discontinue', continue: 'Ligne du milieu continue' }[r.axe]);
       }
       return;
     }
