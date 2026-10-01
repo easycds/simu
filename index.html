@@ -749,7 +749,7 @@ function panneauGiratoire(u, v, angle) {
 const MONDE = { W: 1280, H: 1150 };
 const LR = 150, TR = 20;              // largeur route (2 voies) / trottoir
 const M1 = 21;                        // 1 m ≈ 21 unités monde
-const TIRET = 3 * M1, VIDE = 1.33 * M1; // ligne axiale d'agglomération type T3 : 3 m de trait, 1,33 m de vide (IISR art. 114-5)
+const TIRET = 1.5 * M1, VIDE = 0.75 * M1; // ligne discontinue : trait raccourci (demande moniteur), même rythme que T3
 const PP_FEUX = LR / 2 + TR + 36;       // centre du passage piéton aux feux
 const D_FEUX = PP_FEUX + 27.5 + 14;      // ligne d'effet des feux : en amont du passage piéton (IISR art. 117-4.C)
 const distLigne = (c) => c.type === 'feux' ? D_FEUX : DEGAGE;
