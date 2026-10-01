@@ -157,6 +157,7 @@
   <button class="btn" id="m-ouvrir-simu"><svg viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"/></svg>Ouvrir une scène du simulateur</button>
   <button class="btn" id="m-envoyer"><svg viewBox="0 0 24 24"><path d="M5 12h12M13 6l6 6-6 6"/></svg>Ouvrir dans l'ancienne version</button>
   <div class="sep-h"></div>
+  <button class="btn" id="m-cours"><svg viewBox="0 0 24 24"><path d="M4 5h7a2 2 0 012 2v12a2 2 0 00-2-2H4zM20 5h-7a2 2 0 00-2 2v12a2 2 0 012-2h7z"/></svg>Scènes du cours</button>
   <button class="btn" id="m-demo1"><svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="20" rx="3"/><circle cx="12" cy="7" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="17" r="1.5"/></svg>Démo feux · croisement classique</button>
   <button class="btn" id="m-demo2"><svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="20" rx="3"/><circle cx="12" cy="7" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="17" r="1.5"/></svg>Démo feux · à l'indonésienne</button>
   <button class="btn" id="m-exemple"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></svg>Charger l'exemple</button>
@@ -853,7 +854,8 @@ function reconstruire() {
     const cle = Math.round(p[0]) + ',' + Math.round(p[1]);
     const reg = scene.regimes.find((q) => Math.hypot(q.x - p[0], q.y - p[1]) < 45);
     const traversantes = membres.filter((m) => branches.filter((b) => b.id === m.id).length === 2).map((m) => m.id);
-    let prio = reg && membres.some((m) => m.id === reg.prio) ? reg.prio : (traversantes[0] ?? membres[0].id);
+    const tous = reg && reg.prio === 0 && (reg.type === 'stop' || reg.type === 'cedez');      // STOP / cédez sur toutes les branches
+    let prio = tous ? 0 : reg && membres.some((m) => m.id === reg.prio) ? reg.prio : (traversantes[0] ?? membres[0].id);
     geo.carrefours.push({ x: p[0], y: p[1], cle, membres, branches, type: reg ? reg.type : 'aucun', prio, reg });
   }
   // 3) panneaux + lignes automatiques
@@ -1000,7 +1002,7 @@ function dessinerRoutes(g) {
     g.restore();
   }
 }
-const LIGNES = new Set(['ligne_stop', 'ligne_cedez', 'ligne_feux', 'ligne_continue', 'ligne_discontinue']);
+const LIGNES = new Set(['ligne_stop', 'ligne_cedez', 'ligne_feux', 'ligne_continue', 'ligne_discontinue', 'ligne_guidage', 'ligne_bus']);
 const VIGNETTES = new Set(['zebra', 'ralentisseur', 'stationnement', 'pmr', 'triangle_cedez', 'sas_velo']);
 function milieu(m) { m.x = (m.x1 + m.x2) / 2; m.y = (m.y1 + m.y2) / 2; }
 function dessinerLigne(g, m) {
@@ -1010,6 +1012,8 @@ function dessinerLigne(g, m) {
   else if (m.type === 'ligne_cedez') for (let x = 0; x < L; x += 21) g.fillRect(x, -5.25, Math.min(10.5, L - x), 10.5);
   else if (m.type === 'ligne_feux') for (let x = 0; x < L; x += 21) g.fillRect(x, -1.6, Math.min(10.5, L - x), 3.2);
   else if (m.type === 'ligne_continue') g.fillRect(0, -1.5, L, 3);
+  else if (m.type === 'ligne_guidage') for (let x = 0; x < L; x += M1) g.fillRect(x, -1.1, Math.min(M1 / 2, L - x), 2.2);   // T'2, 10 cm
+  else if (m.type === 'ligne_bus') for (let x = 0; x < L; x += TIRET + VIDE) g.fillRect(x, -3.2, Math.min(TIRET, L - x), 6.4);   // couloir bus : T3 large
   else for (let x = 0; x < L; x += TIRET + VIDE) g.fillRect(x, -1.5, Math.min(TIRET, L - x), 3);
   g.restore();
 }
@@ -1017,6 +1021,8 @@ function dessinerMarque(g, m) {
   if (LIGNES.has(m.type)) { dessinerLigne(g, m); return; }
   g.save(); g.translate(m.x, m.y); g.fillStyle = PEINT;
   if (VIGNETTES.has(m.type)) { g.rotate(m.ang + Math.PI / 2); g.scale(0.7, 0.7); g.translate(-120, -120); marquageV2(g, m.type, 240, 240); g.restore(); return; }
+  if (m.type === 'zone_zebra') { zoneZebra(g, m); g.restore(); return; }
+  if (m.type === 'texte') { g.rotate((m.ang || 0) + Math.PI / 2); g.scale(1, 2.2); g.font = '800 ' + (m.taille || 22) + 'px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(m.texte || '', 0, 0); g.restore(); return; }
   if (m.type === 'passage_pieton') {
     g.rotate(m.ang);
     const lp = m.larg || LR;
@@ -1025,7 +1031,22 @@ function dessinerMarque(g, m) {
   else { g.rotate(m.ang + Math.PI / 2); flecheSol(g, m.type, 88); }
   g.restore();
 }
+function zoneZebra(g, m) {           // îlot zébré : contour + hachures à 45° (pts relatifs au centre)
+  const P = m.pts || [], a = m.ang || 0; if (P.length < 3) return;
+  g.rotate(a); g.beginPath(); P.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath();
+  g.save(); g.clip(); g.strokeStyle = PEINT; g.lineWidth = 6;
+  let R = 0; for (const [x, y] of P) R = Math.max(R, Math.hypot(x, y));
+  g.beginPath(); for (let k = -2 * R; k < 2 * R; k += 18) { g.moveTo(k - R, -R); g.lineTo(k + R, R); } g.stroke(); g.restore();
+  g.beginPath(); P.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath();
+  g.strokeStyle = PEINT; g.lineWidth = 3; g.stroke();
+}
+function terreplein(g, d) {
+  g.save(); g.translate(d.x, d.y); g.rotate(d.ang || 0); const w = d.w || 110, h = d.h || 28;
+  g.fillStyle = TROT; g.beginPath(); g.roundRect(-w / 2, -h / 2, w, h, h / 2); g.fill();
+  g.fillStyle = '#7fae74'; g.beginPath(); g.roundRect(-w / 2 + 4, -h / 2 + 4, w - 8, h - 8, h / 2 - 4); g.fill(); g.restore();
+}
 function dessinerDecor(d) {
+  if (d.type === 'terreplein') { terreplein(ctx, d); return; }
   if (d.type === 'arbre') arbre(d.x, d.y, 34);
   else if (d.type === 'buisson') arbre(d.x, d.y, 20);
   else maison(d.x, d.y, d.w || 170, d.h || 130, d.ang || 0, d.type === 'maison_grise' ? '#7d8791' : '#b5654a');
@@ -1252,7 +1273,7 @@ function objetSous(p) {
   for (const c of cands) {
     let d = Math.hypot(p[0] - c.obj.x, p[1] - c.obj.y), r = rayonObjet(c);
     if (c.kind === 'marque' && LIGNES.has(c.obj.type)) { d = distSeg(p, [c.obj.x1, c.obj.y1], [c.obj.x2, c.obj.y2]); r = 18; }
-    if (c.kind === 'decor' && c.obj.type.startsWith('maison')) {       // rectangle
+    if (c.kind === 'decor' && (c.obj.type.startsWith('maison') || c.obj.type === 'terreplein')) {       // rectangle
       const a = -(c.obj.ang || 0), dx = p[0] - c.obj.x, dy = p[1] - c.obj.y;
       const lx = dx * Math.cos(a) - dy * Math.sin(a), ly = dx * Math.sin(a) + dy * Math.cos(a);
       d = Math.abs(lx) < (c.obj.w || 170) / 2 && Math.abs(ly) < (c.obj.h || 130) / 2 ? 0 : Infinity; r = 1;
@@ -1479,11 +1500,12 @@ function ouvrirRegime(c) {
   const autres = c.membres.map((m) => m.id);
   inv.style.display = (c.type === 'stop' || c.type === 'cedez' || c.type === 'feux') && autres.length > 1 ? 'block' : 'none';
   inv.onclick = () => {
-    const i = autres.indexOf(c.prio), prio = autres[(i + 1) % autres.length];
+    const cycle = c.type === 'feux' ? autres : [...autres, 0];        // 0 = toutes les branches
+    const i = cycle.indexOf(c.prio), prio = cycle[(i + 1) % cycle.length];
     retirerDetaches(c);
     scene.regimes = scene.regimes.filter((r) => r !== c.reg);
     scene.regimes.push({ x: Math.round(c.x), y: Math.round(c.y), type: c.type, prio, croisement: croisementDe(c) });
-    reconstruire(); dessinerCouche(); valider('Priorité changée');
+    reconstruire(); dessinerCouche(); valider(prio === 0 ? (c.type === 'stop' ? 'STOP sur toutes les branches' : 'Cédez sur toutes les branches') : 'Priorité changée');
     const n = geo.carrefours.find((q) => Math.hypot(q.x - c.x, q.y - c.y) < 5); if (n) ouvrirRegime(n);
   };
   const cr = $('croisement'), carre = c.branches.length >= 4;
@@ -1819,7 +1841,13 @@ function avancerTest() {
     test.vehicules.forEach((w, iw) => {
       if (w === v) return;
       const q = P[iw], dx = q.x - p.x, dy = q.y - p.y, av = dx * p.hx + dy * p.hy, lat = Math.abs(dx * p.hy - dy * p.hx);
-      if (p.hx * q.hx + p.hy * q.hy < 0.35) return;
+      if (p.hx * q.hx + p.hy * q.hy < 0.35) {                // véhicule en travers juste devant : on ne le percute pas
+        if (av > 0 && av < 82 && lat < 36) {
+          const bx = -dx, by = -dy, av2 = bx * q.hx + by * q.hy, lat2 = Math.abs(bx * q.hy - by * q.hx);
+          if (!(av2 > 0 && av2 < 82 && lat2 < 36) || iv > iw) cible = 0;   // s'ils se gênent mutuellement, un seul attend
+        }
+        return;
+      }
       if (av > 0 && lat < 26) { if (av < 90) cible = 0; else if (av < 140) cible = Math.min(cible, 1.1); }
     });
     v.cligno = null;
@@ -1836,10 +1864,24 @@ function avancerTest() {
           if (c.type === 'feux') { const et = etatFeu(c.cle, e.route); ok = et === 'vert' || (et === 'orange' && reste < 8); }
           else if ((c.type === 'stop' || c.type === 'cedez') && e.secondaire) {
             const libre = !test.vehicules.some((w) => {
-              if (w === v) return false; const ew = evtEnCours(w, c.cle); if (!ew || ew.secondaire) return false;
+              if (w === v) return false; const ew = evtEnCours(w, c.cle); if (!ew) return false;
+              if (c.prio === 0) return w.passes.has('L' + c.cle + ew.i) && w.s < ew.sFin;   // STOP partout : un seul à la fois dans le carrefour
+              if (ew.secondaire) return false;
               return ew.sArret - w.s < 260;
             });
             if (c.type === 'stop') { if (reste <= 1) v.attente++; ok = v.attente > 55 && libre; } else ok = libre;
+          }
+          else if (c.type === 'pad' || c.type === 'aucun') {        // sans panneau = priorité à droite
+            const [dx, dy] = droiteDe(e.hi[0], e.hi[1]);
+            const gene = test.vehicules.some((w) => {
+              if (w === v) return false; const ew = evtEnCours(w, c.cle); if (!ew) return false;
+              if (w.passes.has('L' + c.cle + ew.i)) return w.s < ew.sFin && ew.hi[0] * e.hi[0] + ew.hi[1] * e.hi[1] < 0.7;   // déjà engagé en travers
+              const rw = ew.sLigne - w.s - 38;
+              if (rw < 30 && w.v > 1 && ew.hi[0] * e.hi[0] + ew.hi[1] * e.hi[1] < 0.7) return true;                         // lancé, il ne s'arrêtera plus
+              return ew.hi[0] * dx + ew.hi[1] * dy < -0.7 && rw < 280;                                       // arrive de ma droite
+            });
+            if (reste <= 1) v.attente++;
+            ok = !gene || v.attente > 160;                              // évite le blocage à 4
           }
           if (!ok && reste <= 1) v.pret = v.reaction;                  // arrêté : temps de réaction au redémarrage
           else if (ok && v.v < 0.2 && v.pret > 0) { v.pret--; ok = false; }
@@ -1857,7 +1899,8 @@ function avancerTest() {
             if (w === v) return false; const ew = evtEnCours(w, c.cle); if (!ew || ew.tv === 'gauche') return false;
             if (ew.hi[0] * e.hi[0] + ew.hi[1] * e.hi[1] > -0.7) return false;              // pas en face
             if (c.type === 'feux' && w.s < ew.sArret - 38 && etatFeu(c.cle, ew.route) !== 'vert') return false;
-            return ew.sArret - w.s < 240;
+            if ((c.type === 'stop' || c.type === 'cedez') && ew.secondaire && !w.passes.has('L' + c.cle + ew.i)) return false;   // encore arrêté à sa ligne
+            return ew.sArret - w.s < (c.type === 'feux' ? 360 : 240);
           });
           if (gene) { cible = r2 <= 1 ? 0 : Math.min(cible, Math.max(0.3, r2 / 25)); break; }
         }
@@ -2043,11 +2086,14 @@ function versFormatSimu() {
     if (m.type === 'passage_pieton') passage(m);
     else if (m.type === 'velo') velo(m);
     else if (m.type.startsWith('fleche_')) { const hx = Math.cos(m.ang), hy = Math.sin(m.ang); ligne2(m.type, m.x - hx * 44, m.y - hy * 44, m.x + hx * 44, m.y + hy * 44); }
-    else if (LIGNES.has(m.type)) ligne2({ ligne_stop: 'stop', ligne_cedez: 'cedez', ligne_feux: 'ligne_effet' }[m.type] || m.type, m.x1, m.y1, m.x2, m.y2);
+    else if (LIGNES.has(m.type)) ligne2({ ligne_stop: 'stop', ligne_cedez: 'cedez', ligne_feux: 'ligne_effet', ligne_bus: 'voie_bus' }[m.type] || m.type, m.x1, m.y1, m.x2, m.y2);
+    else if (m.type === 'zone_zebra') { const c = Math.cos(m.ang || 0), sn = Math.sin(m.ang || 0); marquages.push({ type: 'zebra', pts: m.pts.map(([x, y]) => nrm(m.x + x * c - y * sn, m.y + x * sn + y * c)), arrondi: false, jaune: false }); }
+    else if (m.type === 'texte') { const hx = Math.cos(m.ang), hy = Math.sin(m.ang); marquages.push({ type: 'texte_sol', texte: m.texte, pts: [nrm(m.x - hx * 10, m.y - hy * 10), nrm(m.x + hx * 10, m.y + hy * 10)], arrondi: false, jaune: false }); }
     else ignores++;
   }
   for (const p of [...geo.autoPanneaux, ...scene.panneaux]) panneaux.push({ type: p.type, ...nrm(p.x, p.y), taille: T_PAN, etatFeu: 'rouge', angle: +(p.ang || 0).toFixed(4) });
   for (const d of scene.decor) {
+    if (d.type === 'terreplein') { batiments.push({ type: 'terreplein', ...nrm(d.x, d.y), w: +((d.w || 110) / MONDE.W).toFixed(5), h: +((d.h || 28) / MONDE.H).toFixed(5), ...(d.ang ? { angle: d.ang } : {}) }); continue; }
     const arbre = d.type === 'arbre' || d.type === 'buisson', t = d.type === 'arbre' ? 68 : 40;
     batiments.push({ type: arbre ? 'buisson' : d.type === 'maison_grise' ? 'immeuble' : 'maison', ...nrm(d.x, d.y), w: +((arbre ? t : d.w || 170) / MONDE.W).toFixed(5), h: +((arbre ? t : d.h || 130) / MONDE.H).toFixed(5), ...(d.ang ? { angle: d.ang } : {}) });
   }
@@ -2079,7 +2125,17 @@ function depuisFormatSimu(s, nom) {
     if (m.type === 'stop') seg('ligne_stop');
     else if (m.type === 'cedez') seg('ligne_cedez');
     else if (m.type === 'ligne_effet') seg('ligne_feux');
-    else if (m.type === 'ligne_continue' || m.type === 'ligne_discontinue') seg(m.type);
+    else if (m.type === 'ligne_continue' || m.type === 'ligne_discontinue' || m.type === 'ligne_guidage') seg(m.type);
+    else if (m.type === 'voie_bus') seg('ligne_bus');
+    else if (m.type === 'bande_cyclable') seg('ligne_discontinue');
+    else if (m.type === 'zebra') {
+      const pp = []; for (const q of m.pts.map(P)) if (!pp.length || dist(pp[pp.length - 1], q) > 2) pp.push(q);
+      if (pp.length > 2 && dist(pp[0], pp[pp.length - 1]) < 2) pp.pop();
+      if (pp.length < 3) { ignores++; continue; }
+      const cx = pp.reduce((t, q) => t + q[0], 0) / pp.length, cy = pp.reduce((t, q) => t + q[1], 0) / pp.length;
+      sc.marques.push({ type: 'zone_zebra', x: cx, y: cy, ang: 0, pts: pp.map(([x, y]) => [Math.round(x - cx), Math.round(y - cy)]) });
+    }
+    else if (m.type === 'texte_sol') { const L = Math.hypot(b[0] - a[0], b[1] - a[1]); sc.marques.push({ type: 'texte', x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2, ang, texte: m.texte || '', taille: Math.max(14, Math.min(26, L * 0.6)) }); }
     else if (m.type === 'passage_pieton') { const L = Math.hypot(b[0] - a[0], b[1] - a[1]); sc.marques.push({ type: 'passage_pieton', x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2, ang: ang - Math.PI / 2, ...(Math.abs(L - LR) > 20 ? { larg: L } : {}) }); }
     else if (m.type.startsWith('fleche_')) { const L = Math.max(54, Math.hypot(b[0] - a[0], b[1] - a[1])); sc.marques.push({ type: m.type, x: a[0] + Math.cos(ang) * L / 2, y: a[1] + Math.sin(ang) * L / 2, ang }); }
     else if (m.type === 'velo') sc.marques.push({ type: 'velo', x: a[0], y: a[1], ang });
@@ -2089,6 +2145,8 @@ function depuisFormatSimu(s, nom) {
   for (const d of s.batiments || []) {
     if (d.type === 'buisson') sc.decor.push({ type: d.w * W > 50 ? 'arbre' : 'buisson', x: d.x * W, y: d.y * H, ang: 0 });
     else if (['maison', 'immeuble', 'ecole', 'parking'].includes(d.type)) sc.decor.push({ type: d.type === 'maison' ? 'maison' : 'maison_grise', x: d.x * W, y: d.y * H, w: d.w * W, h: d.h * H, ang: d.angle || 0 });
+    else if (d.type === 'terreplein') sc.decor.push({ type: 'terreplein', x: d.x * W, y: d.y * H, w: d.w * W, h: d.h * H, ang: d.angle || 0 });
+    else if (d.type === 'voiture') (sc.usagers || (sc.usagers = [])).push({ id: sc.usagers.length + 1, type: 'voiture', x: d.x * W, y: d.y * H, ang: d.angle || 0, coul: d.couleur || '#5b6270' });
     else ignores++;
   }
   if ((s.pinceau || []).length) ignores++;
@@ -2097,6 +2155,7 @@ function depuisFormatSimu(s, nom) {
 function ouvrirListeSimu() {
   const toutes = lireScenesSimu(), noms = Object.keys(toutes).sort((a, b) => a.localeCompare(b));
   const box = $('liste-scenes'), ul = $('ls-noms'); ul.innerHTML = '';
+  box.querySelector('h4').textContent = 'Mes scènes du simulateur'; box.querySelector('p').textContent = 'Elles s\u2019ouvrent ici pour être modifiées. Le simulateur garde l\u2019original.';
   if (!noms.length) ul.innerHTML = '<p class="ls-vide">Aucune scène enregistrée dans le simulateur sur cet appareil.</p>';
   for (const nm of noms) {
     const b = document.createElement('button'); b.className = 'ls-item'; b.textContent = nm;
@@ -2540,6 +2599,95 @@ function boucle() {
   if (sale || test) rendre();
   requestAnimationFrame(boucle);
 }
+
+
+/* =====================================================================
+   SCÈNES DU COURS — reprises de l'ancien simulateur, refaites pour le nouveau
+   (régimes automatiques là où c'est possible : lignes, panneaux, feux, sas, passages)
+   ===================================================================== */
+const ANCIENNES = {"s_feux7sonnettes":{"routes":[{"pts":[{"x":0.42188,"y":0.07652},{"x":0.42188,"y":0.96696}],"largeur":150,"trottoir":false,"arrondi":false,"boutsDroits":false},{"pts":[{"x":-0.43646,"y":0.46957},{"x":1.21042,"y":0.46957},{"x":1.21042,"y":0.46957}],"largeur":150,"trottoir":false,"arrondi":true,"boutsDroits":false},{"pts":[{"x":0.50977,"y":0.09609},{"x":0.50977,"y":0.93087}],"largeur":150,"trottoir":false,"arrondi":true,"boutsDroits":false},{"pts":[{"x":-0.15469,"y":0.53783},{"x":1.15313,"y":0.53783}],"largeur":150,"trottoir":false,"arrondi":true,"boutsDroits":false}],"marquages":[{"type":"passage_pieton","pts":[{"x":0.56644,"y":0.33998},{"x":0.36332,"y":0.33998}],"arrondi":true,"jaune":false},{"type":"cedez","pts":[{"x":0.37539,"y":0.37391},{"x":0.56289,"y":0.37391}],"arrondi":true,"jaune":false},{"type":"cedez","pts":[{"x":0.37617,"y":0.3987},{"x":0.56367,"y":0.3987}],"arrondi":true,"jaune":false},{"type":"zigzag_bus","pts":[{"x":0.55329,"y":0.18},{"x":0.55329,"y":0.26695}],"arrondi":true,"jaune":false},{"type":"texte_sol","pts":[{"x":0.55159,"y":0.2939},{"x":0.55159,"y":0.2765}],"arrondi":true,"jaune":false,"texte":"BUS"},{"type":"voie_bus","pts":[{"x":0.3832,"y":0.27609},{"x":0.3832,"y":0.2413},{"x":0.3832,"y":0.2587}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.53086,"y":0.26478},{"x":0.53086,"y":0.23},{"x":0.53086,"y":0.24739}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.38633,"y":0.23304},{"x":0.38633,"y":0.19826},{"x":0.38633,"y":0.21565}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.5514,"y":0.82489},{"x":0.5514,"y":0.79011},{"x":0.5514,"y":0.8075}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.18478,"y":0.58504},{"x":0.15821,"y":0.58504},{"x":0.17149,"y":0.58504}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.22587,"y":0.58511},{"x":0.19931,"y":0.58511},{"x":0.21259,"y":0.58511}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.10726,"y":0.58585},{"x":0.08069,"y":0.58585},{"x":0.09397,"y":0.58585}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.14444,"y":0.58548},{"x":0.11788,"y":0.58548},{"x":0.13116,"y":0.58548}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.02973,"y":0.5864},{"x":0.00316,"y":0.5864},{"x":0.01645,"y":0.5864}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.06691,"y":0.58603},{"x":0.04035,"y":0.58603},{"x":0.05363,"y":0.58603}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":-0.0291,"y":0.5687},{"x":-0.06035,"y":0.5687},{"x":-0.04473,"y":0.5687}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.55134,"y":0.7505},{"x":0.55134,"y":0.78006},{"x":0.55134,"y":0.76528}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.5514,"y":0.70476},{"x":0.5514,"y":0.73432},{"x":0.5514,"y":0.71954}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.54905,"y":0.86525},{"x":0.54905,"y":0.89481},{"x":0.54905,"y":0.88003}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.54871,"y":0.82386},{"x":0.54871,"y":0.85342},{"x":0.54871,"y":0.83864}],"arrondi":false,"jaune":false},{"type":"ligne_discontinue","pts":[{"x":0.425,"y":0.2713},{"x":0.425,"y":0.13565}],"arrondi":false,"jaune":false},{"type":"ligne_discontinue","pts":[{"x":0.50977,"y":0.85435},{"x":0.50977,"y":0.7187}],"arrondi":false,"jaune":false},{"type":"ligne_discontinue","pts":[{"x":0.22875,"y":0.54486},{"x":-0.13688,"y":0.54486}],"arrondi":false,"jaune":false},{"type":"ligne_discontinue","pts":[{"x":1.12695,"y":0.46348},{"x":0.70039,"y":0.46348}],"arrondi":false,"jaune":false},{"type":"passage_pieton","pts":[{"x":0.29062,"y":0.4087},{"x":0.29062,"y":0.6}],"arrondi":false,"jaune":false},{"type":"passage_pieton","pts":[{"x":0.64023,"y":0.40391},{"x":0.64023,"y":0.59522}],"arrondi":false,"jaune":false},{"type":"passage_pieton","pts":[{"x":0.36914,"y":0.65174},{"x":0.57539,"y":0.65174}],"arrondi":false,"jaune":false},{"type":"ligne_effet","pts":[{"x":0.38477,"y":0.28609},{"x":0.46445,"y":0.28609}],"arrondi":false,"jaune":false},{"type":"ligne_effet","pts":[{"x":0.38481,"y":0.30935},{"x":0.46449,"y":0.30935}],"arrondi":false,"jaune":false},{"type":"ligne_effet","pts":[{"x":0.23965,"y":0.59765},{"x":0.23965,"y":0.50452}],"arrondi":false,"jaune":false},{"type":"ligne_effet","pts":[{"x":0.26113,"y":0.59804},{"x":0.26113,"y":0.50935}],"arrondi":false,"jaune":false},{"type":"ligne_effet","pts":[{"x":0.47598,"y":0.68109},{"x":0.55566,"y":0.68109}],"arrondi":false,"jaune":false},{"type":"ligne_effet","pts":[{"x":0.47715,"y":0.7037},{"x":0.55684,"y":0.7037}],"arrondi":false,"jaune":false},{"type":"ligne_effet","pts":[{"x":0.67051,"y":0.50022},{"x":0.67051,"y":0.41152}],"arrondi":false,"jaune":false},{"type":"ligne_effet","pts":[{"x":0.69199,"y":0.49978},{"x":0.69199,"y":0.41109}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.82547,"y":0.41774},{"x":0.79227,"y":0.41774},{"x":0.80887,"y":0.41774}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.72857,"y":0.41875},{"x":0.69537,"y":0.41875},{"x":0.71197,"y":0.41875}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.77506,"y":0.41829},{"x":0.74185,"y":0.41829},{"x":0.75846,"y":0.41829}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.4668,"y":0.31304},{"x":0.4668,"y":0.13913}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.47422,"y":0.85304},{"x":0.47422,"y":0.67913}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.96883,"y":0.41731},{"x":0.93563,"y":0.41731},{"x":0.95223,"y":0.41731}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.87193,"y":0.41832},{"x":0.83873,"y":0.41832},{"x":0.85533,"y":0.41832}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.91842,"y":0.41785},{"x":0.88521,"y":0.41785},{"x":0.90181,"y":0.41785}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.53086,"y":0.30783},{"x":0.53086,"y":0.27304},{"x":0.53086,"y":0.29043}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.66758,"y":0.50348},{"x":2.5582,"y":0.50348}],"arrondi":false,"jaune":false},{"type":"zebra","pts":[{"x":0.2332,"y":0.45345},{"x":0.2332,"y":0.48267},{"x":-0.01289,"y":0.48267},{"x":0.00352,"y":0.45345},{"x":0.00352,"y":0.45345},{"x":0.00352,"y":0.45345}],"arrondi":false,"jaune":false},{"type":"fleche_droit","pts":[{"x":0.18252,"y":0.42995},{"x":0.1669,"y":0.42995}],"arrondi":false,"jaune":false},{"type":"fleche_gauche","pts":[{"x":0.1876,"y":0.53776},{"x":0.20089,"y":0.53776}],"arrondi":false,"jaune":false},{"type":"fleche_td_droite","pts":[{"x":0.18633,"y":0.55522},{"x":0.19961,"y":0.55522}],"arrondi":false,"jaune":false},{"type":"fleche_td_droite","pts":[{"x":0.41328,"y":0.23435},{"x":0.41328,"y":0.25174}],"arrondi":false,"jaune":false},{"type":"fleche_gauche","pts":[{"x":0.43789,"y":0.24383},{"x":0.43789,"y":0.26748}],"arrondi":false,"jaune":false},{"type":"fleche_gauche","pts":[{"x":0.72617,"y":0.47435},{"x":0.71289,"y":0.47435}],"arrondi":false,"jaune":false},{"type":"fleche_td_droite","pts":[{"x":0.74063,"y":0.45043},{"x":0.72734,"y":0.45043}],"arrondi":false,"jaune":false},{"type":"fleche_td_droite","pts":[{"x":0.52535,"y":0.76756},{"x":0.52465,"y":0.72983}],"arrondi":false,"jaune":false},{"type":"fleche_gauche","pts":[{"x":0.49931,"y":0.74944},{"x":0.49931,"y":0.73466}],"arrondi":false,"jaune":false},{"type":"fleche_droite","pts":[{"x":0.75889,"y":0.52364},{"x":0.77158,"y":0.51549}],"arrondi":false,"jaune":false},{"type":"ligne_discontinue","pts":[{"x":0.82813,"y":0.52174},{"x":0.82813,"y":0.52174},{"x":0.82813,"y":0.52174},{"x":0.84375,"y":0.52174}],"arrondi":false,"jaune":false},{"type":"fleche_droit","pts":[{"x":0.85586,"y":0.56174},{"x":0.87148,"y":0.56174}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.79637,"y":0.58622},{"x":0.76317,"y":0.58622},{"x":0.77977,"y":0.58622}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.69947,"y":0.58723},{"x":0.66627,"y":0.58723},{"x":0.68287,"y":0.58723}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.74596,"y":0.58677},{"x":0.71275,"y":0.58677},{"x":0.72935,"y":0.58677}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.93973,"y":0.58579},{"x":0.90653,"y":0.58579},{"x":0.92313,"y":0.58579}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.84283,"y":0.58679},{"x":0.80963,"y":0.58679},{"x":0.82623,"y":0.58679}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.88931,"y":0.58633},{"x":0.85611,"y":0.58633},{"x":0.87271,"y":0.58633}],"arrondi":false,"jaune":false},{"type":"fleche_droite","pts":[{"x":0.70499,"y":0.52408},{"x":0.71767,"y":0.51592}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.98965,"y":0.58609},{"x":0.95645,"y":0.58609},{"x":0.97305,"y":0.58609}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.53041,"y":0.17894},{"x":0.53041,"y":0.14416},{"x":0.53041,"y":0.16155}],"arrondi":false,"jaune":false},{"type":"voie_bus","pts":[{"x":0.53041,"y":0.22198},{"x":0.53041,"y":0.1872},{"x":0.53041,"y":0.20459}],"arrondi":false,"jaune":false}],"panneaux":[{"type":"feu","x":0.58672,"y":0.69739,"taille":44,"etatFeu":"rouge","angle":0},{"type":"feu","x":0.24297,"y":0.61783,"taille":44,"etatFeu":"rouge","angle":1.5708},{"type":"feu","x":0.34492,"y":0.2913,"taille":44,"etatFeu":"rouge","angle":3.14159},{"type":"feu","x":0.68789,"y":0.38696,"taille":44,"etatFeu":"rouge","angle":-1.5708}],"pinceau":[{"x":599,"y":582,"taille":50,"forme":"cercle","couleur":"marquage"},{"x":604.49219,"y":582.41477,"taille":55,"forme":"cercle","couleur":"blanc"}],"batiments":[{"type":"terreplein","x":0.19531,"y":0.49783,"w":0.08594,"h":0.02391,"angle":0},{"type":"terreplein","x":0.11016,"y":0.49783,"w":0.08594,"h":0.02391,"angle":0},{"type":"terreplein","x":0.0334,"y":0.49783,"w":0.08594,"h":0.02391,"angle":0},{"type":"buisson","x":0.01224,"y":0.49609,"w":0.02109,"h":0.02348,"angle":0},{"type":"buisson","x":0.03607,"y":0.49696,"w":0.02109,"h":0.02348,"angle":0},{"type":"buisson","x":0.06302,"y":0.49652,"w":0.02109,"h":0.02348,"angle":0},{"type":"buisson","x":0.08763,"y":0.49739,"w":0.02109,"h":0.02348,"angle":0},{"type":"buisson","x":0.11224,"y":0.49913,"w":0.02109,"h":0.02348,"angle":0},{"type":"buisson","x":0.13724,"y":0.4987,"w":0.02109,"h":0.02348,"angle":0},{"type":"buisson","x":0.16771,"y":0.49783,"w":0.02109,"h":0.02348,"angle":0},{"type":"buisson","x":0.19427,"y":0.4987,"w":0.02109,"h":0.02348,"angle":0},{"type":"buisson","x":0.21927,"y":0.4987,"w":0.02109,"h":0.02348,"angle":0},{"type":"buisson","x":0.66016,"y":0.68348,"w":0.10313,"h":0.11478,"angle":0},{"type":"buisson","x":0.60156,"y":0.37217,"w":0.02109,"h":0.02348,"angle":0},{"type":"buisson","x":0.60117,"y":0.34522,"w":0.02109,"h":0.02348,"angle":0},{"type":"buisson","x":0.62695,"y":0.37348,"w":0.02109,"h":0.02348,"angle":0},{"type":"buisson","x":0.60039,"y":0.31783,"w":0.02215,"h":0.02465,"angle":0},{"type":"terreplein","x":0.46172,"y":0.7587,"w":0.08594,"h":0.02391,"angle":1.5708},{"type":"terreplein","x":0.85781,"y":0.5187,"w":0.08594,"h":0.02391,"angle":0},{"type":"terreplein","x":0.94336,"y":0.51826,"w":0.08594,"h":0.02391,"angle":0},{"type":"maison","x":0.625,"y":0.26087,"w":0.07031,"h":0.0587},{"type":"maison","x":0.78125,"y":0.67826,"w":0.07031,"h":0.0587},{"type":"immeuble","x":0.28125,"y":0.69565,"w":0.09375,"h":0.07826},{"type":"immeuble","x":0.15625,"y":0.33043,"w":0.09375,"h":0.07826}]},"s_manoeuvres1":{"routes":[{"pts":[{"x":-0.2334,"y":0.43091},{"x":1.21972,"y":0.43091}],"largeur":150,"trottoir":false,"arrondi":false,"boutsDroits":false},{"pts":[{"x":-0.52519,"y":0.54084},{"x":1.542,"y":0.54084}],"largeur":150,"trottoir":false,"arrondi":false,"boutsDroits":false}],"marquages":[{"type":"ligne_continue","pts":[{"x":0.30266,"y":0.60385},{"x":0.30266,"y":0.53428},{"x":0.30266,"y":0.53428},{"x":0.30266,"y":0.53428}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.34393,"y":0.53464},{"x":0.34393,"y":0.60421}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.34435,"y":0.60424},{"x":0.34435,"y":0.53467},{"x":0.34435,"y":0.53467},{"x":0.34435,"y":0.53467}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.38562,"y":0.53503},{"x":0.38562,"y":0.6046}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.38536,"y":0.60484},{"x":0.38536,"y":0.53527},{"x":0.38536,"y":0.53527},{"x":0.38536,"y":0.53527}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.42662,"y":0.53563},{"x":0.42662,"y":0.6052}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.42704,"y":0.60523},{"x":0.42704,"y":0.53566},{"x":0.42704,"y":0.53566},{"x":0.42704,"y":0.53566}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.46831,"y":0.53602},{"x":0.46831,"y":0.60559}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.46823,"y":0.60384},{"x":0.46823,"y":0.53428},{"x":0.46823,"y":0.53428},{"x":0.46823,"y":0.53428}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.50949,"y":0.53464},{"x":0.50949,"y":0.6042}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.50992,"y":0.60423},{"x":0.50992,"y":0.53467},{"x":0.50992,"y":0.53467},{"x":0.50992,"y":0.53467}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.55118,"y":0.53503},{"x":0.55118,"y":0.60459}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.55092,"y":0.60483},{"x":0.55092,"y":0.53527},{"x":0.55092,"y":0.53527},{"x":0.55092,"y":0.53527}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.59219,"y":0.53562},{"x":0.59219,"y":0.60519}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.59261,"y":0.60522},{"x":0.59261,"y":0.53566},{"x":0.59261,"y":0.53566},{"x":0.59261,"y":0.53566}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.63388,"y":0.53602},{"x":0.63388,"y":0.60558}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":-0.02815,"y":0.60447},{"x":-0.02815,"y":0.53491},{"x":-0.02815,"y":0.53491},{"x":-0.02815,"y":0.53491}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.01311,"y":0.53526},{"x":0.01311,"y":0.60483}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.01354,"y":0.60486},{"x":0.01354,"y":0.5353},{"x":0.01354,"y":0.5353},{"x":0.01354,"y":0.5353}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.0548,"y":0.53566},{"x":0.0548,"y":0.60522}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.05454,"y":0.60546},{"x":0.05454,"y":0.5359},{"x":0.05454,"y":0.5359},{"x":0.05454,"y":0.5359}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.09581,"y":0.53625},{"x":0.09581,"y":0.60582}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.09623,"y":0.60585},{"x":0.09623,"y":0.53629},{"x":0.09623,"y":0.53629},{"x":0.09623,"y":0.53629}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.1375,"y":0.53665},{"x":0.1375,"y":0.60621}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.13742,"y":0.60447},{"x":0.13742,"y":0.5349},{"x":0.13742,"y":0.5349},{"x":0.13742,"y":0.5349}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.17868,"y":0.53526},{"x":0.17868,"y":0.60482}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.17911,"y":0.60486},{"x":0.17911,"y":0.53529},{"x":0.17911,"y":0.53529},{"x":0.17911,"y":0.53529}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.22037,"y":0.53565},{"x":0.22037,"y":0.60522}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.22011,"y":0.60546},{"x":0.22011,"y":0.53589},{"x":0.22011,"y":0.53589},{"x":0.22011,"y":0.53589}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.26137,"y":0.53625},{"x":0.26137,"y":0.60581}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.2618,"y":0.60585},{"x":0.2618,"y":0.53628},{"x":0.2618,"y":0.53628},{"x":0.2618,"y":0.53628}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.30306,"y":0.53664},{"x":0.30306,"y":0.60621}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.65625,"y":0.43478},{"x":0.6875,"y":0.36522}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.70313,"y":0.43478},{"x":0.73438,"y":0.36522}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.74931,"y":0.43687},{"x":0.78056,"y":0.3673}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.79618,"y":0.43687},{"x":0.82743,"y":0.3673}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.847,"y":0.43697},{"x":0.87825,"y":0.3674}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.89388,"y":0.43697},{"x":0.92513,"y":0.3674}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.94415,"y":0.53786},{"x":0.9129,"y":0.60742}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.89728,"y":0.53786},{"x":0.86603,"y":0.60742}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.8511,"y":0.53577},{"x":0.81985,"y":0.60534}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.80422,"y":0.53577},{"x":0.77297,"y":0.60534}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.7534,"y":0.53568},{"x":0.72215,"y":0.60524}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.70653,"y":0.53568},{"x":0.67528,"y":0.60524}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.55366,"y":0.36522},{"x":0.55366,"y":0.41739},{"x":0.55366,"y":0.41739},{"x":0.55366,"y":0.41739}],"arrondi":false,"jaune":false},{"type":"ligne_continue","pts":[{"x":0.10431,"y":0.36557},{"x":0.10431,"y":0.41775},{"x":0.10431,"y":0.41775},{"x":0.10431,"y":0.41775}],"arrondi":false,"jaune":false},{"type":"ligne_guidage","pts":[{"x":0.54494,"y":0.41629},{"x":0.09963,"y":0.41629}],"arrondi":false,"jaune":false},{"type":"ligne_guidage","pts":[{"x":0.48438,"y":0.41739},{"x":0.48438,"y":0.36522}],"arrondi":false,"jaune":false},{"type":"ligne_guidage","pts":[{"x":0.41454,"y":0.4183},{"x":0.41454,"y":0.36612}],"arrondi":false,"jaune":false},{"type":"ligne_guidage","pts":[{"x":0.18243,"y":0.41813},{"x":0.18243,"y":0.36596}],"arrondi":false,"jaune":false},{"type":"ligne_guidage","pts":[{"x":0.24768,"y":0.41874},{"x":0.24768,"y":0.36657}],"arrondi":false,"jaune":false},{"type":"ligne_guidage","pts":[{"x":0.32845,"y":0.41968},{"x":0.32845,"y":0.36751}],"arrondi":false,"jaune":false},{"type":"texte_sol","pts":[{"x":0.28032,"y":0.6422},{"x":0.28032,"y":0.60742}],"arrondi":false,"jaune":false,"texte":"BAT ARD"},{"type":"texte_sol","pts":[{"x":0.79688,"y":0.33043},{"x":0.79688,"y":0.31304}],"arrondi":false,"jaune":false,"texte":"EPI AR"},{"type":"texte_sol","pts":[{"x":0.2981,"y":0.32717},{"x":0.2981,"y":0.29239}],"arrondi":false,"jaune":false,"texte":"CRENEAU D"},{"type":"fleche_droit","pts":[{"x":0.3125,"y":0.50435},{"x":0.3125,"y":0.50435}],"arrondi":false,"jaune":false},{"type":"fleche_droit","pts":[{"x":0.34457,"y":0.45043},{"x":0.31332,"y":0.45043}],"arrondi":false,"jaune":false},{"type":"fleche_droit","pts":[{"x":0.56114,"y":0.50398},{"x":0.56114,"y":0.50398}],"arrondi":false,"jaune":false},{"type":"fleche_droit","pts":[{"x":0.59321,"y":0.45006},{"x":0.56196,"y":0.45006}],"arrondi":false,"jaune":false}],"panneaux":[],"pinceau":[],"batiments":[{"type":"voiture","x":0.14239,"y":0.38905,"w":0.05781,"h":0.03217,"couleur":"#4a4a4a"},{"type":"voiture","x":0.3712,"y":0.38879,"w":0.05781,"h":0.03217,"couleur":"#5aa15a"},{"type":"voiture","x":0.51855,"y":0.38886,"w":0.05781,"h":0.03217,"couleur":"#5aa15a"},{"type":"voiture","x":0.36473,"y":0.57089,"w":0.05781,"h":0.03217,"couleur":"#e0a93f","angle":1.5708},{"type":"voiture","x":0.74138,"y":0.4,"w":0.05781,"h":0.03217,"couleur":"#3f6fb0","angle":-1.13446},{"type":"buisson","x":0.65625,"y":0.64348,"w":0.04688,"h":0.05217},{"type":"buisson","x":0.21875,"y":0.31304,"w":0.04688,"h":0.05217},{"type":"buisson","x":0.375,"y":0.31304,"w":0.04688,"h":0.05217},{"type":"buisson","x":0.75,"y":0.31304,"w":0.04688,"h":0.05217},{"type":"buisson","x":0.84375,"y":0.31304,"w":0.04688,"h":0.05217},{"type":"buisson","x":0.34375,"y":0.64348,"w":0.04688,"h":0.05217},{"type":"buisson","x":0.20313,"y":0.64348,"w":0.04688,"h":0.05217},{"type":"immeuble","x":0.08222,"y":0.30409,"w":0.09375,"h":0.07826},{"type":"maison","x":0.56881,"y":0.31236,"w":0.07031,"h":0.0587},{"type":"maison","x":0.53125,"y":0.66087,"w":0.07031,"h":0.0587},{"type":"voiture","x":0.28196,"y":0.57135,"w":0.05781,"h":0.03217,"couleur":"#e0a93f","angle":1.5708}]},"priorite_b15c18":{"routes":[{"pts":[{"x":0.01562,"y":0.50435},{"x":0.98438,"y":0.50435},{"x":1,"y":0.50435}],"largeur":150},{"pts":[{"x":0.84375,"y":0.43478},{"x":0.84375,"y":0.1913}],"largeur":150}],"marquages":[{"type":"ligne_discontinue","pts":[{"x":-1.5625,"y":0.50435},{"x":2.5625,"y":0.50435}]},{"type":"ligne_discontinue","pts":[{"x":0.46875,"y":0.55652},{"x":0.46875,"y":0.53913},{"x":0.60938,"y":0.53913},{"x":0.60938,"y":0.57391}]},{"type":"ligne_discontinue","pts":[{"x":0.53634,"y":0.54412},{"x":0.53634,"y":0.58084}]},{"type":"ligne_discontinue","pts":[{"x":2.39439,"y":0.50433},{"x":-1.73061,"y":0.50433}]},{"type":"ligne_discontinue","pts":[{"x":0.36314,"y":0.45216},{"x":0.36314,"y":0.46955},{"x":0.22252,"y":0.46955},{"x":0.22252,"y":0.43477}]},{"type":"ligne_discontinue","pts":[{"x":0.29555,"y":0.46455},{"x":0.29555,"y":0.42783}]}],"panneaux":[{"type":"b15","x":0.44037,"y":0.58838,"taille":34,"etatFeu":"rouge","angle":1.5708},{"type":"c18","x":0.64034,"y":0.42575,"taille":31,"etatFeu":"rouge","angle":-1.5708},{"type":"c18","x":0.12338,"y":0.58143,"taille":31,"etatFeu":"rouge","angle":-4.71239},{"type":"b15","x":0.39413,"y":0.42389,"taille":34,"etatFeu":"rouge","angle":4.71239}],"batiments":[{"type":"voiture","x":0.4967,"y":0.55643,"w":0.04856,"h":0.02703,"couleur":"#7d5ba6"},{"type":"voiture","x":0.56946,"y":0.55557,"w":0.04625,"h":0.02574,"couleur":"#e0e0e0"},{"type":"buisson","x":0.49053,"y":0.63251,"w":0.07969,"h":0.0887},{"type":"buisson","x":0.64062,"y":0.64348,"w":0.04688,"h":0.05217},{"type":"buisson","x":0.40625,"y":0.67826,"w":0.04688,"h":0.05217},{"type":"buisson","x":0.26562,"y":0.6087,"w":0.04688,"h":0.05217},{"type":"immeuble","x":0.4661,"y":0.37029,"w":0.09375,"h":0.07826},{"type":"immeuble","x":0.12596,"y":0.64253,"w":0.09375,"h":0.07826},{"type":"ecole","x":0.66016,"y":0.35211,"w":0.125,"h":0.10435},{"type":"maison","x":0.16435,"y":0.38902,"w":0.07031,"h":0.0587},{"type":"maison","x":0.74713,"y":0.62609,"w":0.07031,"h":0.0587},{"type":"buisson","x":0.5625,"y":0.34783,"w":0.04688,"h":0.05217},{"type":"buisson","x":0.9375,"y":0.26087,"w":0.04688,"h":0.05217},{"type":"buisson","x":0.9375,"y":0.26087,"w":0.04688,"h":0.05217},{"type":"buisson","x":0.71875,"y":0.2087,"w":0.04688,"h":0.05217},{"type":"buisson","x":0.29688,"y":0.33043,"w":0.04688,"h":0.05217},{"type":"buisson","x":0.125,"y":0.24348,"w":0.04688,"h":0.05217},{"type":"buisson","x":0.1875,"y":0.8,"w":0.04688,"h":0.05217},{"type":"buisson","x":0.70312,"y":0.78261,"w":0.04688,"h":0.05217},{"type":"buisson","x":0.46875,"y":0.24348,"w":0.04688,"h":0.05217}]}};
+function bornes(m) { return { G: Math.min(VIS.x0, 0) - (m || 420), D: Math.max(VIS.x1, MONDE.W) + (m || 420), H: Math.min(VIS.y0, 0) - (m || 420), B: Math.max(VIS.y1, MONDE.H) + (m || 420) }; }
+const deco = (l) => l.map(([type, x, y, w, h]) => ({ type, x, y, ang: 0, ...(w ? { w, h } : {}) }));
+const usager = (id, type, x, y, ang, coul) => ({ id, type, x, y, ang, coul });
+const SCENES_COURS = [
+  ['cedez', 'Cédez-le-passage', () => {
+    const { G, D, H, B } = bornes(), X = 640, Y = 560, sc = sceneVide();
+    sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }, { id: 2, pts: [[X, H], [X, B]] }]; sc.id = 3;
+    sc.regimes = [{ x: X, y: Y, type: 'cedez', prio: 1 }];
+    sc.decor = deco([['arbre', 480, 700], ['arbre', 800, 820], ['arbre', 980, 720], ['arbre', 470, 360], ['arbre', 1180, 360], ['arbre', 80, 800], ['arbre', 140, 300], ['arbre', 330, 720], ['maison', 860, 740, 140, 100], ['maison_grise', 300, 330, 150, 110]]);
+    sc.usagers = [usager(1, 'ecole', X + 37, 760, -Math.PI / 2, '#3b82c4'), usager(2, 'voiture', 170, Y + 37, 0, '#5b6270')];
+    return sc;
+  }],
+  ['stop', 'STOP (4 branches)', () => {
+    const { G, D, H, B } = bornes(), X = 640, Y = 560, sc = sceneVide();
+    sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }, { id: 2, pts: [[X, H], [X, B]] }]; sc.id = 3;
+    sc.regimes = [{ x: X, y: Y, type: 'stop', prio: 0 }];
+    sc.decor = deco([['arbre', 480, 700], ['arbre', 800, 820], ['arbre', 980, 720], ['arbre', 470, 360], ['arbre', 1180, 360], ['arbre', 80, 800], ['arbre', 140, 300], ['maison', 870, 330, 150, 110], ['maison_grise', 300, 820, 150, 110]]);
+    sc.usagers = [usager(1, 'ecole', X + 37, 760, -Math.PI / 2, '#3b82c4'), usager(2, 'voiture', 170, Y + 37, 0, '#5b6270'), usager(3, 'voiture', X - 37, 260, Math.PI / 2, '#e0b43a')];
+    return sc;
+  }],
+  ['briollay1', 'Briollay – feux 1', () => {
+    const { G, D, H, B } = bornes(), X = 600, Y = 540, sc = sceneVide();
+    sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }, { id: 2, pts: [[X, H], [X, B]] }]; sc.id = 3;
+    sc.regimes = [{ x: X, y: Y, type: 'feux', prio: 1, sas: true }];
+    sc.marques = [
+      { type: 'zone_zebra', x: X, y: 170, ang: 0, pts: [[0, -150], [-11, 140], [11, 140]] },     // îlots zébrés sur l'axe, avant le sas
+      { type: 'zone_zebra', x: X, y: 910, ang: 0, pts: [[0, 150], [-11, -140], [11, -140]] },
+    ];
+    sc.decor = deco([['maison', 300, 300, 150, 110], ['maison_grise', 930, 300, 160, 120], ['maison_grise', 300, 820, 160, 120], ['maison', 930, 820, 150, 110], ['arbre', 110, 330], ['arbre', 1180, 330], ['arbre', 1180, 820], ['buisson', 110, 820]]);
+    sc.usagers = [usager(1, 'ecole', X + 37, 760, -Math.PI / 2, '#3b82c4'), usager(2, 'voiture', 120, Y + 37, 0, '#5b6270')];
+    return sc;
+  }],
+  ['briollay2', 'Briollay – feux 2', () => {
+    const { G, D, H, B } = bornes(), Y = 600, X1 = 260, X2 = 780, sc = sceneVide();
+    sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }, { id: 2, pts: [[X1, Y], [X1, H]] }, { id: 3, pts: [[X2, Y], [X2, B]] }]; sc.id = 4;
+    sc.regimes = [{ x: X1, y: Y, type: 'feux', prio: 1, sas: true }, { x: X2, y: Y, type: 'feux', prio: 1, sas: true }];
+    sc.decor = deco([['maison', 470, 330, 150, 110], ['maison_grise', 760, 330, 150, 110], ['maison', 1080, 330, 160, 120], ['maison_grise', 260, 880, 170, 120], ['maison', 960, 880, 150, 110], ['arbre', 1200, 860], ['arbre', 450, 900], ['buisson', 60, 300]]);
+    sc.usagers = [usager(1, 'ecole', X2 + 37, 860, -Math.PI / 2, '#3b82c4'), usager(2, 'voiture', 1150, Y - 37, Math.PI, '#5b6270')];
+    return sc;
+  }],
+  ['sonnettes', 'Les 7 Sonnettes – feux', () => {
+    const { sc } = depuisFormatSimu(ANCIENNES.s_feux7sonnettes, ''), { G, D, H, B } = bornes();
+    sc.routes = [{ id: 1, pts: [[597, H], [597, B]], larg: 264, axe: 'aucune' }, { id: 2, pts: [[G, 579], [D, 579]], larg: 228, axe: 'aucune' }]; sc.id = 3;
+    sc.regimes = [{ x: 597, y: 579, type: 'feux', prio: 2, manuel: true, sas: false }];     // grand carrefour : marquage posé à la main
+    sc.usagers = [usager(1, 'ecole', 680, 860, -Math.PI / 2, '#3b82c4')];
+    return sc;
+  }],
+  ['manoeuvres', 'Manœuvres (créneau, bataille, épi)', () => {
+    const { sc } = depuisFormatSimu(ANCIENNES.s_manoeuvres1, ''), { G, D } = bornes();
+    sc.routes = [{ id: 1, pts: [[G, 559], [D, 559]], larg: 276, axe: 'aucune' }]; sc.id = 2;
+    sc.usagers.unshift(usager(99, 'ecole', 900, 600, Math.PI, '#3b82c4'));
+    return sc;
+  }],
+  ['etroit', 'Passage étroit (B15 / C18)', () => {
+    const { sc } = depuisFormatSimu(ANCIENNES.priorite_b15c18, ''), { G, D, H } = bornes();
+    sc.routes = [{ id: 1, pts: [[G, 580], [D, 580]] }, { id: 2, pts: [[1080, 580], [1080, H]] }]; sc.id = 3;
+    sc.marques = sc.marques.filter((m) => !(m.x1 !== undefined && Math.abs(m.y1 - 580) < 2 && Math.abs(m.y2 - 580) < 2));   // l'axe est automatique
+    sc.decor = sc.decor.filter((d, i, l) => l.findIndex((e) => e.x === d.x && e.y === d.y) === i);
+    sc.usagers.push(usager(9, 'ecole', 120, 543, 0, '#3b82c4'), usager(10, 'voiture', 1180, 543, Math.PI, '#e0b43a'));
+    return sc;
+  }],
+];
+function chargerSceneCours(cle) {
+  const def = SCENES_COURS.find((s) => s[0] === cle); if (!def) return;
+  if (test) basculerTest();
+  scene = def[2](); scene.titre = def[1];
+  selection = null; groupe = null; majSelbar(); fermerRegime(); $('titre').textContent = scene.titre;
+  seance.sel = null; seance.traits = []; if (typeof majSelSeance === 'function') majSelSeance();
+  toutRefaire('« ' + def[1] + ' » chargée');
+}
+function ouvrirScenesCours() {
+  const box = $('liste-scenes'), ul = $('ls-noms'); ul.innerHTML = '';
+  box.querySelector('h4').textContent = 'Scènes du cours';
+  box.querySelector('p').textContent = 'Les situations de l’ancien simulateur, refaites pour le nouveau.';
+  for (const [cle, nom] of SCENES_COURS) {
+    const b = document.createElement('button'); b.className = 'ls-item'; b.textContent = nom;
+    b.onclick = () => { box.classList.remove('ouvert'); chargerSceneCours(cle); };
+    ul.appendChild(b);
+  }
+  box.classList.add('ouvert'); fermerMenu();
+}
+$('m-cours').onclick = ouvrirScenesCours;
 
 /* ---------------- démarrage ---------------- */
 redimensionner();
