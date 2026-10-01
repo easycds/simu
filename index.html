@@ -1380,6 +1380,7 @@
     #barre-visuels .bve-ctrl { flex-direction: row !important; align-items: center; gap: 6px; }
     #barre-visuels .bve-ctrl input[type=range] { width: 110px; }
   }
+#ed-beta { width: 100%; margin: 6px 0 10px; padding: 10px 12px; border-radius: 10px; border: 2px solid #ff3131; background: #fff4f4; color: #1c2430; font: inherit; font-weight: 700; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -1728,6 +1729,7 @@
         <option value="feu">Feu tricolore</option>
       </select>
       <button id="ed-vehicule-test">🚗 Véhicule test</button>
+      <button id="ed-beta" type="button">✨ Nouvel éditeur (bêta)</button>
       <div id="zone-scenes">
         <div class="zs-titre">Mes scènes</div>
         <button id="zs-sauver">💾 Sauvegarder cette scène</button>
@@ -2046,7 +2048,271 @@ function dessinerFlecheVerticale(ctx, cx, t, sens, couleur, largeurRel) {
   ctx.restore();
 }
 
+/* ===== Panneaux et marquages V2 (maquette validée) ===== */
+const V2 = { rouge: '#c8102e', rougeF: '#5b1016', bleu: '#0055a4', bleuF: '#0b2a55', jaune: '#f7c600', noir: '#1b1d21', blanc: '#ffffff' };
+
+function v2Poly(ctx, pts) { ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); }
+/* triangle aux coins arrondis (comme les vrais panneaux) */
+function v2Tri(ctx, r, bas) {
+  const s = bas ? -1 : 1;
+  const P = [[0, -r * 1.02 * s], [r * 1.1, r * 0.88 * s], [-r * 1.1, r * 0.88 * s]];
+  const k = r * 0.14;
+  ctx.beginPath();
+  ctx.moveTo((P[0][0] + P[1][0]) / 2, (P[0][1] + P[1][1]) / 2);
+  for (let i = 1; i <= 3; i++) { const p = P[i % 3], n = P[(i + 1) % 3]; ctx.arcTo(p[0], p[1], n[0], n[1], k); }
+  ctx.closePath();
+}
+function v2TriC(ctx, r, k, bas) {
+  const cy = (bas ? -1 : 1) * r * 0.247;
+  ctx.save(); ctx.translate(0, cy * (1 - k)); v2Tri(ctx, r * k, bas); ctx.restore();
+}
+function v2Tranche(ctx, dessin, coul) { ctx.fillStyle = coul; dessin(); ctx.fill(); }
+function v2Reflet(ctx, clip, r) {
+  r = r || 40;
+  ctx.save(); clip(); ctx.clip();
+  const g = ctx.createLinearGradient(0, -r, 0, r);
+  g.addColorStop(0, 'rgba(255,255,255,0.16)'); g.addColorStop(0.5, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g; ctx.fillRect(-r * 1.5, -r * 1.5, r * 3, r * 3);
+  ctx.restore();
+}
+function v2Fleche(ctx, x0, y0, x1, y1, ep, tete, coul) {
+  // flèche pleine de (x0,y0) vers (x1,y1)
+  const a = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0);
+  ctx.save(); ctx.translate(x0, y0); ctx.rotate(a); ctx.fillStyle = coul;
+  ctx.beginPath();
+  ctx.moveTo(0, -ep / 2); ctx.lineTo(L - tete, -ep / 2); ctx.lineTo(L - tete, -tete * 0.62);
+  ctx.lineTo(L, 0); ctx.lineTo(L - tete, tete * 0.62); ctx.lineTo(L - tete, ep / 2); ctx.lineTo(0, ep / 2);
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function dessinerPictogrammeV2(ctx, type, t, etatFeu) {
+  const r = t / 2;
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const rond = (k) => { ctx.beginPath(); ctx.arc(0, 0, r * k, 0, Math.PI * 2); };
+  const carre = (k, rr) => { const c = t * k; ctx.beginPath(); ctx.roundRect(-c / 2, -c / 2, c, c, rr || t * 0.08); };
+  const losange = (k) => v2Poly(ctx, [[0, -r * k], [r * k, 0], [0, r * k], [-r * k, 0]]);
+
+  // AB6 + M7 : losange réduit + panonceau dessous
+  if (type.startsWith('route_prioritaire_m7') || type.startsWith('m7_seul')) {
+    const seul = type.startsWith('m7_seul');
+    const suffixe = (type.match(/(?:m7|seul)_?([bcde])$/) || [])[1] || '';
+    const variante = { '': 'gauche', b: 'droite', c: 'T', d: 'gauche_bas', e: 'droite_bas' }[suffixe];
+    if (!seul) {
+      ctx.save(); ctx.translate(0, -t * 0.2); dessinerPictogrammeV2(ctx, 'route_prioritaire', t * 0.78); ctx.restore();
+    }
+    const w = seul ? t * 0.86 : t * 0.62, h = seul ? t * 0.86 : t * 0.36, y = seul ? 0 : t * 0.38;
+    ctx.fillStyle = V2.noir; ctx.beginPath(); ctx.roundRect(-w / 2 - 1.2, y - h / 2 - 1.2, w + 2.4, h + 2.4, t * 0.05); ctx.fill();
+    ctx.fillStyle = V2.blanc; ctx.beginPath(); ctx.roundRect(-w / 2, y - h / 2, w, h, t * 0.04); ctx.fill();
+    // schéma : route prioritaire épaisse, route secondaire fine
+    ctx.save(); ctx.translate(0, y);
+    const k = Math.min(w, h) * 0.42, epP = Math.max(2.5, k * 0.46), epS = Math.max(1, k * 0.1);
+    ctx.strokeStyle = V2.noir; ctx.lineCap = 'butt'; ctx.lineJoin = 'miter';
+    const bas = variante && variante.endsWith('_bas');
+    const dir = variante && variante.startsWith('droite') ? 1 : -1;
+    if (variante === 'T') {
+      ctx.lineWidth = epP; ctx.beginPath(); ctx.moveTo(-k * 1.1, -k * 0.2); ctx.lineTo(k * 1.1, -k * 0.2); ctx.stroke();
+      ctx.lineWidth = epS; ctx.beginPath(); ctx.moveTo(0, -k * 0.2); ctx.lineTo(0, k * 0.9); ctx.stroke();
+    } else {
+      const ys = bas ? -1 : 1;
+      ctx.lineWidth = epS; ctx.beginPath(); ctx.moveTo(-k * 1.1, 0); ctx.lineTo(k * 1.1, 0); ctx.moveTo(0, -k * 0.9 * ys); ctx.lineTo(0, 0); ctx.stroke();
+      ctx.lineWidth = epP; ctx.beginPath(); ctx.moveTo(0, k * 0.9 * ys); ctx.lineTo(0, 0); ctx.lineTo(dir * k * 1.1, 0); ctx.stroke();
+    }
+    ctx.restore();
+    return;
+  }
+
+  switch (type) {
+    case 'stop': {
+      const oct = (k) => { ctx.beginPath(); for (let i = 0; i < 8; i++) { const a = Math.PI / 8 + i * Math.PI / 4; ctx[i ? 'lineTo' : 'moveTo'](r * k * Math.cos(a), r * k * Math.sin(a)); } ctx.closePath(); };
+      ctx.fillStyle = V2.rougeF; oct(1); ctx.fill();
+      ctx.fillStyle = V2.blanc; oct(0.94); ctx.fill();
+      ctx.fillStyle = V2.rouge; oct(0.85); ctx.fill();
+      ctx.save(); ctx.fillStyle = '#fff'; ctx.font = `800 ${t * 0.36}px "Arial Narrow","Helvetica Neue",Arial,sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; const lw = ctx.measureText('STOP').width; ctx.scale(t * 0.66 / lw, 1); ctx.fillText('STOP', 0, t * 0.02); ctx.restore();
+      v2Reflet(ctx, () => oct(0.85), r);
+      break;
+    }
+    case 'cedez': {                                 // AB3a : triangle pointe en bas, grand fond blanc
+      ctx.fillStyle = V2.rougeF; v2TriC(ctx, r, 1, true); ctx.fill();
+      ctx.fillStyle = V2.blanc; v2TriC(ctx, r, 0.955, true); ctx.fill();
+      ctx.fillStyle = V2.rouge; v2TriC(ctx, r, 0.92, true); ctx.fill();
+      ctx.fillStyle = V2.blanc; v2TriC(ctx, r, 0.68, true); ctx.fill();
+      v2Reflet(ctx, () => v2TriC(ctx, r, 0.92, true), r);
+      break;
+    }
+    case 'priorite_droite': case 'priorite_ponctuelle': case 'giratoire': {
+      // triangle de danger : liseré blanc, bordure rouge régulière, grand fond blanc
+      ctx.fillStyle = V2.rougeF; v2TriC(ctx, r, 1, false); ctx.fill();
+      ctx.fillStyle = V2.blanc; v2TriC(ctx, r, 0.955, false); ctx.fill();
+      ctx.fillStyle = V2.rouge; v2TriC(ctx, r, 0.92, false); ctx.fill();
+      ctx.fillStyle = V2.blanc; v2TriC(ctx, r, 0.7, false); ctx.fill();
+      ctx.save(); ctx.translate(0, r * 0.27);
+      ctx.strokeStyle = V2.noir; ctx.fillStyle = V2.noir;
+      if (type === 'priorite_droite') {            // AB1 : croix de Saint-André
+        const d = r * 0.3; ctx.lineWidth = r * 0.14; ctx.lineCap = 'butt';
+        ctx.beginPath(); ctx.moveTo(-d, -d); ctx.lineTo(d, d); ctx.moveTo(d, -d); ctx.lineTo(-d, d); ctx.stroke();
+      } else if (type === 'priorite_ponctuelle') { // AB2 : barre verticale épaisse, barre horizontale plus fine
+        ctx.fillRect(-r * 0.1, -r * 0.44, r * 0.2, r * 0.76);
+        ctx.fillRect(-r * 0.32, -r * 0.13, r * 0.64, r * 0.12);
+      } else {                                      // AB25 : trois flèches tournant dans le sens giratoire
+        const R0 = r * 0.25; ctx.lineWidth = r * 0.12; ctx.lineCap = 'butt';
+        for (let k = 0; k < 3; k++) {
+          const a0 = -Math.PI / 2 + k * 2 * Math.PI / 3 + 0.25, e = a0 - 1.45;
+          ctx.beginPath(); ctx.arc(0, 0, R0, a0, e, true); ctx.stroke();
+          const hx = Math.cos(e) * R0, hy = Math.sin(e) * R0, tx = Math.sin(e), ty = -Math.cos(e), nx = Math.cos(e), ny = Math.sin(e);
+          const L = r * 0.17, W = r * 0.13;
+          ctx.beginPath(); ctx.moveTo(hx + tx * L, hy + ty * L); ctx.lineTo(hx + nx * W, hy + ny * W); ctx.lineTo(hx - nx * W, hy - ny * W); ctx.closePath(); ctx.fill();
+        }
+      }
+      ctx.restore();
+      v2Reflet(ctx, () => v2TriC(ctx, r, 0.92, false), r);
+      break;
+    }
+    case 'sens_interdit': {
+      ctx.fillStyle = V2.rougeF; rond(1); ctx.fill();
+      ctx.fillStyle = V2.blanc; rond(0.95); ctx.fill();
+      ctx.fillStyle = V2.rouge; rond(0.88); ctx.fill();
+      ctx.fillStyle = V2.blanc; ctx.beginPath(); ctx.roundRect(-r * 0.62, -r * 0.14, r * 1.24, r * 0.28, r * 0.05); ctx.fill();
+      v2Reflet(ctx, () => rond(0.88), r);
+      break;
+    }
+    case 'b15': {
+      ctx.fillStyle = V2.rougeF; rond(1); ctx.fill();
+      ctx.fillStyle = V2.rouge; rond(0.96); ctx.fill();
+      ctx.fillStyle = V2.blanc; rond(0.76); ctx.fill();
+      v2Fleche(ctx, -r * 0.2, -r * 0.5, -r * 0.2, r * 0.52, t * 0.13, t * 0.2, V2.noir);   // noire vers le bas (large)
+      v2Fleche(ctx, r * 0.22, r * 0.5, r * 0.22, -r * 0.52, t * 0.07, t * 0.15, V2.rouge); // rouge vers le haut (fine)
+      v2Reflet(ctx, () => rond(0.96), r);
+      break;
+    }
+    case 'c18': {
+      ctx.fillStyle = V2.bleuF; carre(0.96); ctx.fill();
+      ctx.fillStyle = V2.blanc; carre(0.9); ctx.fill();
+      ctx.fillStyle = V2.bleu; carre(0.84); ctx.fill();
+      v2Fleche(ctx, -r * 0.22, -r * 0.55, -r * 0.22, r * 0.55, t * 0.07, t * 0.15, V2.rouge); // rouge vers le bas (fine)
+      v2Fleche(ctx, r * 0.2, r * 0.55, r * 0.2, -r * 0.55, t * 0.13, t * 0.2, V2.blanc);    // blanche vers le haut (large)
+      v2Reflet(ctx, () => carre(0.84), r);
+      break;
+    }
+    case 'passage_pieton': {
+      ctx.fillStyle = V2.bleuF; carre(0.96); ctx.fill();
+      ctx.fillStyle = V2.blanc; carre(0.9); ctx.fill();
+      ctx.fillStyle = V2.bleu; carre(0.84); ctx.fill();
+      ctx.fillStyle = V2.blanc; v2Poly(ctx, [[0, -r * 0.62], [r * 0.64, r * 0.5], [-r * 0.64, r * 0.5]]); ctx.fill();
+      // piéton (silhouette simple qui marche)
+      ctx.save(); ctx.translate(0, r * 0.05); ctx.scale(1.35, 1.35);
+      ctx.fillStyle = V2.noir; ctx.strokeStyle = V2.noir; ctx.lineWidth = t * 0.05;
+      ctx.beginPath(); ctx.arc(r * 0.02, -r * 0.2, t * 0.045, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0, -r * 0.1); ctx.lineTo(-r * 0.04, r * 0.12); ctx.lineTo(-r * 0.16, r * 0.34);
+      ctx.moveTo(-r * 0.04, r * 0.12); ctx.lineTo(r * 0.1, r * 0.34);
+      ctx.moveTo(-r * 0.02, -r * 0.04); ctx.lineTo(-r * 0.14, r * 0.08); ctx.moveTo(-r * 0.02, -r * 0.04); ctx.lineTo(r * 0.12, r * 0.06);
+      ctx.stroke();
+      ctx.restore();
+      // bandes du passage
+      ctx.fillStyle = V2.noir; for (let i = -2; i <= 2; i++) ctx.fillRect(i * r * 0.13 - r * 0.04, r * 0.4, r * 0.08, r * 0.06);
+      v2Reflet(ctx, () => carre(0.84), r);
+      break;
+    }
+    case 'route_prioritaire': {
+      ctx.fillStyle = V2.noir; losange(1.08); ctx.fill();
+      ctx.fillStyle = V2.blanc; losange(1.03); ctx.fill();
+      ctx.fillStyle = V2.noir; losange(0.7); ctx.fill();
+      ctx.fillStyle = V2.jaune; losange(0.66); ctx.fill();
+      v2Reflet(ctx, () => losange(1.03), r);
+      break;
+    }
+    case 'obligation_droit': case 'obligation_droite': case 'obligation_gauche': {
+      ctx.fillStyle = V2.bleuF; rond(1); ctx.fill();
+      ctx.fillStyle = V2.blanc; rond(0.95); ctx.fill();
+      ctx.fillStyle = V2.bleu; rond(0.88); ctx.fill();
+      if (type === 'obligation_droit') v2Fleche(ctx, 0, r * 0.58, 0, -r * 0.6, t * 0.14, t * 0.26, V2.blanc);
+      else {
+        const s = type === 'obligation_droite' ? 1 : -1;
+        ctx.save(); ctx.strokeStyle = V2.blanc; ctx.lineWidth = t * 0.14; ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
+        ctx.beginPath(); ctx.moveTo(-s * r * 0.18, r * 0.58); ctx.lineTo(-s * r * 0.18, -r * 0.02);
+        ctx.quadraticCurveTo(-s * r * 0.18, -r * 0.16, -s * r * 0.04, -r * 0.16); ctx.lineTo(s * r * 0.12, -r * 0.16); ctx.stroke(); ctx.restore();
+        v2Fleche(ctx, s * r * 0.1, -r * 0.16, s * r * 0.64, -r * 0.16, 0.001, t * 0.26, V2.blanc);
+      }
+      v2Reflet(ctx, () => rond(0.88), r);
+      break;
+    }
+    case 'feu': {
+      const w = t * 0.42, h = t * 1.0;
+      ctx.fillStyle = '#0f1114'; ctx.beginPath(); ctx.roundRect(-w / 2 - 1.5, -h / 2 - 1.5, w + 3, h + 3, w * 0.36); ctx.fill();
+      ctx.fillStyle = '#23272d'; ctx.beginPath(); ctx.roundRect(-w / 2, -h / 2, w, h, w * 0.32); ctx.fill();
+      const lampes = [['rouge', '#ff3b30', -h * 0.3], ['orange', '#ffb000', 0], ['vert', '#2ecc71', h * 0.3]];
+      for (const [e, c, y] of lampes) {
+        const on = e === (etatFeu || 'rouge');
+        if (on) { const g = ctx.createRadialGradient(0, y, 0, 0, y, w * 0.75); g.addColorStop(0, c + 'aa'); g.addColorStop(1, c + '00'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, y, w * 0.75, 0, Math.PI * 2); ctx.fill(); }
+        ctx.fillStyle = on ? c : '#3a3f47'; ctx.beginPath(); ctx.arc(0, y, w * 0.3, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = on ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.06)'; ctx.beginPath(); ctx.arc(-w * 0.08, y - w * 0.08, w * 0.1, 0, Math.PI * 2); ctx.fill();
+      }
+      break;
+    }
+  }
+}
+
+const PEINT = '#eef0ee', JAUNE = '#f2c200';
+function flecheSol(ctx, type, L, coul) {
+  coul = coul || PEINT;
+  // flèches directionnelles françaises : longue tige, pointe effilée ; axe vers le haut
+  ctx.fillStyle = coul;
+  const tige = L * 0.045, pointe = L * 0.28, larg = L * 0.22;     // tige fine, pointe bien marquée
+  const droit = () => { ctx.fillRect(-tige / 2, -L * 0.5 + pointe, tige, L * 0.6 - pointe); v2Poly(ctx, [[0, -L * 0.5], [larg / 2, -L * 0.5 + pointe], [-larg / 2, -L * 0.5 + pointe]]); ctx.fill(); };
+  const tourne = (s) => {
+    ctx.save(); ctx.strokeStyle = coul; ctx.lineWidth = tige; ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
+    // tige verticale puis coude à 90° : la pointe part à l'horizontale
+    const yc = -L * 0.12, r = L * 0.05;
+    ctx.beginPath(); ctx.moveTo(0, L * 0.22); ctx.lineTo(0, yc + r); ctx.quadraticCurveTo(0, yc, s * r, yc); ctx.lineTo(s * L * 0.12, yc); ctx.stroke(); ctx.restore();
+    ctx.save(); ctx.translate(s * L * 0.12, yc); ctx.rotate(s * Math.PI / 2);
+    v2Poly(ctx, [[0, -pointe * 0.9], [larg / 2, 0], [-larg / 2, 0]]); ctx.fill(); ctx.restore();
+  };
+  if (type === 'fleche_droit') droit();
+  else if (type === 'fleche_gauche') tourne(-1);
+  else if (type === 'fleche_droite') tourne(1);
+  else if (type === 'fleche_td_gauche') { droit(); ctx.save(); ctx.translate(0, L * 0.14); tourne(-1); ctx.restore(); }
+  else if (type === 'fleche_td_droite') { droit(); ctx.save(); ctx.translate(0, L * 0.14); tourne(1); ctx.restore(); }
+  else if (type === 'fleche_rabattement') {         // flèche de rabattement : courbe, pointe vers la droite
+    ctx.save(); ctx.strokeStyle = coul; ctx.lineWidth = tige; ctx.beginPath(); ctx.moveTo(-L * 0.08, L * 0.45); ctx.bezierCurveTo(-L * 0.08, 0, L * 0.02, -L * 0.18, L * 0.1, -L * 0.26); ctx.stroke(); ctx.restore();
+    ctx.save(); ctx.translate(L * 0.1, -L * 0.26); ctx.rotate(Math.PI / 5); v2Poly(ctx, [[0, -pointe], [larg / 2, 0], [-larg / 2, 0]]); ctx.fill(); ctx.restore();
+  }
+}
+function veloSol(ctx, s, coul) {
+  coul = coul || PEINT;
+  ctx.save(); ctx.strokeStyle = coul; ctx.fillStyle = coul; ctx.lineWidth = s * 0.07; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const R = s * 0.2;
+  ctx.beginPath(); ctx.arc(-s * 0.32, s * 0.12, R, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(s * 0.32, s * 0.12, R, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-s * 0.32, s * 0.12); ctx.lineTo(-s * 0.06, -s * 0.14); ctx.lineTo(s * 0.2, -s * 0.14); ctx.lineTo(s * 0.32, s * 0.12);
+  ctx.moveTo(-s * 0.06, -s * 0.14); ctx.lineTo(s * 0.02, s * 0.12); ctx.lineTo(s * 0.2, -s * 0.14);
+  ctx.moveTo(-s * 0.1, -s * 0.24); ctx.lineTo(s * 0.02, -s * 0.24); ctx.moveTo(s * 0.2, -s * 0.14); ctx.lineTo(s * 0.16, -s * 0.28); ctx.lineTo(s * 0.26, -s * 0.3);
+  ctx.stroke(); ctx.restore();
+}
+function pmrSol(ctx, s, coul) {
+  coul = coul || PEINT;
+  ctx.save(); ctx.fillStyle = coul; ctx.strokeStyle = coul; ctx.lineWidth = s * 0.09; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(-s * 0.02, -s * 0.36, s * 0.08, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-s * 0.04, -s * 0.24); ctx.lineTo(-s * 0.04, s * 0.02); ctx.lineTo(s * 0.2, s * 0.02); ctx.lineTo(s * 0.28, s * 0.3);
+  ctx.moveTo(-s * 0.04, -s * 0.12); ctx.lineTo(s * 0.14, -s * 0.12); ctx.stroke();
+  ctx.lineWidth = s * 0.07; ctx.beginPath(); ctx.arc(-s * 0.04, s * 0.18, s * 0.24, -Math.PI * 0.15, Math.PI * 1.1); ctx.stroke();
+  ctx.restore();
+}
+
+/* Peinture routière : blanc cassé avec micro-usure (motif répété, sans coût de calcul) */
+let _motifPeinture = null;
+function peintureSol() {
+  if (_motifPeinture) return _motifPeinture;
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const x = c.getContext('2d');
+  x.fillStyle = PEINT; x.fillRect(0, 0, 64, 64);
+  let g = 97; const a = () => ((g = (g * 1664525 + 1013904223) >>> 0) / 4294967296);
+  x.globalCompositeOperation = 'destination-out';
+  for (let i = 0; i < 45; i++) { x.fillStyle = `rgba(0,0,0,${0.15 + a() * 0.35})`; x.fillRect(a() * 64, a() * 64, 1 + a() * 1.5, 1 + a() * 1.5); }
+  _motifPeinture = x.createPattern(c, 'repeat') || PEINT;
+  return _motifPeinture;
+}
+
 function dessinerPictogramme(ctx, type, taille, etatFeu, numero) {
+  if (type !== 'feu') { dessinerPictogrammeV2(ctx, type, taille, etatFeu); return; }
   const t = taille, r = t / 2;
   ctx.lineJoin = 'round';
 
@@ -3596,7 +3862,7 @@ function drawMarquage(ctx, m, W, H, alpha = 1) {
   ctx.save();
   ctx.globalAlpha = alpha;
   // Marquage jaune = temporaire (chantier) ; il prime sur le blanc permanent.
-  const couleurM = m.jaune ? '#f5c518' : '#f3f4f6';
+  const couleurM = m.jaune ? '#f5c518' : peintureSol();
   ctx.strokeStyle = couleurM;
   ctx.fillStyle = couleurM;
   ctx.lineJoin = 'round';
@@ -3633,7 +3899,7 @@ function drawMarquage(ctx, m, W, H, alpha = 1) {
       ctx.stroke();
       break;
     case 'ligne_discontinue':
-      ctx.lineWidth = 4; ctx.lineCap = 'butt'; ctx.setLineDash([26, 22]);
+      ctx.lineWidth = 3; ctx.lineCap = 'butt'; ctx.setLineDash([63, 28]);   // T3 : 3 m / 1,33 m
       (m.arrondi ? tracerCheminLisse : tracerChemin)(ctx, m.pts, W, H);
       ctx.stroke();
       ctx.setLineDash([]);
@@ -3753,35 +4019,15 @@ function drawMarquage(ctx, m, W, H, alpha = 1) {
     }
 
     case 'velo': {
-      // Figurine cycliste réglementaire (0,80 × 1,28 m) : profil
-      // regardant vers la gauche, tête dans le sens de circulation.
-      // 1ᵉʳ tap : position · 2ᵉ tap : direction (et hauteur).
+      // Figurine vélo : 1ᵉʳ tap position · 2ᵉ tap direction (et taille)
       const a = { x: m.pts[0].x * W, y: m.pts[0].y * H };
       const b = { x: m.pts[1].x * W, y: m.pts[1].y * H };
       const h = Math.max(54, Math.hypot(b.x - a.x, b.y - a.y));
       const ang = Math.atan2(b.y - a.y, b.x - a.x);
       ctx.save();
       ctx.translate(a.x, a.y);
-      ctx.rotate(ang + Math.PI / 2);        // -y local = sens de circulation
-      ctx.strokeStyle = '#f3f4f6';
-      ctx.fillStyle = '#f3f4f6';
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.lineWidth = Math.max(4, h * 0.07);
-      const Rr = h * 0.17;
-      ctx.beginPath(); ctx.arc(0,  h * 0.30, Rr, 0, Math.PI * 2); ctx.stroke();
-      ctx.beginPath(); ctx.arc(0, -h * 0.30, Rr, 0, Math.PI * 2); ctx.stroke();
-      ctx.beginPath();                      // cadre
-      ctx.moveTo(0, h * 0.30);
-      ctx.lineTo(-h * 0.10, h * 0.02);
-      ctx.lineTo(0, -h * 0.30);
-      ctx.moveTo(-h * 0.10, h * 0.02);      // tronc penché vers l'avant
-      ctx.lineTo(-h * 0.17, -h * 0.16);
-      ctx.lineTo(-h * 0.04, -h * 0.24);     // bras vers le guidon
-      ctx.stroke();
-      ctx.beginPath();                      // tête (vers la gauche du profil)
-      ctx.arc(-h * 0.20, -h * 0.27, h * 0.075, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.rotate(ang);                      // +x = sens de circulation
+      veloSol(ctx, h, couleurM);
       ctx.restore();
       break;
     }
@@ -3800,7 +4046,7 @@ function drawMarquage(ctx, m, W, H, alpha = 1) {
       ctx.rotate(ang);
       ctx.fillStyle = '#454b54';
       ctx.fillRect(0, -EP / 2, len, EP);
-      ctx.fillStyle = '#f3f4f6';
+      ctx.fillStyle = couleurM;
       const Bt = 22, Et = 14;
       for (let d = 10; d + Bt <= len - 10; d += Bt + Et) {
         ctx.beginPath();
@@ -3822,37 +4068,20 @@ function drawMarquage(ctx, m, W, H, alpha = 1) {
 
     case 'fleche_droit':
     case 'fleche_gauche':
-    case 'fleche_droite': {
+    case 'fleche_droite':
+    case 'fleche_td_gauche':
+    case 'fleche_td_droite': {
+      // Flèches directionnelles « à la française » : tige fine, pointe effilée.
       // 1ᵉʳ point : position · 2ᵉ point : direction (et taille)
       const a = { x: m.pts[0].x * W, y: m.pts[0].y * H };
       const b = { x: m.pts[1].x * W, y: m.pts[1].y * H };
-      const len = Math.max(46, Math.hypot(b.x - a.x, b.y - a.y));
+      const len = Math.max(54, Math.hypot(b.x - a.x, b.y - a.y));
       const ang = Math.atan2(b.y - a.y, b.x - a.x);
-      const w = Math.max(8, len * 0.14);          // largeur du fût
       ctx.save();
       ctx.translate(a.x, a.y);
-      ctx.rotate(ang);                            // axe x = sens de circulation
-      if (m.type === 'fleche_droit') {
-        ctx.fillRect(0, -w / 2, len * 0.66, w);   // fût
-        ctx.beginPath();                          // pointe
-        ctx.moveTo(len * 0.66, -w * 1.6);
-        ctx.lineTo(len, 0);
-        ctx.lineTo(len * 0.66, w * 1.6);
-        ctx.closePath();
-        ctx.fill();
-      } else {
-        const s = m.type === 'fleche_gauche' ? -1 : 1;  // -y = gauche du sens
-        const x0 = len * 0.52, cou = len * 0.30;
-        ctx.fillRect(0, -w / 2, x0, w);                 // fût
-        if (s === 1) ctx.fillRect(x0 - w, -w / 2, w, cou + w / 2);
-        else         ctx.fillRect(x0 - w, -cou,   w, cou + w / 2);
-        ctx.beginPath();                                // pointe latérale
-        ctx.moveTo(x0 - w / 2 - w * 1.6, s * cou);
-        ctx.lineTo(x0 - w / 2 + w * 1.6, s * cou);
-        ctx.lineTo(x0 - w / 2, s * (cou + w * 2.2));
-        ctx.closePath();
-        ctx.fill();
-      }
+      ctx.rotate(ang + Math.PI / 2);          // -y local = sens de circulation
+      ctx.translate(0, -len * 0.5);
+      flecheSol(ctx, m.type, len, couleurM);
       ctx.restore();
       break;
     }
@@ -4082,7 +4311,7 @@ function drawMarquage(ctx, m, W, H, alpha = 1) {
       ctx.fillStyle = couleurM;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = `900 ${h}px Fredoka, sans-serif`;
+      ctx.font = `800 ${h}px "Arial Narrow", "Helvetica Neue", Arial, sans-serif`;
       ctx.scale(0.62, 1);
       ctx.fillText(texte, 0, 0);
       ctx.restore();
@@ -4090,7 +4319,6 @@ function drawMarquage(ctx, m, W, H, alpha = 1) {
     }
 
     case 'pmr': {
-      // Pictogramme PMR (place de stationnement réservée) — art. 118-2.C.
       const a = { x: m.pts[0].x * W, y: m.pts[0].y * H };
       const b = { x: m.pts[1].x * W, y: m.pts[1].y * H };
       const h = Math.max(40, Math.hypot(b.x - a.x, b.y - a.y));
@@ -4098,49 +4326,7 @@ function drawMarquage(ctx, m, W, H, alpha = 1) {
       ctx.save();
       ctx.translate(a.x, a.y);
       ctx.rotate(ang + Math.PI / 2);
-      ctx.fillStyle = couleurM;
-      ctx.strokeStyle = couleurM;
-      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      const R = h * 0.30;
-      ctx.lineWidth = Math.max(3, h * 0.10);
-      ctx.beginPath(); ctx.arc(0, h * 0.10, R, Math.PI * 0.15, Math.PI * 1.25); ctx.stroke();
-      ctx.beginPath(); ctx.arc(h * 0.02, -h * 0.34, h * 0.10, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(0, -h * 0.20);
-      ctx.lineTo(h * 0.06, h * 0.02);
-      ctx.lineTo(-R * 0.55, h * 0.02);
-      ctx.moveTo(0, -h * 0.20);
-      ctx.lineTo(-h * 0.14, -h * 0.06);
-      ctx.stroke();
-      ctx.restore();
-      break;
-    }
-
-    case 'fleche_td_gauche':
-    case 'fleche_td_droite': {
-      // Flèche directionnelle combinée : tout droit + tourner (schéma B.3).
-      const a = { x: m.pts[0].x * W, y: m.pts[0].y * H };
-      const b = { x: m.pts[1].x * W, y: m.pts[1].y * H };
-      const len = Math.max(54, Math.hypot(b.x - a.x, b.y - a.y));
-      const ang = Math.atan2(b.y - a.y, b.x - a.x);
-      const w = Math.max(8, len * 0.13);
-      const s = m.type === 'fleche_td_gauche' ? -1 : 1;
-      ctx.save();
-      ctx.translate(a.x, a.y);
-      ctx.rotate(ang);
-      ctx.fillRect(0, -w / 2, len * 0.62, w);
-      ctx.beginPath();
-      ctx.moveTo(len * 0.62, -w * 1.5);
-      ctx.lineTo(len, 0);
-      ctx.lineTo(len * 0.62, w * 1.5);
-      ctx.closePath(); ctx.fill();
-      const x0 = len * 0.40, cou = len * 0.26;
-      ctx.fillRect(x0 - w / 2, s > 0 ? 0 : -cou, w, cou + w / 2);
-      ctx.beginPath();
-      ctx.moveTo(x0 - w * 1.6, s * cou);
-      ctx.lineTo(x0 + w * 1.6, s * cou);
-      ctx.lineTo(x0, s * (cou + w * 2.2));
-      ctx.closePath(); ctx.fill();
+      pmrSol(ctx, h * 1.1, couleurM);
       ctx.restore();
       break;
     }
@@ -7778,9 +7964,9 @@ function chargerModele(nom) {
   modeleVersScene(gen());
 }
 
-function chargerSceneSelectionnee() {
+function chargerSceneSelectionnee(nomForce) {
   const sel = document.getElementById('zs-liste');
-  const nom = sel.value;
+  const nom = typeof nomForce === 'string' ? nomForce : sel.value;
   if (!nom) { alert('Choisis d\'abord une scène dans la liste.'); return; }
   const scenes = lireScenesEnregistrees();
   const s = scenes[nom];
@@ -7805,7 +7991,7 @@ function chargerSceneSelectionnee() {
   document.querySelectorAll('#choix-decor button').forEach(b =>
     b.classList.toggle('actif', b.dataset.decor === 'perso'));
   demanderRenduEditeur();
-  alert('Scène « ' + nom + ' » chargée dans l\'éditeur.');
+  if (typeof nomForce !== 'string') alert('Scène « ' + nom + ' » chargée dans l\'éditeur.');
 }
 function supprimerSceneSelectionnee() {
   const sel = document.getElementById('zs-liste');
@@ -7818,7 +8004,23 @@ function supprimerSceneSelectionnee() {
   rafraichirListeScenes();
 }
 document.getElementById('zs-sauver').addEventListener('click', sauverSceneCourante);
-document.getElementById('zs-charger').addEventListener('click', chargerSceneSelectionnee);
+document.getElementById('zs-charger').addEventListener('click', () => chargerSceneSelectionnee());
+/* Nouvel éditeur (bêta) : page editeur.html. Le panneau de l'éditeur est déjà déverrouillé ici. */
+document.getElementById('ed-beta').addEventListener('click', () => {
+  try { sessionStorage.setItem('easy-editeur-ok', '1'); } catch (e) {}
+  location.href = 'editeur.html';
+});
+/* Scène envoyée depuis le nouvel éditeur : on l'ouvre directement */
+(function ouvrirDepuisNouvelEditeur() {
+  let nom = null;
+  try { nom = localStorage.getItem('easy-simu-ouvrir'); if (nom) localStorage.removeItem('easy-simu-ouvrir'); } catch (e) {}
+  if (!nom || !lireScenesEnregistrees()[nom]) return;
+  setTimeout(() => {
+    rafraichirListeScenes();
+    const sel = document.getElementById('zs-liste'); if (sel) sel.value = nom;
+    chargerSceneSelectionnee(nom);
+  }, 0);
+})();
 document.getElementById('zs-supprimer').addEventListener('click', supprimerSceneSelectionnee);
 rafraichirListeScenes();
 function poserCoupPinceau(p) {
