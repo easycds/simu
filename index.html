@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Simulateur Easy</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff3131">
+<link rel="apple-touch-icon" href="/permis/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Simulateur">
 <!--
   Simulateur de sécurité routière — Easy CDS
   © 2026 Easy CDS. Reproduction, copie ou diffusion non autorisée interdite.
@@ -1107,10 +1114,14 @@ function rendre() {
     const o = selection.obj, r = rayonObjet(selection);
     g.save(); g.strokeStyle = '#fff'; g.lineWidth = 3 / S * 1.2; g.setLineDash([8, 6]);
     if (selection.kind === 'marque' && LIGNES.has(o.type)) {
-      g.beginPath(); g.moveTo(o.x1, o.y1); g.lineTo(o.x2, o.y2); g.lineWidth = 24; g.strokeStyle = 'rgba(255,255,255,.25)'; g.setLineDash([]); g.stroke();
+      g.beginPath(); g.moveTo(o.x1, o.y1); g.lineTo(o.x2, o.y2); g.lineWidth = 24; g.strokeStyle = 'rgba(255,255,255,.10)'; g.setLineDash([]); g.stroke();
+      // poignées « viseur » : anneau creux + croix à l'extérieur → on voit exactement le bout de la ligne en dessous
+      const R = Math.max(11, 13 / S), w = Math.max(1.5, 2 / S);
       for (const [x, y] of [[o.x1, o.y1], [o.x2, o.y2]]) {
-        g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, 12, 0, 7); g.fill();
-        g.fillStyle = '#ff3131'; g.beginPath(); g.arc(x, y, 5, 0, 7); g.fill();
+        g.lineWidth = w + 2 / S; g.strokeStyle = 'rgba(0,0,0,.45)'; g.beginPath(); g.arc(x, y, R, 0, 7); g.stroke();
+        g.lineWidth = w; g.strokeStyle = '#ff3131'; g.beginPath(); g.arc(x, y, R, 0, 7);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { g.moveTo(x + dx * R * 0.55, y + dy * R * 0.55); g.lineTo(x + dx * R * 1.5, y + dy * R * 1.5); }
+        g.stroke();
       }
     } else { g.beginPath(); g.arc(o.x, o.y, r, 0, 7); g.stroke(); }
     g.restore();
@@ -1569,7 +1580,17 @@ function majSelbar() {
   if (!selection) { b.classList.remove('ouvert'); sale = true; return; }
   const o = selection.obj, [sx, sy] = versEcran(o.x, o.y);
   $('s-tourner-g').style.display = selection.kind === 'marque' || outil === 'selection' ? '' : 'none';
-  b.classList.add('ouvert'); b.style.left = sx + 'px'; b.style.top = Math.max(70, sy - rayonObjet(selection) * S - 10) + 'px'; sale = true;
+  b.classList.add('ouvert');
+  if (selection.kind === 'marque' && LIGNES.has(o.type)) {            // ligne : la barre se met à côté, jamais sur la ligne ni ses bouts
+    const [ax, ay] = versEcran(o.x1, o.y1), [bx, by] = versEcran(o.x2, o.y2), m = 34;
+    const x0 = Math.min(ax, bx) - m, x1 = Math.max(ax, bx) + m, y0 = Math.min(ay, by) - m, y1 = Math.max(ay, by) + m;
+    const W = b.offsetWidth || 150, H = b.offsetHeight || 48;
+    const cands = [[(x0 + x1) / 2, y0 - 8], [(x0 + x1) / 2, y1 + H + 8], [x1 + W / 2 + 8, (y0 + y1) / 2 + H / 2], [x0 - W / 2 - 8, (y0 + y1) / 2 + H / 2]];
+    const ok = ([x, y]) => x - W / 2 > 8 && x + W / 2 < VW - 8 && y - H > 66 && y < VH - 80;
+    const [px, py] = cands.find(ok) || [sx, 70 + H];
+    b.style.left = px + 'px'; b.style.top = py + 'px'; sale = true; return;
+  }
+  b.style.left = sx + 'px'; b.style.top = Math.max(70, sy - rayonObjet(selection) * S - 10) + 'px'; sale = true;
 }
 function tournerGroupe(da) {
   const [cx, cy] = centreGroupe(), c = Math.cos(da), sn = Math.sin(da);
