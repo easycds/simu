@@ -1,0 +1,18 @@
+{
+  "name": "Easy Auto-École · Simulateur",
+  "short_name": "Simulateur",
+  "description": "Simulateur de sécurité routière pour les cours en salle — Easy Auto-École",
+  "lang": "fr",
+  "id": "/simu/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ff3131",
+  "theme_color": "#ff3131",
+  "icons": [
+    { "src": "/permis/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/permis/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/permis/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
