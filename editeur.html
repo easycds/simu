@@ -1,0 +1,2117 @@
+Prêt : 131544 caractères
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Éditeur Tracé (bêta)</title>
+<style>
+  :root { --rouge:#ff3131; --encre:#1c2430; --gris:#5b6270; --verre:rgba(17,20,24,.88); }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; overflow:hidden; background:#8ab583; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--encre); user-select:none; -webkit-user-select:none; }
+  canvas#vue { position:fixed; inset:0; width:100vw; height:100vh; touch-action:none; display:block; }
+  .pill { position:fixed; display:flex; align-items:center; gap:4px; background:var(--verre); color:#fff; border-radius:14px; padding:6px;
+          backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); box-shadow:0 6px 18px rgba(0,0,0,.25); z-index:5; }
+  .btn { height:44px; min-width:44px; padding:0 14px; border-radius:10px; display:flex; align-items:center; justify-content:center; gap:8px;
+         font-size:15px; font-weight:600; color:#e9ecf0; background:none; border:0; font-family:inherit; cursor:pointer; }
+  .btn:hover { background:rgba(255,255,255,.08); }
+  .btn:disabled { opacity:.35; cursor:default; background:none; }
+  .btn svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+  .btn.actif, .btn.actif:hover { background:#fff; color:#111; }
+  .btn.rouge, .btn.rouge:hover { background:var(--rouge); color:#fff; }
+  .sep { width:1px; height:28px; background:rgba(255,255,255,.18); margin:0 2px; }
+  #titre { font-size:16px; font-weight:650; padding:4px 10px 4px 2px; outline:none; min-width:60px; border-radius:6px; }
+  #titre:focus { background:rgba(255,255,255,.1); }
+  .chip { position:fixed; background:rgba(255,255,255,.92); color:#1c2430; border-radius:999px; padding:7px 13px; font-size:13px; font-weight:650;
+          box-shadow:0 4px 12px rgba(0,0,0,.18); white-space:nowrap; z-index:4; pointer-events:none; }
+  #echelle { left:50%; top:26px; transform:translateX(-50%); }
+  #dock { left:50%; bottom:18px; transform:translateX(-50%); }
+  /* tiroir */
+  #tiroir { position:fixed; left:50%; bottom:84px; transform:translateX(-50%); display:none; gap:6px; padding:8px; background:#fff; border-radius:16px;
+            box-shadow:0 12px 30px rgba(0,0,0,.28); z-index:5; max-width:calc(100vw - 24px); overflow-x:auto; }
+  #tiroir.ouvert { display:flex; }
+  .item { flex:none; width:64px; border-radius:12px; border:2px solid #eceef1; padding:6px 0 4px; text-align:center; font-size:10.5px; font-weight:650; color:#3a4250; cursor:pointer; line-height:1.15; }
+  .item:hover { border-color:#d4d7dd; }
+  .item.on { border-color:var(--rouge); background:#fff4f4; color:#111; }
+  .item canvas { display:block; margin:0 auto 3px; width:40px; height:40px; }
+  /* popover carrefour */
+  #regime { position:fixed; display:none; background:#fff; border-radius:16px; padding:14px 14px 12px; box-shadow:0 14px 34px rgba(0,0,0,.3); width:392px; z-index:6; }
+  #regime.ouvert { display:block; }
+  #regime h4 { margin:0 0 2px; font-size:15px; }
+  #regime p { margin:0 0 12px; font-size:12.5px; color:var(--gris); }
+  .choix { display:flex; gap:7px; }
+  .choix .item { width:auto; flex:1; }
+  #inverser { margin-top:10px; width:100%; height:38px; border-radius:10px; border:0; background:#f1f2f4; font:inherit; font-size:13px; font-weight:650; color:#1c2430; cursor:pointer; }
+  #sas { margin-top:8px; width:100%; height:38px; border-radius:10px; border:0; background:#f1f2f4; font:inherit; font-size:13px; font-weight:650; color:#1c2430; cursor:pointer; }
+  #inverser:hover, #detacher:hover, #sas:hover { background:#e6e8ec; }
+  #croisement { display:flex; align-items:center; gap:6px; margin-top:10px; font-size:12.5px; font-weight:650; color:var(--gris); }
+  #croisement span { flex:1; }
+  #croisement button { height:34px; padding:0 12px; border-radius:9px; border:2px solid #e6e8ec; background:#fff; font:inherit; font-size:12.5px; font-weight:650; color:#3a4250; cursor:pointer; }
+  #croisement button.on { border-color:var(--rouge); background:#fff4f4; color:#111; }
+  #detacher { margin-top:8px; width:100%; height:38px; border-radius:10px; border:0; background:#f1f2f4; font:inherit; font-size:13px; font-weight:650; color:#1c2430; cursor:pointer; }
+  /* sélection */
+  #selbar { position:fixed; display:none; z-index:6; transform:translate(-50%, -100%); }
+  #selbar.ouvert { display:flex; }
+  #selbar .btn { height:38px; min-width:38px; padding:0 10px; }
+  /* menu scènes */
+  #menu { position:fixed; left:20px; top:78px; display:none; flex-direction:column; align-items:stretch; padding:6px; }
+  #menu.ouvert { display:flex; }
+  #menu .btn { justify-content:flex-start; }
+  /* aide */
+  #aide { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); background:rgba(17,20,24,.82); color:#fff; border-radius:18px; padding:22px 26px;
+          text-align:center; z-index:3; max-width:360px; pointer-events:none; }
+  #aide b { display:block; font-size:19px; margin-bottom:6px; }
+  #aide span { font-size:14px; color:#c9ced6; line-height:1.45; }
+  #aide button { pointer-events:auto; margin-top:14px; height:38px; padding:0 16px; border-radius:10px; border:0; background:#fff; color:#111; font:inherit; font-weight:650; cursor:pointer; }
+  #menu a.btn { text-decoration:none; }
+  .sep-h { height:1px; background:rgba(255,255,255,.15); margin:4px 6px; }
+  #liste-scenes { position:fixed; inset:0; background:rgba(10,12,16,.45); display:none; align-items:center; justify-content:center; z-index:9; padding:16px; }
+  #liste-scenes.ouvert { display:flex; }
+  .ls-boite { background:#fff; border-radius:16px; padding:18px; width:min(420px, 100%); max-height:80vh; overflow:auto; box-shadow:0 20px 50px rgba(0,0,0,.35); }
+  .ls-boite h4 { margin:0 0 4px; font-size:16px; } .ls-boite p { margin:0 0 12px; font-size:13px; color:var(--gris); }
+  .ls-item { display:block; width:100%; text-align:left; padding:12px 14px; margin-bottom:6px; border-radius:10px; border:2px solid #eceef1; background:#fff; font:inherit; font-size:14px; font-weight:600; cursor:pointer; }
+  .ls-item:hover { border-color:var(--rouge); }
+  .ls-vide { color:var(--gris); }
+  #ls-fermer { margin-top:6px; height:38px; width:100%; border-radius:10px; border:0; background:#f1f2f4; font:inherit; font-weight:650; cursor:pointer; }
+  #verrou { position:fixed; inset:0; background:#8ab583; display:none; align-items:center; justify-content:center; z-index:20; padding:16px; }
+  #verrou.ouvert { display:flex; }
+  #verrou input { width:100%; height:44px; border-radius:10px; border:2px solid #e2e5ea; padding:0 12px; font:inherit; font-size:16px; user-select:text; -webkit-user-select:text; }
+  #verrou-ok { margin-top:12px; height:44px; width:100%; border-radius:10px; border:0; background:var(--rouge); color:#fff; font:inherit; font-weight:700; font-size:15px; cursor:pointer; }
+  .verrou-retour { display:block; text-align:center; margin-top:10px; font-size:13px; color:var(--gris); }
+  #toast { position:fixed; left:50%; bottom:92px; transform:translateX(-50%); background:rgba(17,20,24,.9); color:#fff; padding:10px 16px; border-radius:12px; font-size:14px;
+           font-weight:550; z-index:7; opacity:0; transition:opacity .2s; pointer-events:none; white-space:nowrap; }
+  #toast.vu { opacity:1; }
+  #tiroir.ouvert ~ #toast { bottom:calc(200px + env(safe-area-inset-bottom, 0px)); }
+  .lbl { }
+  @media (max-width: 480px) { #titre { display:none; } }
+  @media (max-width: 720px) {
+    .lbl { display:none; }
+    .btn { padding:0 10px; }
+    #regime { width:calc(100vw - 24px); }
+    #echelle { display:none; }
+    #titre { max-width:110px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  }
+</style>
+</head>
+<body>
+<canvas id="vue"></canvas>
+
+<div class="pill" style="left:20px;top:18px">
+  <button class="btn" id="b-menu" title="Scènes"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <div id="titre" contenteditable="true" spellcheck="false">Nouvelle scène</div>
+</div>
+<div class="pill" id="menu">
+  <a class="btn" id="m-retour" href="./"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Retour au simulateur</a>
+  <button class="btn" id="m-ouvrir-simu"><svg viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"/></svg>Ouvrir une scène du simulateur</button>
+  <button class="btn" id="m-envoyer"><svg viewBox="0 0 24 24"><path d="M5 12h12M13 6l6 6-6 6"/></svg>Envoyer vers la Simulation</button>
+  <div class="sep-h"></div>
+  <button class="btn" id="m-demo1"><svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="20" rx="3"/><circle cx="12" cy="7" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="17" r="1.5"/></svg>Démo feux · croisement classique</button>
+  <button class="btn" id="m-demo2"><svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="20" rx="3"/><circle cx="12" cy="7" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="17" r="1.5"/></svg>Démo feux · à l'indonésienne</button>
+  <button class="btn" id="m-exemple"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></svg>Charger l'exemple</button>
+  <div class="sep-h"></div>
+  <button class="btn" id="m-vider"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Tout effacer</button>
+</div>
+<div class="chip" id="echelle">Vue classe · échelle 1:1</div>
+<div class="pill" style="right:20px;top:18px">
+  <button class="btn" id="b-annuler" title="Annuler"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
+  <button class="btn" id="b-retablir" title="Rétablir"><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 000 12h3"/></svg></button>
+  <div class="sep"></div>
+  <button class="btn rouge" id="b-tester"><svg viewBox="0 0 24 24" style="fill:#fff;stroke:none" id="ico-play"><path d="M7 4l13 8-13 8z"/></svg><span id="t-tester">Tester</span></button>
+</div>
+
+<div class="pill" id="dock">
+  <button class="btn outil actif" data-outil="route"><svg viewBox="0 0 24 24"><path d="M6 21C8 14 10 9 18 3"/><path d="M11 20c2-6 5-11 10-14" opacity=".45"/></svg><span class="lbl">Route</span></button>
+  <button class="btn outil" data-outil="panneau"><svg viewBox="0 0 24 24"><path d="M12 3l8 8-8 8-8-8z"/><path d="M12 19v3"/></svg><span class="lbl">Panneau</span></button>
+  <button class="btn outil" data-outil="sol"><svg viewBox="0 0 24 24"><path d="M12 21V5"/><path d="M7 10l5-5 5 5"/></svg><span class="lbl">Sol</span></button>
+  <button class="btn outil" data-outil="decor"><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="6"/><path d="M12 16v6"/></svg><span class="lbl">Décor</span></button>
+  <div class="sep"></div>
+  <button class="btn outil" data-outil="gomme"><svg viewBox="0 0 24 24"><path d="M20 20H8l-5-5 10-10 8 8-6 6"/></svg><span class="lbl">Gomme</span></button>
+</div>
+<div id="tiroir"></div>
+
+<div id="regime">
+  <h4>Ce carrefour est réglé en…</h4>
+  <p>Un choix = panneaux + lignes posés sur chaque branche.</p>
+  <div class="choix" id="choix"></div>
+  <button id="inverser">⇄ Changer la route prioritaire</button>
+  <div id="croisement"><span>Tourne-à-gauche</span><button data-c="classique">Classique</button><button data-c="indonesien">Indonésien</button></div>
+  <button id="sas">🚲 Sas vélo</button>
+  <button id="detacher" class="inv2">✋ Ajuster librement panneaux et lignes</button>
+</div>
+
+<div class="pill" id="selbar">
+  <button class="btn" id="s-tourner-g" title="Tourner à gauche"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 103-6.3"/><path d="M4 4v5h5"/></svg></button>
+  <button class="btn" id="s-tourner" title="Tourner"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 11-3-6.3"/><path d="M20 4v5h-5"/></svg></button>
+  <button class="btn" id="s-suppr" title="Supprimer"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button>
+</div>
+
+<div id="aide"><b>Glisse pour tracer une route</b><span>Elle s'accroche toute seule aux autres routes et aux bords.<br>Touche ensuite un carrefour pour le régler.</span><br><button id="aide-ex">Voir l'exemple</button></div>
+<div id="liste-scenes"><div class="ls-boite"><h4>Mes scènes du simulateur</h4><p>Elles s'ouvrent ici pour être modifiées. Le simulateur garde l'original.</p><div id="ls-noms"></div><button id="ls-fermer">Fermer</button></div></div>
+<div id="verrou"><div class="ls-boite"><h4>Éditeur Tracé (bêta)</h4><p>Même mot de passe que l'éditeur du simulateur.</p>
+<input type="password" id="verrou-mdp" autocomplete="current-password" placeholder="Mot de passe"><p id="verrou-err" hidden style="color:#c8102e;margin:8px 0 0">Mot de passe incorrect.</p>
+<button id="verrou-ok">Entrer</button> <a href="./" class="verrou-retour">Retour au simulateur</a></div></div>
+<div id="toast"></div>
+
+<script>let ctx; const COL = { ombre: 'rgba(0,0,0,0.22)' }; const C = { x: 0, y: 0 };</script>
+<script>
+/* =====================================================================
+   PANNEAUX V2 — grammaire commune
+   rouge #c8102e · bleu #0055a4 · jaune #f7c600 · noir #1b1d21
+   tranche sombre fine + liseré blanc + fond + pictogramme net
+   ===================================================================== */
+const V2 = { rouge: '#c8102e', rougeF: '#5b1016', bleu: '#0055a4', bleuF: '#0b2a55', jaune: '#f7c600', noir: '#1b1d21', blanc: '#ffffff' };
+
+function v2Poly(ctx, pts) { ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); }
+/* triangle aux coins arrondis (comme les vrais panneaux) */
+function v2Tri(ctx, r, bas) {
+  const s = bas ? -1 : 1;
+  const P = [[0, -r * 1.02 * s], [r * 1.1, r * 0.88 * s], [-r * 1.1, r * 0.88 * s]];
+  const k = r * 0.14;
+  ctx.beginPath();
+  ctx.moveTo((P[0][0] + P[1][0]) / 2, (P[0][1] + P[1][1]) / 2);
+  for (let i = 1; i <= 3; i++) { const p = P[i % 3], n = P[(i + 1) % 3]; ctx.arcTo(p[0], p[1], n[0], n[1], k); }
+  ctx.closePath();
+}
+function v2TriC(ctx, r, k, bas) {
+  const cy = (bas ? -1 : 1) * r * 0.247;
+  ctx.save(); ctx.translate(0, cy * (1 - k)); v2Tri(ctx, r * k, bas); ctx.restore();
+}
+function v2Tranche(ctx, dessin, coul) { ctx.fillStyle = coul; dessin(); ctx.fill(); }
+function v2Reflet(ctx, clip, r) {
+  r = r || 40;
+  ctx.save(); clip(); ctx.clip();
+  const g = ctx.createLinearGradient(0, -r, 0, r);
+  g.addColorStop(0, 'rgba(255,255,255,0.16)'); g.addColorStop(0.5, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g; ctx.fillRect(-r * 1.5, -r * 1.5, r * 3, r * 3);
+  ctx.restore();
+}
+function v2Fleche(ctx, x0, y0, x1, y1, ep, tete, coul) {
+  // flèche pleine de (x0,y0) vers (x1,y1)
+  const a = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0);
+  ctx.save(); ctx.translate(x0, y0); ctx.rotate(a); ctx.fillStyle = coul;
+  ctx.beginPath();
+  ctx.moveTo(0, -ep / 2); ctx.lineTo(L - tete, -ep / 2); ctx.lineTo(L - tete, -tete * 0.62);
+  ctx.lineTo(L, 0); ctx.lineTo(L - tete, tete * 0.62); ctx.lineTo(L - tete, ep / 2); ctx.lineTo(0, ep / 2);
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function dessinerPictogrammeV2(ctx, type, t, etatFeu) {
+  const r = t / 2;
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const rond = (k) => { ctx.beginPath(); ctx.arc(0, 0, r * k, 0, Math.PI * 2); };
+  const carre = (k, rr) => { const c = t * k; ctx.beginPath(); ctx.roundRect(-c / 2, -c / 2, c, c, rr || t * 0.08); };
+  const losange = (k) => v2Poly(ctx, [[0, -r * k], [r * k, 0], [0, r * k], [-r * k, 0]]);
+
+  // AB6 + M7 : losange réduit + panonceau dessous
+  if (type.startsWith('route_prioritaire_m7') || type.startsWith('m7_seul')) {
+    const seul = type.startsWith('m7_seul');
+    const suffixe = (type.match(/(?:m7|seul)_?([bcde])$/) || [])[1] || '';
+    const variante = { '': 'gauche', b: 'droite', c: 'T', d: 'gauche_bas', e: 'droite_bas' }[suffixe];
+    if (!seul) {
+      ctx.save(); ctx.translate(0, -t * 0.2); dessinerPictogrammeV2(ctx, 'route_prioritaire', t * 0.78); ctx.restore();
+    }
+    const w = seul ? t * 0.86 : t * 0.62, h = seul ? t * 0.86 : t * 0.36, y = seul ? 0 : t * 0.38;
+    ctx.fillStyle = V2.noir; ctx.beginPath(); ctx.roundRect(-w / 2 - 1.2, y - h / 2 - 1.2, w + 2.4, h + 2.4, t * 0.05); ctx.fill();
+    ctx.fillStyle = V2.blanc; ctx.beginPath(); ctx.roundRect(-w / 2, y - h / 2, w, h, t * 0.04); ctx.fill();
+    // schéma : route prioritaire épaisse, route secondaire fine
+    ctx.save(); ctx.translate(0, y);
+    const k = Math.min(w, h) * 0.42, epP = Math.max(2.5, k * 0.46), epS = Math.max(1, k * 0.1);
+    ctx.strokeStyle = V2.noir; ctx.lineCap = 'butt'; ctx.lineJoin = 'miter';
+    const bas = variante && variante.endsWith('_bas');
+    const dir = variante && variante.startsWith('droite') ? 1 : -1;
+    if (variante === 'T') {
+      ctx.lineWidth = epP; ctx.beginPath(); ctx.moveTo(-k * 1.1, -k * 0.2); ctx.lineTo(k * 1.1, -k * 0.2); ctx.stroke();
+      ctx.lineWidth = epS; ctx.beginPath(); ctx.moveTo(0, -k * 0.2); ctx.lineTo(0, k * 0.9); ctx.stroke();
+    } else {
+      const ys = bas ? -1 : 1;
+      ctx.lineWidth = epS; ctx.beginPath(); ctx.moveTo(-k * 1.1, 0); ctx.lineTo(k * 1.1, 0); ctx.moveTo(0, -k * 0.9 * ys); ctx.lineTo(0, 0); ctx.stroke();
+      ctx.lineWidth = epP; ctx.beginPath(); ctx.moveTo(0, k * 0.9 * ys); ctx.lineTo(0, 0); ctx.lineTo(dir * k * 1.1, 0); ctx.stroke();
+    }
+    ctx.restore();
+    return;
+  }
+
+  switch (type) {
+    case 'stop': {
+      const oct = (k) => { ctx.beginPath(); for (let i = 0; i < 8; i++) { const a = Math.PI / 8 + i * Math.PI / 4; ctx[i ? 'lineTo' : 'moveTo'](r * k * Math.cos(a), r * k * Math.sin(a)); } ctx.closePath(); };
+      ctx.fillStyle = V2.rougeF; oct(1); ctx.fill();
+      ctx.fillStyle = V2.blanc; oct(0.94); ctx.fill();
+      ctx.fillStyle = V2.rouge; oct(0.85); ctx.fill();
+      ctx.save(); ctx.fillStyle = '#fff'; ctx.font = `800 ${t * 0.36}px "Arial Narrow","Helvetica Neue",Arial,sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; const lw = ctx.measureText('STOP').width; ctx.scale(t * 0.66 / lw, 1); ctx.fillText('STOP', 0, t * 0.02); ctx.restore();
+      v2Reflet(ctx, () => oct(0.85), r);
+      break;
+    }
+    case 'cedez': {                                 // AB3a : triangle pointe en bas, grand fond blanc
+      ctx.fillStyle = V2.rougeF; v2TriC(ctx, r, 1, true); ctx.fill();
+      ctx.fillStyle = V2.blanc; v2TriC(ctx, r, 0.955, true); ctx.fill();
+      ctx.fillStyle = V2.rouge; v2TriC(ctx, r, 0.92, true); ctx.fill();
+      ctx.fillStyle = V2.blanc; v2TriC(ctx, r, 0.68, true); ctx.fill();
+      v2Reflet(ctx, () => v2TriC(ctx, r, 0.92, true), r);
+      break;
+    }
+    case 'priorite_droite': case 'priorite_ponctuelle': case 'giratoire': {
+      // triangle de danger : liseré blanc, bordure rouge régulière, grand fond blanc
+      ctx.fillStyle = V2.rougeF; v2TriC(ctx, r, 1, false); ctx.fill();
+      ctx.fillStyle = V2.blanc; v2TriC(ctx, r, 0.955, false); ctx.fill();
+      ctx.fillStyle = V2.rouge; v2TriC(ctx, r, 0.92, false); ctx.fill();
+      ctx.fillStyle = V2.blanc; v2TriC(ctx, r, 0.7, false); ctx.fill();
+      ctx.save(); ctx.translate(0, r * 0.27);
+      ctx.strokeStyle = V2.noir; ctx.fillStyle = V2.noir;
+      if (type === 'priorite_droite') {            // AB1 : croix de Saint-André
+        const d = r * 0.3; ctx.lineWidth = r * 0.14; ctx.lineCap = 'butt';
+        ctx.beginPath(); ctx.moveTo(-d, -d); ctx.lineTo(d, d); ctx.moveTo(d, -d); ctx.lineTo(-d, d); ctx.stroke();
+      } else if (type === 'priorite_ponctuelle') { // AB2 : barre verticale épaisse, barre horizontale plus fine
+        ctx.fillRect(-r * 0.1, -r * 0.44, r * 0.2, r * 0.76);
+        ctx.fillRect(-r * 0.32, -r * 0.13, r * 0.64, r * 0.12);
+      } else {                                      // AB25 : trois flèches tournant dans le sens giratoire
+        const R0 = r * 0.25; ctx.lineWidth = r * 0.12; ctx.lineCap = 'butt';
+        for (let k = 0; k < 3; k++) {
+          const a0 = -Math.PI / 2 + k * 2 * Math.PI / 3 + 0.25, e = a0 - 1.45;
+          ctx.beginPath(); ctx.arc(0, 0, R0, a0, e, true); ctx.stroke();
+          const hx = Math.cos(e) * R0, hy = Math.sin(e) * R0, tx = Math.sin(e), ty = -Math.cos(e), nx = Math.cos(e), ny = Math.sin(e);
+          const L = r * 0.17, W = r * 0.13;
+          ctx.beginPath(); ctx.moveTo(hx + tx * L, hy + ty * L); ctx.lineTo(hx + nx * W, hy + ny * W); ctx.lineTo(hx - nx * W, hy - ny * W); ctx.closePath(); ctx.fill();
+        }
+      }
+      ctx.restore();
+      v2Reflet(ctx, () => v2TriC(ctx, r, 0.92, false), r);
+      break;
+    }
+    case 'sens_interdit': {
+      ctx.fillStyle = V2.rougeF; rond(1); ctx.fill();
+      ctx.fillStyle = V2.blanc; rond(0.95); ctx.fill();
+      ctx.fillStyle = V2.rouge; rond(0.88); ctx.fill();
+      ctx.fillStyle = V2.blanc; ctx.beginPath(); ctx.roundRect(-r * 0.62, -r * 0.14, r * 1.24, r * 0.28, r * 0.05); ctx.fill();
+      v2Reflet(ctx, () => rond(0.88), r);
+      break;
+    }
+    case 'b15': {
+      ctx.fillStyle = V2.rougeF; rond(1); ctx.fill();
+      ctx.fillStyle = V2.rouge; rond(0.96); ctx.fill();
+      ctx.fillStyle = V2.blanc; rond(0.76); ctx.fill();
+      v2Fleche(ctx, -r * 0.2, -r * 0.5, -r * 0.2, r * 0.52, t * 0.13, t * 0.2, V2.noir);   // noire vers le bas (large)
+      v2Fleche(ctx, r * 0.22, r * 0.5, r * 0.22, -r * 0.52, t * 0.07, t * 0.15, V2.rouge); // rouge vers le haut (fine)
+      v2Reflet(ctx, () => rond(0.96), r);
+      break;
+    }
+    case 'c18': {
+      ctx.fillStyle = V2.bleuF; carre(0.96); ctx.fill();
+      ctx.fillStyle = V2.blanc; carre(0.9); ctx.fill();
+      ctx.fillStyle = V2.bleu; carre(0.84); ctx.fill();
+      v2Fleche(ctx, -r * 0.22, -r * 0.55, -r * 0.22, r * 0.55, t * 0.07, t * 0.15, V2.rouge); // rouge vers le bas (fine)
+      v2Fleche(ctx, r * 0.2, r * 0.55, r * 0.2, -r * 0.55, t * 0.13, t * 0.2, V2.blanc);    // blanche vers le haut (large)
+      v2Reflet(ctx, () => carre(0.84), r);
+      break;
+    }
+    case 'passage_pieton': {
+      ctx.fillStyle = V2.bleuF; carre(0.96); ctx.fill();
+      ctx.fillStyle = V2.blanc; carre(0.9); ctx.fill();
+      ctx.fillStyle = V2.bleu; carre(0.84); ctx.fill();
+      ctx.fillStyle = V2.blanc; v2Poly(ctx, [[0, -r * 0.62], [r * 0.64, r * 0.5], [-r * 0.64, r * 0.5]]); ctx.fill();
+      // piéton (silhouette simple qui marche)
+      ctx.save(); ctx.translate(0, r * 0.05); ctx.scale(1.35, 1.35);
+      ctx.fillStyle = V2.noir; ctx.strokeStyle = V2.noir; ctx.lineWidth = t * 0.05;
+      ctx.beginPath(); ctx.arc(r * 0.02, -r * 0.2, t * 0.045, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0, -r * 0.1); ctx.lineTo(-r * 0.04, r * 0.12); ctx.lineTo(-r * 0.16, r * 0.34);
+      ctx.moveTo(-r * 0.04, r * 0.12); ctx.lineTo(r * 0.1, r * 0.34);
+      ctx.moveTo(-r * 0.02, -r * 0.04); ctx.lineTo(-r * 0.14, r * 0.08); ctx.moveTo(-r * 0.02, -r * 0.04); ctx.lineTo(r * 0.12, r * 0.06);
+      ctx.stroke();
+      ctx.restore();
+      // bandes du passage
+      ctx.fillStyle = V2.noir; for (let i = -2; i <= 2; i++) ctx.fillRect(i * r * 0.13 - r * 0.04, r * 0.4, r * 0.08, r * 0.06);
+      v2Reflet(ctx, () => carre(0.84), r);
+      break;
+    }
+    case 'route_prioritaire': {
+      ctx.fillStyle = V2.noir; losange(1.08); ctx.fill();
+      ctx.fillStyle = V2.blanc; losange(1.03); ctx.fill();
+      ctx.fillStyle = V2.noir; losange(0.7); ctx.fill();
+      ctx.fillStyle = V2.jaune; losange(0.66); ctx.fill();
+      v2Reflet(ctx, () => losange(1.03), r);
+      break;
+    }
+    case 'obligation_droit': case 'obligation_droite': case 'obligation_gauche': {
+      ctx.fillStyle = V2.bleuF; rond(1); ctx.fill();
+      ctx.fillStyle = V2.blanc; rond(0.95); ctx.fill();
+      ctx.fillStyle = V2.bleu; rond(0.88); ctx.fill();
+      if (type === 'obligation_droit') v2Fleche(ctx, 0, r * 0.58, 0, -r * 0.6, t * 0.14, t * 0.26, V2.blanc);
+      else {
+        const s = type === 'obligation_droite' ? 1 : -1;
+        ctx.save(); ctx.strokeStyle = V2.blanc; ctx.lineWidth = t * 0.14; ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
+        ctx.beginPath(); ctx.moveTo(-s * r * 0.18, r * 0.58); ctx.lineTo(-s * r * 0.18, -r * 0.02);
+        ctx.quadraticCurveTo(-s * r * 0.18, -r * 0.16, -s * r * 0.04, -r * 0.16); ctx.lineTo(s * r * 0.12, -r * 0.16); ctx.stroke(); ctx.restore();
+        v2Fleche(ctx, s * r * 0.1, -r * 0.16, s * r * 0.64, -r * 0.16, 0.001, t * 0.26, V2.blanc);
+      }
+      v2Reflet(ctx, () => rond(0.88), r);
+      break;
+    }
+    case 'feu': {
+      const w = t * 0.42, h = t * 1.0;
+      ctx.fillStyle = '#0f1114'; ctx.beginPath(); ctx.roundRect(-w / 2 - 1.5, -h / 2 - 1.5, w + 3, h + 3, w * 0.36); ctx.fill();
+      ctx.fillStyle = '#23272d'; ctx.beginPath(); ctx.roundRect(-w / 2, -h / 2, w, h, w * 0.32); ctx.fill();
+      const lampes = [['rouge', '#ff3b30', -h * 0.3], ['orange', '#ffb000', 0], ['vert', '#2ecc71', h * 0.3]];
+      for (const [e, c, y] of lampes) {
+        const on = e === (etatFeu || 'rouge');
+        if (on) { const g = ctx.createRadialGradient(0, y, 0, 0, y, w * 0.75); g.addColorStop(0, c + 'aa'); g.addColorStop(1, c + '00'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, y, w * 0.75, 0, Math.PI * 2); ctx.fill(); }
+        ctx.fillStyle = on ? c : '#3a3f47'; ctx.beginPath(); ctx.arc(0, y, w * 0.3, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = on ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.06)'; ctx.beginPath(); ctx.arc(-w * 0.08, y - w * 0.08, w * 0.1, 0, Math.PI * 2); ctx.fill();
+      }
+      break;
+    }
+  }
+}
+
+/* Rendu complet : ombre de la forme + mât côté usager (comme en ligne) */
+function panneauV2(ctx, type, t, etat) {
+  const r = t / 2;
+  if (type !== 'feu') {
+    ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.arc(t * 0.05, r * 1.02 + t * 0.07, Math.max(2, t * 0.07), 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#8f969d'; ctx.beginPath(); ctx.arc(0, r * 1.02, Math.max(2, t * 0.065), 0, Math.PI * 2); ctx.fill();
+  }
+  const off = document.createElement('canvas'); const S = 4, c = t * 1.3;
+  off.width = off.height = Math.ceil(c * S); const o = off.getContext('2d'); o.setTransform(S, 0, 0, S, c * S / 2, c * S / 2);
+  dessinerPictogrammeV2(o, type, t, etat);
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.22)'; ctx.shadowOffsetX = t * 0.06 * 2; ctx.shadowOffsetY = t * 0.09 * 2; ctx.shadowBlur = 3;
+  ctx.drawImage(off, -c / 2, -c / 2, c, c); ctx.restore();
+}
+
+/* =====================================================================
+   MARQUAGES V2 — peinture blanc cassé, légère usure, proportions réelles
+   (1 m ≈ 30 px ici)
+   ===================================================================== */
+const PEINT = '#eef0ee', JAUNE = '#f2c200';
+function usure(ctx, w, h, graine) {
+  let g = graine || 7; const a = () => ((g = (g * 1664525 + 1013904223) >>> 0) / 4294967296);
+  ctx.save(); ctx.globalCompositeOperation = 'destination-out';
+  for (let i = 0; i < w * h / 55; i++) { ctx.fillStyle = `rgba(0,0,0,${0.15 + a() * 0.35})`; ctx.fillRect(a() * w, a() * h, 1 + a() * 2, 1 + a() * 2); }
+  ctx.restore();
+}
+function flecheSol(ctx, type, L) {
+  // flèches directionnelles françaises : longue tige, pointe effilée ; axe vers le haut
+  ctx.fillStyle = PEINT;
+  const tige = L * 0.045, pointe = L * 0.28, larg = L * 0.22;     // tige fine, pointe bien marquée
+  const droit = () => { ctx.fillRect(-tige / 2, -L * 0.5 + pointe, tige, L * 0.6 - pointe); v2Poly(ctx, [[0, -L * 0.5], [larg / 2, -L * 0.5 + pointe], [-larg / 2, -L * 0.5 + pointe]]); ctx.fill(); };
+  const tourne = (s) => {
+    ctx.save(); ctx.strokeStyle = PEINT; ctx.lineWidth = tige; ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
+    // tige verticale puis coude à 90° : la pointe part à l'horizontale
+    const yc = -L * 0.12, r = L * 0.05;
+    ctx.beginPath(); ctx.moveTo(0, L * 0.22); ctx.lineTo(0, yc + r); ctx.quadraticCurveTo(0, yc, s * r, yc); ctx.lineTo(s * L * 0.12, yc); ctx.stroke(); ctx.restore();
+    ctx.save(); ctx.translate(s * L * 0.12, yc); ctx.rotate(s * Math.PI / 2);
+    v2Poly(ctx, [[0, -pointe * 0.9], [larg / 2, 0], [-larg / 2, 0]]); ctx.fill(); ctx.restore();
+  };
+  if (type === 'fleche_droit') droit();
+  else if (type === 'fleche_gauche') tourne(-1);
+  else if (type === 'fleche_droite') tourne(1);
+  else if (type === 'fleche_td_gauche') { droit(); ctx.save(); ctx.translate(0, L * 0.14); tourne(-1); ctx.restore(); }
+  else if (type === 'fleche_td_droite') { droit(); ctx.save(); ctx.translate(0, L * 0.14); tourne(1); ctx.restore(); }
+  else if (type === 'fleche_rabattement') {         // flèche de rabattement : courbe, pointe vers la droite
+    ctx.save(); ctx.strokeStyle = PEINT; ctx.lineWidth = tige; ctx.beginPath(); ctx.moveTo(-L * 0.08, L * 0.45); ctx.bezierCurveTo(-L * 0.08, 0, L * 0.02, -L * 0.18, L * 0.1, -L * 0.26); ctx.stroke(); ctx.restore();
+    ctx.save(); ctx.translate(L * 0.1, -L * 0.26); ctx.rotate(Math.PI / 5); v2Poly(ctx, [[0, -pointe], [larg / 2, 0], [-larg / 2, 0]]); ctx.fill(); ctx.restore();
+  }
+}
+function veloSol(ctx, s) {
+  ctx.save(); ctx.strokeStyle = PEINT; ctx.fillStyle = PEINT; ctx.lineWidth = s * 0.07; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const R = s * 0.2;
+  ctx.beginPath(); ctx.arc(-s * 0.32, s * 0.12, R, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(s * 0.32, s * 0.12, R, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-s * 0.32, s * 0.12); ctx.lineTo(-s * 0.06, -s * 0.14); ctx.lineTo(s * 0.2, -s * 0.14); ctx.lineTo(s * 0.32, s * 0.12);
+  ctx.moveTo(-s * 0.06, -s * 0.14); ctx.lineTo(s * 0.02, s * 0.12); ctx.lineTo(s * 0.2, -s * 0.14);
+  ctx.moveTo(-s * 0.1, -s * 0.24); ctx.lineTo(s * 0.02, -s * 0.24); ctx.moveTo(s * 0.2, -s * 0.14); ctx.lineTo(s * 0.16, -s * 0.28); ctx.lineTo(s * 0.26, -s * 0.3);
+  ctx.stroke(); ctx.restore();
+}
+function pmrSol(ctx, s) {
+  ctx.save(); ctx.fillStyle = PEINT; ctx.strokeStyle = PEINT; ctx.lineWidth = s * 0.09; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(-s * 0.02, -s * 0.36, s * 0.08, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-s * 0.04, -s * 0.24); ctx.lineTo(-s * 0.04, s * 0.02); ctx.lineTo(s * 0.2, s * 0.02); ctx.lineTo(s * 0.28, s * 0.3);
+  ctx.moveTo(-s * 0.04, -s * 0.12); ctx.lineTo(s * 0.14, -s * 0.12); ctx.stroke();
+  ctx.lineWidth = s * 0.07; ctx.beginPath(); ctx.arc(-s * 0.04, s * 0.18, s * 0.24, -Math.PI * 0.15, Math.PI * 1.1); ctx.stroke();
+  ctx.restore();
+}
+/* dessine une vignette de marquage V2 centrée dans (w,h) — orientation : la voie va vers le haut */
+function marquageV2(ctx, type, w, h) {
+  ctx.save();
+  const cx = w / 2, cy = h / 2, M = 30;         // 30 px = 1 m
+  ctx.fillStyle = PEINT;
+  const bandeT = (x0, x1, y, ep, tiret, vide) => { for (let x = x0; x < x1; x += tiret + vide) ctx.fillRect(x, y - ep / 2, Math.min(tiret, x1 - x), ep); };
+  switch (type) {
+    case 'stop': ctx.fillRect(cx - 3.5 * M * 0.9, cy - 0.25 * M, 3.5 * M * 1.8, 0.5 * M); break;                          // 50 cm continue
+    case 'cedez': bandeT(cx - 3.2 * M, cx + 3.2 * M, cy, 0.5 * M, 0.5 * M, 0.5 * M); break;                               // 50 cm, 50/50
+    case 'passage_pieton': for (let x = cx - 3 * M; x < cx + 3 * M; x += M) ctx.fillRect(x, cy - 1.25 * M, 0.5 * M, 2.5 * M); break;
+    case 'ligne_discontinue': bandeT(0, w, cy, 0.15 * M, 3 * M, 3.5 * M); break;
+    case 'ligne_continue': ctx.fillRect(0, cy - 0.075 * M, w, 0.15 * M); break;
+    case 'ligne_mixte': ctx.fillRect(0, cy - 0.3 * M, w, 0.15 * M); bandeT(0, w, cy + 0.225 * M, 0.15 * M, 3 * M, 3.5 * M); break;
+    case 'double_continue': ctx.fillRect(0, cy - 0.3 * M, w, 0.15 * M); ctx.fillRect(0, cy + 0.15 * M, w, 0.15 * M); break;
+    case 'ligne_effet': ctx.fillRect(cx - 3.2 * M, cy - 0.1 * M, 6.4 * M, 0.2 * M); break;
+    case 'ligne_guidage': bandeT(0, w, cy, 0.15 * M, 1 * M, 1 * M); break;
+    case 'bande_cyclable': bandeT(0, w, cy - 0.6 * M, 0.3 * M, 3 * M, 1.5 * M); ctx.save(); ctx.translate(cx, cy + 0.9 * M); veloSol(ctx, 1.4 * M); ctx.restore(); break;
+    case 'piste_cyclable':
+      ctx.fillStyle = '#2f7d5b'; ctx.beginPath(); ctx.roundRect(0, cy - 1.1 * M, w, 2.2 * M, 6); ctx.fill();
+      ctx.fillStyle = PEINT; ctx.fillRect(0, cy - 1.1 * M, w, 0.12 * M); ctx.fillRect(0, cy + 0.98 * M, w, 0.12 * M);
+      ctx.save(); ctx.translate(cx, cy); veloSol(ctx, 1.5 * M); ctx.restore(); break;
+    case 'velo': ctx.save(); ctx.translate(cx, cy); veloSol(ctx, 2.6 * M); ctx.restore(); break;
+    case 'sas_velo':
+      ctx.fillRect(cx - 3.2 * M, cy - 1.8 * M, 6.4 * M, 0.3 * M); bandeT(cx - 3.2 * M, cx + 3.2 * M, cy + 1.6 * M, 0.3 * M, 0.5 * M, 0.5 * M);
+      ctx.save(); ctx.translate(cx, cy); veloSol(ctx, 2 * M); ctx.restore(); break;
+    case 'ralentisseur':
+      ctx.fillStyle = '#5a6069'; ctx.fillRect(cx - 3.3 * M, cy - 0.9 * M, 6.6 * M, 1.8 * M);
+      ctx.fillStyle = PEINT; for (let x = cx - 3 * M; x < cx + 3 * M; x += 1.2 * M) v2Poly(ctx, [[x, cy - 0.9 * M], [x + 0.6 * M, cy - 0.9 * M], [x + 0.3 * M, cy + 0.1 * M]]), ctx.fill();
+      break;
+    case 'stationnement':
+      ctx.fillRect(cx - 2.7 * M, cy - 1.3 * M, 5.4 * M, 0.15 * M);
+      for (const x of [cx - 2.7 * M, cx + 2.55 * M]) ctx.fillRect(x, cy - 1.3 * M, 0.15 * M, 2.5 * M);
+      break;
+    case 'zebra': {
+      const x0 = cx - 3 * M, y0 = cy - 1.3 * M, W2 = 6 * M, H2 = 2.6 * M;
+      ctx.strokeStyle = PEINT; ctx.lineWidth = 0.15 * M; ctx.strokeRect(x0, y0, W2, H2);
+      ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, W2, H2); ctx.clip(); ctx.lineWidth = 0.4 * M;
+      for (let x = x0 - H2; x < x0 + W2; x += 1.1 * M) { ctx.beginPath(); ctx.moveTo(x, y0 + H2); ctx.lineTo(x + H2, y0); ctx.stroke(); }
+      ctx.restore(); break;
+    }
+    case 'damier_bus': {
+      const s = 0.5 * M; ctx.fillStyle = PEINT;
+      for (let i = 0; i < 12; i++) for (let j = 0; j < 5; j++) if ((i + j) % 2 === 0) ctx.fillRect(cx - 3 * M + i * s, cy - 1.25 * M + j * s, s, s);
+      break;
+    }
+    case 'triangle_cedez': v2Poly(ctx, [[cx, cy - 2.2 * M], [cx + 0.6 * M, cy + 1.6 * M], [cx - 0.6 * M, cy + 1.6 * M]]); ctx.fill(); break;
+    case 'zigzag_bus': {
+      ctx.strokeStyle = JAUNE; ctx.lineWidth = 0.15 * M; ctx.lineJoin = 'miter'; ctx.beginPath();
+      for (let k = 0, x = 0; x <= w; k++, x += 1 * M) ctx[k ? 'lineTo' : 'moveTo'](x, cy + (k % 2 ? -0.5 : 0.5) * M);
+      ctx.stroke(); break;
+    }
+    case 'voie_bus': {
+      ctx.fillRect(0, cy - 1.5 * M, w, 0.3 * M);
+      ctx.save(); ctx.translate(cx, cy + 0.6 * M); ctx.font = `800 ${0.9 * M}px "Arial Narrow",Arial,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.scale(1, 1.8); ctx.fillText('BUS', 0, 0); ctx.restore(); break;
+    }
+    case 'texte_sol': {
+      ctx.save(); ctx.translate(cx, cy); ctx.font = `800 ${1.1 * M}px "Arial Narrow",Arial,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.scale(1, 2.2); ctx.fillText('BUS', 0, 0); ctx.restore(); break;
+    }
+    case 'pmr': ctx.save(); ctx.translate(cx, cy); pmrSol(ctx, 2.6 * M); ctx.restore(); break;
+    default: // flèches
+      ctx.save(); ctx.translate(cx, cy); flecheSol(ctx, type, 4.2 * M); ctx.restore();
+  }
+  ctx.restore();
+}
+
+</script>
+<script>
+/* ---------- aléatoire reproductible ---------- */
+let graine = 20260930;
+const alea = () => ((graine = (graine * 1664525 + 1013904223) >>> 0) / 4294967296);
+
+/* ---------- outils ---------- */
+function arcCourt(cx, cy, r, a1, a2) {
+  let d = a2 - a1;
+  while (d > Math.PI) d -= 2 * Math.PI;
+  while (d < -Math.PI) d += 2 * Math.PI;
+  ctx.arc(cx, cy, r, a1, a1 + d, d < 0);
+}
+function enRepere(angle, fn) {       // repère de branche : u vers l'extérieur, v à sa droite
+  ctx.save();
+  ctx.translate(C.x, C.y);
+  ctx.rotate(angle);
+  fn();
+  ctx.restore();
+}
+function rr(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+
+function arbre(x, y, r) {
+  ctx.fillStyle = COL.ombre;
+  ctx.beginPath(); ctx.ellipse(x + r * 0.35, y + r * 0.45, r, r * 0.9, 0, 0, Math.PI * 2); ctx.fill();
+  const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
+  g.addColorStop(0, '#6fae5f'); g.addColorStop(1, '#3f7c3a');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  for (let k = 0; k <= 10; k++) {
+    const a = k / 10 * Math.PI * 2, rr2 = r * (0.86 + ((k * 37) % 7) / 40);
+    const px = x + Math.cos(a) * rr2, py = y + Math.sin(a) * rr2;
+    k ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.beginPath(); ctx.arc(x - r * 0.3, y - r * 0.3, r * 0.35, 0, Math.PI * 2); ctx.fill();
+}
+
+
+function maison(x, y, w, h, rot, toit) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+  ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(-w / 2 + 7, -h / 2 + 9, w, h);
+  ctx.fillStyle = toit; ctx.fillRect(-w / 2, -h / 2, w, h);
+  ctx.fillStyle = 'rgba(0,0,0,0.16)'; ctx.fillRect(-w / 2, 0, w, h / 2);         // pan à l'ombre
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-w / 2, 0); ctx.lineTo(w / 2, 0); ctx.stroke();     // faîtage
+  ctx.strokeStyle = 'rgba(0,0,0,0.08)'; ctx.lineWidth = 1;
+  for (let k = -h / 2 + 6; k < h / 2; k += 6) { ctx.beginPath(); ctx.moveTo(-w / 2, k); ctx.lineTo(w / 2, k); ctx.stroke(); }
+  ctx.restore();
+}
+function lampadaire(x, y, a) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(a);
+  ctx.strokeStyle = '#6b7079'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(22, 0); ctx.stroke();
+  ctx.fillStyle = '#fff6c9'; ctx.beginPath(); ctx.ellipse(24, 0, 6, 4, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#50555d'; ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+/* ---------- 5. usagers (mise en situation) ---------- */
+function voitureEasy(x, y, ang, L = 74, l = 38) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+  const NOIR = '#16181c', ROUGE = '#ff3131', VITRE = '#3b4552', r = 10;
+  ctx.fillStyle = 'rgba(0,0,0,0.22)'; rr(-L/2 + 3, -l/2 + 4, L, l, r); ctx.fill();
+  ctx.fillStyle = NOIR; rr(-L/2, -l/2, L, l, r); ctx.fill();
+  ctx.save(); rr(-L/2, -l/2, L, l, r); ctx.clip(); ctx.fillStyle = ROUGE;
+  for (const c of [-1, 1]) {
+    ctx.beginPath(); ctx.moveTo(-L*0.52, c*l*0.52); ctx.lineTo(L*0.10, c*l*0.52);
+    ctx.bezierCurveTo(L*0.02, c*l*0.40, -L*0.10, c*l*0.30, -L*0.30, c*l*0.30);
+    ctx.lineTo(-L*0.52, c*l*0.30); ctx.closePath(); ctx.fill();
+  }
+  ctx.beginPath(); ctx.moveTo(-L*0.52, -l*0.52); ctx.lineTo(-L*0.40, -l*0.52);
+  ctx.quadraticCurveTo(-L*0.44, 0, -L*0.40, l*0.52); ctx.lineTo(-L*0.52, l*0.52); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = VITRE;
+  rr(L*0.10, -l*0.36, L*0.15, l*0.72, 4); ctx.fill(); rr(-L*0.35, -l*0.32, L*0.09, l*0.64, 3); ctx.fill();
+  for (const c of [-1, 1]) { rr(-L*0.28, c > 0 ? l*0.30 : -l*0.40, L*0.40, l*0.10, 2); ctx.fill(); }
+  ctx.fillStyle = '#0f1114'; rr(-L*0.27, -l*0.30, L*0.37, l*0.60, 4); ctx.fill();
+  const pw = L*0.10, ph = l*0.66;
+  ctx.fillStyle = ROUGE; rr(-L*0.09 - pw/2, -ph/2, pw, ph, 2); ctx.fill();
+  ctx.save(); ctx.translate(-L*0.09, 0); ctx.rotate(Math.PI/2); ctx.fillStyle = '#fff';
+  ctx.font = '700 ' + (pw*0.62).toFixed(1) + 'px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('AUTO-ÉCOLE', 0, 0.3, ph*0.9); ctx.restore();
+  ctx.save(); ctx.translate(L*0.26, 0); ctx.rotate(-Math.PI/2); ctx.strokeStyle = ROUGE; ctx.lineWidth = l*0.10; ctx.lineCap = 'round';
+  const rs = l*0.30; ctx.beginPath(); ctx.arc(0, -rs*0.30, rs, Math.PI*0.28, Math.PI*0.72); ctx.stroke(); ctx.restore();
+  ctx.fillStyle = '#e8f1ff'; for (const c of [-1, 1]) { rr(L*0.44, c > 0 ? l*0.22 : -l*0.36, L*0.05, l*0.14, 2); ctx.fill(); }
+  ctx.fillStyle = '#7f1010'; for (const c of [-1, 1]) { rr(-L*0.50, c > 0 ? l*0.22 : -l*0.36, L*0.04, l*0.14, 2); ctx.fill(); }
+  ctx.fillStyle = NOIR; for (const c of [-1, 1]) { rr(L*0.07, c === -1 ? -l/2 - 7 : l/2, 10, 7, 2); ctx.fill(); }
+  ctx.restore();
+}
+function voiture(x, y, ang, coul, cligno) {
+  const L = 74, l = 38;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+  ctx.fillStyle = 'rgba(0,0,0,0.22)'; rr(-L/2 + 3, -l/2 + 4, L, l, 10); ctx.fill();
+  const g = ctx.createLinearGradient(0, -l/2, 0, l/2);
+  g.addColorStop(0, coul); g.addColorStop(0.5, shade(coul, 18)); g.addColorStop(1, coul);
+  ctx.fillStyle = g; rr(-L/2, -l/2, L, l, 10); ctx.fill();
+  ctx.fillStyle = '#3b4552'; rr(L*0.10, -l*0.36, L*0.15, l*0.72, 4); ctx.fill(); rr(-L*0.35, -l*0.32, L*0.09, l*0.64, 3); ctx.fill();
+  ctx.fillStyle = shade(coul, -18); rr(-L*0.27, -l*0.32, L*0.37, l*0.64, 4); ctx.fill();
+  ctx.fillStyle = '#e8f1ff'; for (const c of [-1, 1]) { rr(L*0.44, c > 0 ? l*0.22 : -l*0.36, L*0.05, l*0.14, 2); ctx.fill(); }
+  ctx.fillStyle = coul; for (const c of [-1, 1]) { rr(L*0.07, c === -1 ? -l/2 - 7 : l/2, 10, 7, 2); ctx.fill(); }
+  if (cligno) {
+    const cy = cligno === 'droite' ? l/2 - 5 : -l/2 + 5;
+    for (const cx of [L/2 - 5, -L/2 + 5]) {
+      ctx.fillStyle = 'rgba(245,158,11,0.35)'; ctx.beginPath(); ctx.arc(cx, cy, 11, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+function shade(hex, p) {
+  const n = parseInt(hex.slice(1), 16);
+  const f = v => Math.max(0, Math.min(255, v + p));
+  return '#' + [f(n >> 16), f((n >> 8) & 255), f(n & 255)].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+function cycliste(x, y, ang) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+  ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(3, 3, 20, 7, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#222'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-18, 0); ctx.lineTo(18, 0); ctx.stroke();
+  ctx.fillStyle = '#2a9d8f'; ctx.beginPath(); ctx.ellipse(-2, 0, 9, 11, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#f4d35e'; ctx.beginPath(); ctx.arc(3, 0, 5.5, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+function pieton(x, y, coul) {
+  ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.arc(x + 2, y + 3, 9, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = coul; ctx.beginPath(); ctx.ellipse(x, y, 10, 7, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#3d2b1f'; ctx.beginPath(); ctx.arc(x, y, 4.5, 0, Math.PI * 2); ctx.fill();
+}
+
+/* Panneaux vus de dessus : pastille lisible, orientée vers l'usager qui arrive */
+function panneauCedez(u, v, angle) {
+  ctx.save(); ctx.translate(u, v); ctx.rotate(-Math.PI / 2);   // lisible par l'usager qui arrive
+  ctx.fillStyle = COL.ombre; ctx.beginPath(); ctx.arc(2, 3, 10, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = '#d7263d'; ctx.lineWidth = 3.4; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(-10, -7); ctx.lineTo(10, -7); ctx.lineTo(0, 10); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+function panneauObligation(u, v, angle) {
+  ctx.save(); ctx.translate(u, v); ctx.rotate(-Math.PI / 2);   // lisible par l'usager qui arrive
+  ctx.fillStyle = COL.ombre; ctx.beginPath(); ctx.arc(2, 3, 9, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#1f5fbf'; ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-4, -5); ctx.lineTo(3, 3); ctx.stroke();   // B21 : contourner par la droite
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(5, 6); ctx.lineTo(5, 0); ctx.lineTo(-1, 6); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function panneauGiratoire(u, v, angle) {
+  ctx.save(); ctx.translate(u, v); ctx.rotate(-Math.PI / 2);   // lisible par l'usager qui arrive
+  ctx.fillStyle = COL.ombre; ctx.beginPath(); ctx.arc(2, 3, 12, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = '#d7263d'; ctx.lineWidth = 3.4; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(12, 9); ctx.lineTo(-12, 9); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = '#222'; ctx.lineWidth = 1.5;
+  for (let k = 0; k < 3; k++) {
+    const a = k * 2 * Math.PI / 3;
+    ctx.beginPath(); ctx.arc(0, 3, 4.2, a + 0.3, a + 1.6); ctx.stroke();
+    const ex = Math.cos(a + 0.3) * 4.2, ey = 3 + Math.sin(a + 0.3) * 4.2;
+    ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(ex, ey, 1.3, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+
+</script>
+<script>
+'use strict';
+/* =====================================================================
+   TRACÉ — éditeur de scènes (prototype)
+   Même monde que la Simulation : 1280 × 1150, cadrage « cover ».
+   ===================================================================== */
+const MONDE = { W: 1280, H: 1150 };
+const LR = 150, TR = 20;              // largeur route (2 voies) / trottoir
+const M1 = 21;                        // 1 m ≈ 21 unités monde
+const TIRET = 3 * M1, VIDE = 1.33 * M1; // ligne axiale d'agglomération type T3 : 3 m de trait, 1,33 m de vide (IISR art. 114-5)
+const PP_FEUX = LR / 2 + TR + 36;       // centre du passage piéton aux feux
+const D_FEUX = PP_FEUX + 27.5 + 14;      // ligne d'effet des feux : en amont du passage piéton (IISR art. 117-4.C)
+const distLigne = (c) => c.type === 'feux' ? D_FEUX : DEGAGE;
+const SAS = 55;                           // sas vélo : 3 m (minimum IISR art. 118-1.D), à l'échelle des voitures
+const sasDe = (c) => c.type === 'feux' && !(c.reg && c.reg.sas === false);
+const distArret = (c) => c.type === 'feux' ? D_FEUX + (sasDe(c) ? SAS : 0) : DEGAGE;   // là où les voitures s'arrêtent
+const HERBE = '#8ab583', ASPH = '#666c75', TROT = '#d9dbdf';
+const T_PAN = 36;                     // taille panneau
+const DEGAGE = LR / 2 + 6;              // ligne d'arrêt au bord de la chaussée croisée (là où l'on regarde à gauche/droite)         // ligne d'arrêt calée juste après le coin du trottoir
+const CLE_SAUVE = 'trace_scene_v1';
+
+const $ = (id) => document.getElementById(id);
+const cv = $('vue'), vctx = cv.getContext('2d');
+const couche = document.createElement('canvas'), cctx = couche.getContext('2d');
+let DPR = 1, VW = 0, VH = 0, S = 1, OX = 0, OY = 0;
+const VIS = { x0: 0, y0: 0, x1: 0, y1: 0 };
+
+/* ---------------- état ---------------- */
+let scene = sceneVide();
+let geo = { routes: new Map(), carrefours: [], autoPanneaux: [], lignes: [], guides: [], passages: [], velos: [] };
+let outil = 'route';
+const choixTiroir = { panneau: 'stop', sol: 'fleche_droit', decor: 'arbre' };
+let groupe = null;                    // sélection multiple (lasso)
+let selection = null;                 // {kind:'panneau'|'marque'|'decor', obj}
+let geste = null;                     // interaction en cours
+let carrefourOuvert = null;           // clé du carrefour du popover
+let histo = [], histoIdx = -1;
+let test = null;                      // mode Tester
+let sale = true;
+
+function sceneVide() { return { titre: 'Nouvelle scène', routes: [], panneaux: [], marques: [], decor: [], regimes: [], id: 1 }; }
+
+/* ---------------- géométrie de base ---------------- */
+const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+function prepRoute(r) {
+  const cum = [0];
+  for (let i = 1; i < r.pts.length; i++) cum.push(cum[i - 1] + dist(r.pts[i - 1], r.pts[i]));
+  return { r, cum, len: cum[cum.length - 1] };
+}
+function surRoute(g, s) {                 // point + tangente à l'abscisse s
+  const { r, cum, len } = g; s = Math.max(0, Math.min(len, s));
+  let i = 1; while (i < cum.length - 1 && cum[i] < s) i++;
+  const a = r.pts[i - 1], b = r.pts[i], L = cum[i] - cum[i - 1] || 1, t = (s - cum[i - 1]) / L;
+  return { x: a[0] + (b[0] - a[0]) * t, y: a[1] + (b[1] - a[1]) * t, tx: (b[0] - a[0]) / L, ty: (b[1] - a[1]) / L };
+}
+function plusProche(g, p) {
+  let best = { d: Infinity };
+  const { r, cum } = g;
+  for (let i = 1; i < r.pts.length; i++) {
+    const a = r.pts[i - 1], b = r.pts[i], dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy || 1;
+    let t = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L2; t = Math.max(0, Math.min(1, t));
+    const x = a[0] + dx * t, y = a[1] + dy * t, d = Math.hypot(p[0] - x, p[1] - y);
+    if (d < best.d) { const L = Math.sqrt(L2); best = { d, x, y, s: cum[i - 1] + L * t, tx: dx / L, ty: dy / L, g }; }
+  }
+  return best;
+}
+function routeLaPlusProche(p, exclure) {
+  let best = null;
+  for (const g of geo.routes.values()) { if (g.r.id === exclure) continue; const n = plusProche(g, p); if (!best || n.d < best.d) best = n; }
+  return best;
+}
+function interSeg(a, b, c, d) {
+  const r = [b[0] - a[0], b[1] - a[1]], s = [d[0] - c[0], d[1] - c[1]], den = r[0] * s[1] - r[1] * s[0];
+  if (Math.abs(den) < 1e-9) return null;
+  const t = ((c[0] - a[0]) * s[1] - (c[1] - a[1]) * s[0]) / den, u = ((c[0] - a[0]) * r[1] - (c[1] - a[1]) * r[0]) / den;
+  if (t < -1e-6 || t > 1 + 1e-6 || u < -1e-6 || u > 1 + 1e-6) return null;
+  return [a[0] + r[0] * t, a[1] + r[1] * t];
+}
+const droiteDe = (hx, hy) => [-hy, hx];    // côté droit du conducteur (écran, y vers le bas)
+
+/* ---------------- reconstruction : carrefours, panneaux auto ---------------- */
+function reconstruire() {
+  geo.routes = new Map(scene.routes.map((r) => [r.id, prepRoute(r)]));
+  const G = [...geo.routes.values()];
+  // 1) points de rencontre
+  const pts = [];
+  for (let i = 0; i < G.length; i++) for (let j = i + 1; j < G.length; j++) {
+    const A = G[i].r.pts, B = G[j].r.pts;
+    for (let a = 1; a < A.length; a++) for (let b = 1; b < B.length; b++) {
+      const q = interSeg(A[a - 1], A[a], B[b - 1], B[b]); if (q) pts.push(q);
+    }
+    for (const [g, h] of [[G[i], G[j]], [G[j], G[i]]]) for (const e of [g.r.pts[0], g.r.pts[g.r.pts.length - 1]]) {
+      const n = plusProche(h, e); if (n.d < 3) pts.push([n.x, n.y]);
+    }
+  }
+  const fus = [];
+  for (const p of pts) { const f = fus.find((q) => dist(q, p) < 30); if (!f) fus.push(p); }
+  // 2) branches
+  geo.carrefours = [];
+  for (const p of fus) {
+    const membres = [], branches = [];
+    for (const g of G) {
+      const n = plusProche(g, p); if (n.d > 4) continue;
+      membres.push({ id: g.r.id, s: n.s });
+      for (const dir of [1, -1]) {
+        const dispo = dir > 0 ? g.len - n.s : n.s;
+        if (dispo < 25) continue;
+        branches.push({ id: g.r.id, s: n.s, dir, dispo });
+      }
+    }
+    if (branches.length < 3) continue;
+    const cle = Math.round(p[0]) + ',' + Math.round(p[1]);
+    const reg = scene.regimes.find((q) => Math.hypot(q.x - p[0], q.y - p[1]) < 45);
+    const traversantes = membres.filter((m) => branches.filter((b) => b.id === m.id).length === 2).map((m) => m.id);
+    let prio = reg && membres.some((m) => m.id === reg.prio) ? reg.prio : (traversantes[0] ?? membres[0].id);
+    geo.carrefours.push({ x: p[0], y: p[1], cle, membres, branches, type: reg ? reg.type : 'aucun', prio, reg });
+  }
+  // 3) panneaux + lignes automatiques
+  geo.autoPanneaux = []; geo.lignes = []; geo.guides = []; geo.passages = []; geo.velos = [];
+  for (const c of geo.carrefours) {
+    if (croisementDe(c) === 'indonesien' && !(c.reg && c.reg.manuel)) for (const bi of c.branches) for (const bo of c.branches) if (bi !== bo) {
+      const cv = courbeVirage(c, bi, bo); if (cv.tv === 'gauche') geo.guides.push(cv.pts.slice(4, 13));
+    }
+    if (c.reg && c.reg.manuel) continue;          // carrefour « détaché » : tout est posé à la main
+    for (const b of c.branches) {
+      const g = geo.routes.get(b.id), secondaire = b.id !== c.prio;
+      const pose = (d, type) => {
+        if (d > b.dispo - 10) return null;
+        const q = surRoute(g, b.s + b.dir * d), hx = -q.tx * b.dir, hy = -q.ty * b.dir, [rx, ry] = droiteDe(hx, hy);
+        return { q, hx, hy, rx, ry, type };
+      };
+      const panneau = (d, type) => {
+        const P = pose(d, type); if (!P) return;
+        geo.autoPanneaux.push({ type, x: P.q.x + P.rx * (LR / 2 + 26), y: P.q.y + P.ry * (LR / 2 + 26), ang: Math.atan2(P.hy, P.hx) + Math.PI / 2, cle: c.cle, route: b.id });
+      };
+      const ligne = (style, d) => { const P = pose(d ?? distLigne(c), ''); if (P) geo.lignes.push({ ...P, style, cle: c.cle }); };
+      if (c.type === 'pad') panneau(190, 'priorite_droite');
+      else if (c.type === 'stop' || c.type === 'cedez') {
+        if (secondaire) { ligne(c.type); panneau(DEGAGE + 22, c.type); }
+        else panneau(230, 'priorite_ponctuelle');
+      } else if (c.type === 'feux') {
+        ligne('feux'); panneau(D_FEUX - 4, 'feu');
+        if (sasDe(c)) {                              // sas vélo : 2e ligne d'effet des feux + vélo au sol
+          ligne('feux', D_FEUX + SAS);
+          const V = pose(D_FEUX + SAS / 2, ''); if (V) geo.velos.push({ x: V.q.x + V.rx * LR / 4, y: V.q.y + V.ry * LR / 4, ang: Math.atan2(V.hy, V.hx) + Math.PI / 2, cle: c.cle });
+        }
+        const P = pose(PP_FEUX, ''); if (P) geo.passages.push({ x: P.q.x, y: P.q.y, ang: Math.atan2(P.q.ty, P.q.tx), route: b.id, cle: c.cle });
+      }
+    }
+  }
+  sale = true;
+}
+
+/* ---------------- transformations écran ---------------- */
+function redimensionner() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  VW = innerWidth; VH = innerHeight;
+  cv.width = couche.width = Math.round(VW * DPR); cv.height = couche.height = Math.round(VH * DPR);
+  S = Math.max(VW / MONDE.W, VH / MONDE.H); OX = (VW - MONDE.W * S) / 2; OY = (VH - MONDE.H * S) / 2;
+  VIS.x0 = -OX / S; VIS.y0 = -OY / S; VIS.x1 = (VW - OX) / S; VIS.y1 = (VH - OY) / S;
+  dessinerCouche();
+}
+const versMonde = (e) => [(e.clientX - OX) / S, (e.clientY - OY) / S];
+const versEcran = (x, y) => [x * S + OX, y * S + OY];
+
+/* ---------------- sprites de panneaux (cache) ---------------- */
+const sprites = new Map();
+function sprite(type, t, etat) {
+  const k = type + '|' + t + '|' + (etat || '');
+  let c = sprites.get(k); if (c) return c;
+  const Q = 3, T = t * 1.8;
+  c = document.createElement('canvas'); c.width = c.height = Math.ceil(T * Q);
+  const o = c.getContext('2d'); o.setTransform(Q, 0, 0, Q, c.width / 2, c.height / 2);
+  panneauV2(o, type, t, etat);
+  c._T = T; sprites.set(k, c); return c;
+}
+function dessinerPanneau(g, type, x, y, ang, etat, alpha) {
+  const sp = sprite(type, T_PAN, etat);
+  g.save(); g.translate(x, y); g.rotate(ang); if (alpha) g.globalAlpha = alpha;
+  g.drawImage(sp, -sp._T / 2, -sp._T / 2, sp._T, sp._T); g.restore();
+}
+
+/* ---------------- dessin : couche statique ---------------- */
+function tracerChemin(g, pts) { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); }
+function cheminPlage(g, gr, s0, s1) {
+  const a = surRoute(gr, s0); g.moveTo(a.x, a.y);
+  for (let i = 1; i < gr.cum.length - 1; i++) if (gr.cum[i] > s0 && gr.cum[i] < s1) g.lineTo(gr.r.pts[i][0], gr.r.pts[i][1]);
+  const b = surRoute(gr, s1); g.lineTo(b.x, b.y);
+}
+function regleC(c, id) { return (c.type === 'stop' || c.type === 'cedez' || c.type === 'feux') && (c.prio !== id || c.type === 'feux'); }
+function segmentsAxe(gr) {           // tronçons de la ligne du milieu : 1 = discontinue, 2 = continue
+  const style = gr.r.axe || 'discontinue', res = []; if (style === 'aucune') return res;
+  const trous = [], pleins = [];
+  for (const c of geo.carrefours) for (const m of c.membres) if (m.id === gr.r.id) {
+    const dl = distArret(c), rg = regleC(c, gr.r.id);
+    trous.push([m.s - dl + (rg ? 5 : -6), m.s + dl - (rg ? 5 : -6)]);
+    if (rg) { pleins.push([m.s - dl - 130, m.s - dl + 5]); pleins.push([m.s + dl - 5, m.s + dl + 130]); }
+  }
+  for (const mq of [...scene.marques, ...geo.passages.map((p) => ({ type: 'passage_pieton', ...p }))]) if (mq.type === 'passage_pieton') {
+    const n = plusProche(gr, [mq.x, mq.y]); if (n.d < 12) trous.push([n.s - 44, n.s + 44]);
+  }
+  const classe = (s) => trous.some(([a, b]) => s > a && s < b) ? 0 : (style === 'continue' || pleins.some(([a, b]) => s >= a && s <= b)) ? 2 : 1;
+  const pas = 3; let s0 = 0, c0 = classe(0);
+  for (let s = pas; s <= gr.len + pas; s += pas) {
+    const c = classe(Math.min(s, gr.len));
+    if (c !== c0 || s >= gr.len) { const s1 = Math.min(s, gr.len); if (c0 !== 0 && s1 - s0 >= 12) res.push({ cls: c0, s0, s1 }); s0 = s1; c0 = c; }
+  }
+  return res;
+}
+function dessinerRoutes(g) {
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  for (const gr of geo.routes.values()) { tracerChemin(g, gr.r.pts); g.strokeStyle = TROT; g.lineWidth = (gr.r.larg || LR) + 2 * TR; g.stroke(); }
+  for (const gr of geo.routes.values()) { tracerChemin(g, gr.r.pts); g.strokeStyle = ASPH; g.lineWidth = gr.r.larg || LR; g.stroke(); }
+  // ligne axiale : discontinue / continue près des carrefours réglés / coupée dans les carrefours
+  g.lineCap = 'butt'; g.strokeStyle = PEINT; g.lineWidth = 3;          // 2u ≈ 12 cm
+  for (const gr of geo.routes.values()) for (const sg of segmentsAxe(gr)) {
+    g.setLineDash(sg.cls === 1 ? [TIRET, VIDE] : []); g.lineDashOffset = sg.cls === 1 ? -sg.s0 : 0;
+    g.beginPath(); cheminPlage(g, gr, sg.s0, sg.s1); g.stroke();
+  }
+  g.setLineDash([]);
+  // lignes de guidage (tourne-à-gauche à l'indonésienne) : tirets courts
+  g.save(); g.strokeStyle = PEINT; g.lineWidth = 2.5; g.setLineDash([M1 * 0.5, M1 * 0.5]);   // guidage : T'2, 10 cm g.lineCap = 'butt';
+  for (const pts of [...(geo.guides || []), ...(scene.courbes || [])]) {                    // bord gauche de la trajectoire
+    g.beginPath();
+    pts.forEach((p, i) => {
+      const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+      const x = p[0] + (b[1] - a[1]) / L * 22, y = p[1] - (b[0] - a[0]) / L * 22;
+      i ? g.lineTo(x, y) : g.moveTo(x, y);
+    });
+    g.stroke();
+  }
+  g.restore();
+  // passages piétons des carrefours à feux
+  for (const pp of geo.passages) dessinerMarque(g, { type: 'passage_pieton', ...pp });
+  for (const v of geo.velos) dessinerMarque(g, { type: 'velo', ...v });
+  // lignes d'arrêt / cédez / feux
+  g.fillStyle = PEINT;
+  for (const L of geo.lignes) {
+    g.save(); g.translate(L.q.x, L.q.y); g.rotate(Math.atan2(L.ry, L.rx));
+    const ep = L.style === 'feux' ? 3.2 : 10.5;       // feux : 15 cm ; STOP / cédez : 50 cm
+    const x0 = 0, x1 = LR / 2;
+    if (L.style === 'cedez' || L.style === 'feux') for (let x = x0; x < x1; x += 21) g.fillRect(x, -ep / 2, Math.min(10.5, x1 - x), ep);   // T'2 : 0,5 m / 0,5 m
+    else g.fillRect(x0, -ep / 2, x1 - x0, ep);
+    g.restore();
+  }
+}
+const LIGNES = new Set(['ligne_stop', 'ligne_cedez', 'ligne_feux', 'ligne_continue', 'ligne_discontinue']);
+const VIGNETTES = new Set(['zebra', 'ralentisseur', 'stationnement', 'pmr', 'triangle_cedez', 'sas_velo']);
+function milieu(m) { m.x = (m.x1 + m.x2) / 2; m.y = (m.y1 + m.y2) / 2; }
+function dessinerLigne(g, m) {
+  const L = Math.hypot(m.x2 - m.x1, m.y2 - m.y1);
+  g.save(); g.translate(m.x1, m.y1); g.rotate(Math.atan2(m.y2 - m.y1, m.x2 - m.x1)); g.fillStyle = PEINT;
+  if (m.type === 'ligne_stop') g.fillRect(0, -5.25, L, 10.5);
+  else if (m.type === 'ligne_cedez') for (let x = 0; x < L; x += 21) g.fillRect(x, -5.25, Math.min(10.5, L - x), 10.5);
+  else if (m.type === 'ligne_feux') for (let x = 0; x < L; x += 21) g.fillRect(x, -1.6, Math.min(10.5, L - x), 3.2);
+  else if (m.type === 'ligne_continue') g.fillRect(0, -1.5, L, 3);
+  else for (let x = 0; x < L; x += TIRET + VIDE) g.fillRect(x, -1.5, Math.min(TIRET, L - x), 3);
+  g.restore();
+}
+function dessinerMarque(g, m) {
+  if (LIGNES.has(m.type)) { dessinerLigne(g, m); return; }
+  g.save(); g.translate(m.x, m.y); g.fillStyle = PEINT;
+  if (VIGNETTES.has(m.type)) { g.rotate(m.ang + Math.PI / 2); g.scale(0.7, 0.7); g.translate(-120, -120); marquageV2(g, m.type, 240, 240); g.restore(); return; }
+  if (m.type === 'passage_pieton') {
+    g.rotate(m.ang);
+    const lp = m.larg || LR;
+    for (let v = -lp / 2 + 8; v < lp / 2 - 8; v += M1) g.fillRect(-27, v, 55, M1 / 2);
+  } else if (m.type === 'velo') { g.rotate(m.ang + Math.PI / 2); g.rotate(-Math.PI / 2); veloSol(g, 48); }
+  else { g.rotate(m.ang + Math.PI / 2); flecheSol(g, m.type, 88); }
+  g.restore();
+}
+function dessinerDecor(d) {
+  if (d.type === 'arbre') arbre(d.x, d.y, 34);
+  else if (d.type === 'buisson') arbre(d.x, d.y, 20);
+  else maison(d.x, d.y, d.w || 170, d.h || 130, d.ang || 0, d.type === 'maison_grise' ? '#7d8791' : '#b5654a');
+}
+let texture = null;
+function dessinerCouche() {
+  const g = cctx; ctx = g;
+  g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = HERBE; g.fillRect(0, 0, couche.width, couche.height);
+  g.setTransform(S * DPR, 0, 0, S * DPR, OX * DPR, OY * DPR);
+  // texture d'herbe (reproductible)
+  let gr = 11; const al = () => ((gr = (gr * 1664525 + 1013904223) >>> 0) / 4294967296);
+  for (let i = 0; i < 900; i++) { g.fillStyle = al() < .5 ? 'rgba(255,255,255,.035)' : 'rgba(0,0,0,.04)'; g.beginPath(); g.arc(VIS.x0 + al() * (VIS.x1 - VIS.x0), VIS.y0 + al() * (VIS.y1 - VIS.y0), 3 + al() * 9, 0, 7); g.fill(); }
+  dessinerRoutes(g);
+  const enMain = geste && geste.type === 'deplacer' ? geste.obj : null;
+  for (const m of scene.marques) if (m !== enMain) dessinerMarque(g, m);
+  for (const d of scene.decor) if (d !== enMain) dessinerDecor(d);
+  for (const p of geo.autoPanneaux) if (p.type !== 'feu') dessinerPanneau(g, p.type, p.x, p.y, p.ang);
+  for (const p of scene.panneaux) if (p !== enMain && p.type !== 'feu') dessinerPanneau(g, p.type, p.x, p.y, p.ang);
+  sale = true;
+}
+
+/* ---------------- dessin : image affichée ---------------- */
+function etatFeu(cle, route) {
+  const c = geo.carrefours.find((k) => k.cle === cle);
+  if (!test) return c && c.prio === route ? 'vert' : 'rouge';
+  const t = test.frame % 480, prio = !c || c.prio === route;
+  if (prio) return t < 200 ? 'vert' : t < 240 ? 'orange' : 'rouge';
+  return t < 240 ? 'rouge' : t < 440 ? 'vert' : 'orange';
+}
+function rendre() {
+  const g = vctx;
+  g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(couche, 0, 0);
+  g.setTransform(S * DPR, 0, 0, S * DPR, OX * DPR, OY * DPR);
+  ctx = g;
+  // feux (animés)
+  for (const p of geo.autoPanneaux) if (p.type === 'feu') dessinerPanneau(g, 'feu', p.x, p.y, p.ang, etatFeu(p.cle, p.route));
+  for (const p of scene.panneaux) if (p.type === 'feu') dessinerPanneau(g, 'feu', p.x, p.y, p.ang, p.cle ? etatFeu(p.cle, p.route) : test ? (test.frame % 400 < 200 ? 'vert' : 'rouge') : 'rouge');
+  // tracé en cours
+  if (geste && geste.type === 'trace' && geste.pts.length > 1) {
+    const ap = geste.apercu || { pts: geste.pts };
+    g.save(); g.globalAlpha = .55; g.lineCap = 'round'; g.lineJoin = 'round';
+    tracerChemin(g, ap.pts); g.strokeStyle = TROT; g.lineWidth = LR + 2 * TR; g.stroke();
+    tracerChemin(g, ap.pts); g.strokeStyle = ASPH; g.lineWidth = LR; g.stroke();
+    g.restore();
+    for (const a of [ap.debut, ap.fin]) if (a && a.kind !== 'libre') anneau(g, a.x, a.y);
+  }
+  if (geste && geste.type === 'ligne' && geste.ligne) { g.save(); g.globalAlpha = .8; dessinerLigne(g, geste.ligne); g.restore(); }
+  // objet en main
+  if (geste && geste.type === 'deplacer') {
+    const o = geste.obj;
+    if (geste.kind === 'panneau') dessinerPanneau(g, o.type, o.x, o.y, o.ang, 'rouge');
+    else if (geste.kind === 'marque') dessinerMarque(g, o);
+    else dessinerDecor(o);
+  }
+  // sélection
+  if (selection) {
+    const o = selection.obj, r = rayonObjet(selection);
+    g.save(); g.strokeStyle = '#fff'; g.lineWidth = 3 / S * 1.2; g.setLineDash([8, 6]);
+    if (selection.kind === 'marque' && LIGNES.has(o.type)) {
+      g.beginPath(); g.moveTo(o.x1, o.y1); g.lineTo(o.x2, o.y2); g.lineWidth = 24; g.strokeStyle = 'rgba(255,255,255,.25)'; g.setLineDash([]); g.stroke();
+      for (const [x, y] of [[o.x1, o.y1], [o.x2, o.y2]]) {
+        g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, 12, 0, 7); g.fill();
+        g.fillStyle = '#ff3131'; g.beginPath(); g.arc(x, y, 5, 0, 7); g.fill();
+      }
+    } else { g.beginPath(); g.arc(o.x, o.y, r, 0, 7); g.stroke(); }
+    g.restore();
+  }
+  if (geste && geste.type === 'lasso' && geste.bouge) {
+    const [a, b] = [geste.p0, geste.p1];
+    g.save(); g.fillStyle = 'rgba(255,255,255,.15)'; g.strokeStyle = '#fff'; g.lineWidth = 2.5; g.setLineDash([10, 7]);
+    g.fillRect(a[0], a[1], b[0] - a[0], b[1] - a[1]); g.strokeRect(a[0], a[1], b[0] - a[0], b[1] - a[1]); g.restore();
+  }
+  if (groupe) {
+    g.save(); g.strokeStyle = '#fff'; g.lineWidth = 3; g.setLineDash([8, 6]);
+    for (const it of groupe) { g.beginPath(); g.arc(it.obj.x, it.obj.y, Math.min(rayonObjet(it), 60), 0, 7); g.stroke(); }
+    g.restore();
+  }
+  // carrefour ouvert
+  if (carrefourOuvert) { const c = geo.carrefours.find((k) => k.cle === carrefourOuvert); if (c) anneau(g, c.x, c.y, true); }
+  if (test) for (const p of test.pietons) { const [x, y] = posPieton(p); g.save(); g.translate(x, y); g.scale(1.6, 1.6); pieton(0, 0, p.coul); g.restore(); }
+  // véhicules
+  if (test) for (const v of test.vehicules) {
+    const P = posVehicule(v); if (v.angAff !== undefined) P.ang = v.angAff;
+    const cl = v.cligno && (test.frame % 40 < 22) ? v.cligno : null;
+    if (v.easy) { voitureEasy(P.x, P.y, P.ang); if (cl) clignoEasy(g, P, cl); } else voiture(P.x, P.y, P.ang, v.coul, cl);
+  }
+  sale = false;
+}
+function clignoEasy(g, P, cote) {
+  g.save(); g.translate(P.x, P.y); g.rotate(P.ang);
+  const cy = cote === 'droite' ? 38 / 2 - 5 : -38 / 2 + 5;
+  for (const cx of [74 / 2 - 5, -74 / 2 + 5]) {
+    g.fillStyle = 'rgba(245,158,11,0.35)'; g.beginPath(); g.arc(cx, cy, 11, 0, 7); g.fill();
+    g.fillStyle = '#f59e0b'; g.beginPath(); g.arc(cx, cy, 5, 0, 7); g.fill();
+  }
+  g.restore();
+}
+function anneau(g, x, y, grand) {
+  g.save();
+  g.strokeStyle = '#fff'; g.lineWidth = 4; g.beginPath(); g.arc(x, y, grand ? 44 : 30, 0, 7); g.stroke();
+  if (!grand) { g.fillStyle = 'rgba(255,49,49,.95)'; g.beginPath(); g.arc(x, y, 11, 0, 7); g.fill(); }
+  g.strokeStyle = 'rgba(255,255,255,.5)'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, grand ? 62 : 46, 0, 7); g.stroke();
+  g.restore();
+}
+
+/* ---------------- tracé de route : lissage + aimants ---------------- */
+function rdp(pts, eps) {
+  if (pts.length < 3) return pts.slice();
+  const a = pts[0], b = pts[pts.length - 1]; let idx = 0, dm = 0;
+  for (let i = 1; i < pts.length - 1; i++) { const d = distSeg(pts[i], a, b); if (d > dm) { dm = d; idx = i; } }
+  if (dm <= eps) return [a, b];
+  return rdp(pts.slice(0, idx + 1), eps).slice(0, -1).concat(rdp(pts.slice(idx), eps));
+}
+function distSeg(p, a, b) {
+  const dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy || 1;
+  let t = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L2; t = Math.max(0, Math.min(1, t));
+  return Math.hypot(p[0] - a[0] - dx * t, p[1] - a[1] - dy * t);
+}
+function chaikin(pts, n) {
+  let P = pts;
+  for (let k = 0; k < n; k++) {
+    const Q = [P[0]];
+    for (let i = 0; i < P.length - 1; i++) {
+      const a = P[i], b = P[i + 1];
+      Q.push([a[0] * .75 + b[0] * .25, a[1] * .75 + b[1] * .25], [a[0] * .25 + b[0] * .75, a[1] * .25 + b[1] * .75]);
+    }
+    Q.push(P[P.length - 1]); P = Q;
+  }
+  return P;
+}
+function aimant(p, voisin) {        // p = extrémité, voisin = point intérieur (direction)
+  // 1) prolonger une route existante (bout à bout)
+  for (const g of geo.routes.values()) for (const e of [g.r.pts[0], g.r.pts[g.r.pts.length - 1]]) {
+    if (dist(p, e) < 55 && e[0] > VIS.x0 - 5 && e[0] < VIS.x1 + 5 && e[1] > VIS.y0 - 5 && e[1] < VIS.y1 + 5) return { kind: 'bout', x: e[0], y: e[1] };
+  }
+  // 2) se raccorder sur une route (T / croisement) : intersection de la direction, sinon projection
+  const n = routeLaPlusProche(p);
+  if (n && n.d < LR * 0.6) {
+    let best = null;
+    const dx = p[0] - voisin[0], dy = p[1] - voisin[1], L = Math.hypot(dx, dy) || 1;
+    const loin = [p[0] + dx / L * 200, p[1] + dy / L * 200], pres = [voisin[0], voisin[1]];
+    const pts = n.g.r.pts;
+    for (let i = 1; i < pts.length; i++) { const q = interSeg(pres, loin, pts[i - 1], pts[i]); if (q && (!best || dist(q, p) < dist(best, p))) best = q; }
+    if (best && dist(best, p) < 130) return { kind: 'T', x: best[0], y: best[1] };
+    return { kind: 'T', x: n.x, y: n.y };
+  }
+  // 3) sortir par le bord de l'écran
+  const m = 110, o = 140;
+  if (p[0] < VIS.x0 + m) return { kind: 'bord', x: VIS.x0 - o, y: p[1] };
+  if (p[0] > VIS.x1 - m) return { kind: 'bord', x: VIS.x1 + o, y: p[1] };
+  if (p[1] < VIS.y0 + m) return { kind: 'bord', x: p[0], y: VIS.y0 - o };
+  if (p[1] > VIS.y1 - m) return { kind: 'bord', x: p[0], y: VIS.y1 + o };
+  return { kind: 'libre', x: p[0], y: p[1] };
+}
+function construireTrace(brut) {
+  if (brut.length < 2) return null;
+  let a = brut[0], b = brut[brut.length - 1];
+  let lon = 0; for (let i = 1; i < brut.length; i++) lon += dist(brut[i - 1], brut[i]);
+  if (lon < 50) return null;
+  const maxDev = Math.max(...brut.map((p) => distSeg(p, a, b)));
+  let pts;
+  if (maxDev < 22) {                       // quasi droite : on redresse (0°, 45°, 90°…)
+    const ang = Math.atan2(b[1] - a[1], b[0] - a[0]), q = Math.round(ang / (Math.PI / 4)) * (Math.PI / 4);
+    const L = dist(a, b);
+    if (Math.abs(ang - q) < 0.13) b = [a[0] + Math.cos(q) * L, a[1] + Math.sin(q) * L];
+    pts = [a, b];
+  } else pts = rdp(brut, 9);
+  // aimants aux deux bouts
+  const dA = aimant(pts[0], pts[1]), dB = aimant(pts[pts.length - 1], pts[pts.length - 2]);
+  if (pts.length === 2 && dA.kind !== 'libre' && dB.kind === 'libre') {
+    // garder la droite parfaite quand seul le début est accroché
+    const dx = pts[1][0] - pts[0][0], dy = pts[1][1] - pts[0][1];
+    pts[0] = [dA.x, dA.y]; pts[1] = [dA.x + dx, dA.y + dy];
+    const dB2 = aimant(pts[1], pts[0]);
+    if (dB2.kind !== 'libre') pts[1] = [dB2.x, dB2.y];
+    return { pts, debut: dA, fin: dB2 };
+  }
+  if (pts.length === 2 && dA.kind === 'libre' && dB.kind !== 'libre') {
+    const dx = pts[0][0] - pts[1][0], dy = pts[0][1] - pts[1][1];
+    pts[1] = [dB.x, dB.y]; pts[0] = [dB.x + dx, dB.y + dy];
+    const dA2 = aimant(pts[0], pts[1]);
+    if (dA2.kind !== 'libre') pts[0] = [dA2.x, dA2.y];
+    return { pts, debut: dA2, fin: dB };
+  }
+  pts[0] = [dA.x, dA.y]; pts[pts.length - 1] = [dB.x, dB.y];
+  // bord : prolonger droit hors de l'écran
+  if (pts.length > 2) pts = chaikin(pts, 3);
+  return { pts, debut: dA, fin: dB };
+}
+
+/* ---------------- objets : placement ---------------- */
+function placerSurVoie(p, decal) {        // renvoie position + orientation selon le côté touché
+  const n = routeLaPlusProche(p);
+  if (!n || n.d > LR / 2 + 90) return null;
+  const [rx, ry] = droiteDe(n.tx, n.ty);
+  const cote = (p[0] - n.x) * rx + (p[1] - n.y) * ry >= 0 ? 1 : -1;   // 1 : à droite du sens de tracé
+  const hx = n.tx * cote, hy = n.ty * cote, [dx, dy] = droiteDe(hx, hy);
+  return { x: n.x + dx * decal, y: n.y + dy * decal, cap: Math.atan2(hy, hx), n };
+}
+function placerPanneau(o, p) {
+  const P = placerSurVoie(p, LR / 2 + 26);
+  if (P) { o.x = P.x; o.y = P.y; o.ang = P.cap + Math.PI / 2; } else { o.x = p[0]; o.y = p[1]; }
+}
+function placerMarque(o, p) {
+  if (o.type === 'passage_pieton') {
+    const n = routeLaPlusProche(p);
+    if (n && n.d < LR / 2 + 30) { o.x = n.x; o.y = n.y; o.ang = Math.atan2(n.ty, n.tx); } else { o.x = p[0]; o.y = p[1]; }
+    return;
+  }
+  const P = placerSurVoie(p, LR / 4);
+  if (P) { o.x = P.x; o.y = P.y; o.ang = P.cap; } else { o.x = p[0]; o.y = p[1]; }
+}
+
+/* ---------------- sélection / hit test ---------------- */
+function rayonObjet(sel) { if (sel.kind === 'marque' && LIGNES.has(sel.obj.type)) return 20; return sel.kind === 'panneau' ? 30 : sel.kind === 'marque' ? 50 : sel.obj.type.startsWith('maison') ? 95 : sel.obj.type === 'buisson' ? 26 : 40; }
+function tousObjets() {
+  return [...scene.panneaux.map((o) => ({ kind: 'panneau', obj: o })), ...scene.decor.map((o) => ({ kind: 'decor', obj: o })), ...scene.marques.map((o) => ({ kind: 'marque', obj: o }))];
+}
+function objetSous(p) {
+  const cands = tousObjets();
+  let best = null, bd = Infinity;
+  for (const c of cands) {
+    let d = Math.hypot(p[0] - c.obj.x, p[1] - c.obj.y), r = rayonObjet(c);
+    if (c.kind === 'marque' && LIGNES.has(c.obj.type)) { d = distSeg(p, [c.obj.x1, c.obj.y1], [c.obj.x2, c.obj.y2]); r = 18; }
+    if (c.kind === 'decor' && c.obj.type.startsWith('maison')) {       // rectangle
+      const a = -(c.obj.ang || 0), dx = p[0] - c.obj.x, dy = p[1] - c.obj.y;
+      const lx = dx * Math.cos(a) - dy * Math.sin(a), ly = dx * Math.sin(a) + dy * Math.cos(a);
+      d = Math.abs(lx) < (c.obj.w || 170) / 2 && Math.abs(ly) < (c.obj.h || 130) / 2 ? 0 : Infinity; r = 1;
+    }
+    if (d < r && d < bd) { bd = d; best = c; }
+  }
+  return best;
+}
+function carrefourSous(p) {
+  for (const c of geo.carrefours) if (Math.hypot(p[0] - c.x, p[1] - c.y) < 70) return c;
+  for (const a of geo.autoPanneaux) if (Math.hypot(p[0] - a.x, p[1] - a.y) < 28) return geo.carrefours.find((c) => c.cle === a.cle);
+  return null;
+}
+
+/* ---------------- historique + sauvegarde ---------------- */
+function valider(msg) {
+  histo = histo.slice(0, histoIdx + 1); histo.push(JSON.stringify(scene)); histoIdx = histo.length - 1;
+  if (histo.length > 80) { histo.shift(); histoIdx--; }
+  try { localStorage.setItem(CLE_SAUVE, histo[histoIdx]); } catch (e) {}
+  majBoutons(); if (msg) toast(msg);
+}
+function charger(json) {
+  scene = JSON.parse(json); selection = null; groupe = null; fermerRegime(); majSelbar();
+  $('titre').textContent = scene.titre || 'Nouvelle scène';
+  reconstruire(); dessinerCouche(); majAide();
+}
+function annuler() { if (histoIdx > 0) { histoIdx--; charger(histo[histoIdx]); sauverLocal(); majBoutons(); } }
+function retablir() { if (histoIdx < histo.length - 1) { histoIdx++; charger(histo[histoIdx]); sauverLocal(); majBoutons(); } }
+function sauverLocal() { try { localStorage.setItem(CLE_SAUVE, histo[histoIdx]); } catch (e) {} }
+function majBoutons() { $('b-annuler').disabled = histoIdx <= 0; $('b-retablir').disabled = histoIdx >= histo.length - 1; }
+function toutRefaire(msg) { reconstruire(); dessinerCouche(); majAide(); valider(msg); }
+
+/* ---------------- pointeur ---------------- */
+cv.addEventListener('pointerdown', (e) => {
+  if (e.button > 0) return;
+  cv.setPointerCapture(e.pointerId);
+  fermerMenu();
+  const p = versMonde(e);
+  geste = { id: e.pointerId, x0: e.clientX, y0: e.clientY, bouge: false, p0: p };
+  if (outil === 'gomme') { geste.type = 'gomme'; effacerSous(p); return; }
+  if (selection && selection.kind === 'marque' && LIGNES.has(selection.obj.type)) {
+    const o = selection.obj, tol = 26;
+    for (const [k, x, y] of [[1, o.x1, o.y1], [2, o.x2, o.y2]]) if (Math.hypot(p[0] - x, p[1] - y) < tol) {
+      geste.type = 'bout'; geste.bout = k; geste.obj = o; $('selbar').classList.remove('ouvert'); return;
+    }
+  }
+  if (groupe) {
+    const h = objetSous(p);
+    if (h && groupe.some((x) => x.obj === h.obj)) {
+      geste.type = 'groupe'; geste.origs = groupe.map((x) => ({ ...x.obj })); fermerRegime(); $('selbar').classList.remove('ouvert'); return;
+    }
+    groupe = null; majSelbar();
+  }
+  let o = objetSous(p);
+  if (!o && outil === 'selection') {
+    const cle = autoSous(p), c = cle && geo.carrefours.find((k) => k.cle === cle);
+    if (c) { detacher(c); toast('Carrefour détaché : chaque panneau et ligne se déplace librement'); o = objetSous(p); }
+  }
+  if (o) {
+    selection = o; geste.type = 'deplacer'; geste.kind = o.kind; geste.obj = o.obj; geste.dx = o.obj.x - p[0]; geste.dy = o.obj.y - p[1]; geste.orig = { ...o.obj };
+    fermerRegime(); majSelbar(); sale = true; return;
+  }
+  if (outil === 'selection') { geste.type = 'lasso'; geste.p1 = p; }
+  else if (outil === 'route') { geste.type = 'trace'; geste.pts = [p]; }
+  else if (outil === 'sol' && LIGNES.has(choixTiroir.sol)) geste.type = 'ligne';
+  else geste.type = 'tap';
+});
+cv.addEventListener('pointermove', (e) => {
+  if (!geste || e.pointerId !== geste.id) return;
+  const p = versMonde(e);
+  if (!geste.bouge && Math.hypot(e.clientX - geste.x0, e.clientY - geste.y0) > 8) {
+    geste.bouge = true;
+    if (geste.type === 'deplacer') { $('selbar').classList.remove('ouvert'); dessinerCouche(); }
+    if (geste.type === 'trace') { selection = null; majSelbar(); fermerRegime(); }
+  }
+  if (!geste.bouge) return;
+  if (geste.type === 'trace') {
+    const l = geste.pts[geste.pts.length - 1];
+    if (dist(l, p) > 6) { geste.pts.push(p); geste.apercu = construireTrace(geste.pts); sale = true; }
+  } else if (geste.type === 'deplacer') {
+    const o = geste.obj, q = [p[0] + geste.dx, p[1] + geste.dy];
+    if (geste.kind === 'panneau' && outil !== 'selection') placerPanneau(o, q);
+    else if (geste.kind === 'panneau') { o.x = q[0]; o.y = q[1]; }
+    else if (geste.kind === 'marque') {            // déplacement libre, orientation conservée
+      const dx = p[0] - geste.p0[0], dy = p[1] - geste.p0[1], a = geste.orig;
+      if (LIGNES.has(o.type)) { o.x1 = a.x1 + dx; o.y1 = a.y1 + dy; o.x2 = a.x2 + dx; o.y2 = a.y2 + dy; milieu(o); }
+      else { o.x = a.x + dx; o.y = a.y + dy; }
+    }
+    else { o.x = q[0]; o.y = q[1]; }
+    sale = true;
+  } else if (geste.type === 'gomme') effacerSous(p);
+  else if (geste.type === 'lasso') { geste.p1 = p; sale = true; }
+  else if (geste.type === 'groupe') {
+    const dx = p[0] - geste.p0[0], dy = p[1] - geste.p0[1];
+    groupe.forEach((it, i) => {
+      const o = it.obj, a = geste.origs[i];
+      if (o.x1 !== undefined) { o.x1 = a.x1 + dx; o.y1 = a.y1 + dy; o.x2 = a.x2 + dx; o.y2 = a.y2 + dy; milieu(o); }
+      else { o.x = a.x + dx; o.y = a.y + dy; }
+    });
+    dessinerCouche();
+  }
+  else if (geste.type === 'ligne') {
+    const [x2, y2] = angleAimante(geste.p0, p);
+    geste.ligne = { type: choixTiroir.sol, x1: geste.p0[0], y1: geste.p0[1], x2, y2 }; milieu(geste.ligne); sale = true;
+  } else if (geste.type === 'bout') {
+    const o = geste.obj, fixe = geste.bout === 1 ? [o.x2, o.y2] : [o.x1, o.y1], [x, y] = angleAimante(fixe, p);
+    if (geste.bout === 1) { o.x1 = x; o.y1 = y; } else { o.x2 = x; o.y2 = y; }
+    milieu(o); dessinerCouche();
+  }
+});
+function angleAimante(a, p) {        // aimante l'angle tous les 15° (tolérance 4°)
+  const ang = Math.atan2(p[1] - a[1], p[0] - a[0]), L = Math.hypot(p[0] - a[0], p[1] - a[1]);
+  const q = Math.round(ang / (Math.PI / 12)) * (Math.PI / 12);
+  return Math.abs(ang - q) < 0.07 ? [a[0] + Math.cos(q) * L, a[1] + Math.sin(q) * L] : [p[0], p[1]];
+}
+cv.addEventListener('pointerup', finGeste);
+cv.addEventListener('pointercancel', () => { geste = null; dessinerCouche(); });
+function finGeste(e) {
+  if (!geste || e.pointerId !== geste.id) return;
+  const g = geste; geste = null;
+  const p = versMonde(e);
+  if (g.type === 'trace' && g.bouge) {
+    const t = construireTrace(g.pts);
+    if (t) {
+      const avant = new Set(geo.carrefours.map((c) => c.cle));
+      scene.routes.push({ id: scene.id++, pts: t.pts.map(([x, y]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10]) });
+      reconstruire(); dessinerCouche(); majAide();
+      const neufs = geo.carrefours.filter((c) => !avant.has(c.cle));
+      valider(neufs.length ? 'Nouveau carrefour : touche-le pour le régler' : null);
+      if (neufs.length) ouvrirRegime(neufs[neufs.length - 1]);
+    } else dessinerCouche();
+    return;
+  }
+  if (g.type === 'deplacer') {
+    if (g.bouge) { dessinerCouche(); valider(); }
+    majSelbar(); return;
+  }
+  if (g.type === 'groupe') { if (g.bouge) valider(); majSelbar(); return; }
+  if (g.type === 'lasso' && g.bouge) {
+    const x0 = Math.min(g.p0[0], g.p1[0]), x1 = Math.max(g.p0[0], g.p1[0]), y0 = Math.min(g.p0[1], g.p1[1]), y1 = Math.max(g.p0[1], g.p1[1]);
+    const dedans = tousObjets().filter((c) => c.obj.x >= x0 && c.obj.x <= x1 && c.obj.y >= y0 && c.obj.y <= y1);
+    selection = null; groupe = null;
+    if (dedans.length === 1) selection = dedans[0]; else if (dedans.length > 1) { groupe = dedans; toast(dedans.length + ' éléments sélectionnés : glisse-les ou tourne-les'); }
+    majSelbar(); sale = true; return;
+  }
+  if (g.type === 'bout') { dessinerCouche(); valider(); majSelbar(); return; }
+  if (g.type === 'ligne' && g.bouge && g.ligne && Math.hypot(g.ligne.x2 - g.ligne.x1, g.ligne.y2 - g.ligne.y1) > 15) {
+    scene.marques.push(g.ligne); selection = { kind: 'marque', obj: g.ligne }; dessinerCouche(); valider(); majSelbar(); return;
+  }
+  if (g.type === 'gomme') { if (g.efface) { reconstruire(); dessinerCouche(); majAide(); valider(); } return; }
+  // simple toucher
+  const c = carrefourSous(p);
+  if (c) { selection = null; majSelbar(); ouvrirRegime(c); return; }
+  if (outil === 'selection') { selection = null; groupe = null; majSelbar(); fermerRegime(); sale = true; return; }
+  if (selection || carrefourOuvert) { selection = null; majSelbar(); fermerRegime(); sale = true; if (outil === 'route') return; }
+  if (outil === 'panneau') {
+    const o = { type: choixTiroir.panneau, x: 0, y: 0, ang: 0 }; placerPanneau(o, p);
+    scene.panneaux.push(o); dessinerCouche(); valider();
+  } else if (outil === 'sol') {
+    if (choixTiroir.sol === 'axe') {
+      const n = routeLaPlusProche(p);
+      if (n && n.d < LR / 2) {
+        const r = n.g.r, suite = { discontinue: 'continue', continue: 'aucune', aucune: 'discontinue' };
+        r.axe = suite[r.axe || 'discontinue'];
+        dessinerCouche(); valider('Ligne du milieu : ' + r.axe);
+      }
+      return;
+    }
+    if (LIGNES.has(choixTiroir.sol)) {            // toucher une voie : ligne en travers de la voie
+      const n = routeLaPlusProche(p);
+      if (choixTiroir.sol.match(/stop|cedez|feux/) && n && n.d < LR / 2) {
+        const [rx, ry] = droiteDe(n.tx, n.ty), cote = (p[0] - n.x) * rx + (p[1] - n.y) * ry >= 0 ? 1 : -1;
+        const o = { type: choixTiroir.sol, x1: n.x, y1: n.y, x2: n.x + rx * cote * LR / 2, y2: n.y + ry * cote * LR / 2 }; milieu(o);
+        scene.marques.push(o); dessinerCouche(); valider('Glisse la ligne pour la déplacer, tire les points pour l\'ajuster');
+      } else toast('Glisse pour tracer la ligne');
+      return;
+    }
+    const o = { type: choixTiroir.sol, x: 0, y: 0, ang: 0 }; placerMarque(o, p);
+    scene.marques.push(o); dessinerCouche(); valider();
+  } else if (outil === 'decor') {
+    scene.decor.push({ type: choixTiroir.decor, x: p[0], y: p[1], ang: 0 }); dessinerCouche(); valider();
+  }
+}
+function effacerSous(p) {
+  const o = objetSous(p);
+  if (o) {
+    const liste = o.kind === 'panneau' ? scene.panneaux : o.kind === 'marque' ? scene.marques : scene.decor;
+    liste.splice(liste.indexOf(o.obj), 1); geste.efface = true; if (selection && selection.obj === o.obj) selection = null;
+    dessinerCouche(); return;
+  }
+  const c = carrefourSous(p);
+  if (c && c.type !== 'aucun' && Math.hypot(p[0] - c.x, p[1] - c.y) > LR / 2 + 10) {
+    scene.regimes = scene.regimes.filter((r) => r !== c.reg); geste.efface = true; reconstruire(); dessinerCouche(); return;
+  }
+  const n = routeLaPlusProche(p);
+  if (n && n.d < LR / 2) {
+    scene.routes = scene.routes.filter((r) => r.id !== n.g.r.id); geste.efface = true;
+    reconstruire(); dessinerCouche();
+  }
+}
+
+/* ---------------- popover carrefour ---------------- */
+const REGIMES = [['aucun', 'Aucun', null], ['pad', 'Priorité à droite', 'priorite_droite'], ['cedez', 'Cédez', 'cedez'], ['stop', 'STOP', 'stop'], ['feux', 'Feux', 'feu']];
+function ouvrirRegime(c) {
+  carrefourOuvert = c.cle; sale = true;
+  const box = $('choix'); box.innerHTML = '';
+  for (const [k, nom, pic] of REGIMES) {
+    const d = document.createElement('div'); d.className = 'item' + (c.type === k ? ' on' : '');
+    d.appendChild(vignette((g) => {
+      if (pic) dessinerPictogrammeV2(g, pic, 30, 'vert');
+      else { g.strokeStyle = '#9aa1ab'; g.lineWidth = 2.5; g.beginPath(); g.arc(0, 0, 12, 0, 7); g.moveTo(-8, 8); g.lineTo(8, -8); g.stroke(); }
+    }));
+    d.append(nom);
+    d.onclick = () => {
+      retirerDetaches(c);
+      scene.regimes = scene.regimes.filter((r) => r !== c.reg);
+      if (k !== 'aucun' || croisementDe(c) !== 'classique') scene.regimes.push({ x: Math.round(c.x), y: Math.round(c.y), type: k, prio: c.prio, croisement: croisementDe(c) });
+      reconstruire(); dessinerCouche(); valider();
+      const n = geo.carrefours.find((q) => Math.hypot(q.x - c.x, q.y - c.y) < 5); if (n) ouvrirRegime(n);
+    };
+    box.appendChild(d);
+  }
+  const inv = $('inverser');
+  const autres = c.membres.map((m) => m.id);
+  inv.style.display = (c.type === 'stop' || c.type === 'cedez' || c.type === 'feux') && autres.length > 1 ? 'block' : 'none';
+  inv.onclick = () => {
+    const i = autres.indexOf(c.prio), prio = autres[(i + 1) % autres.length];
+    retirerDetaches(c);
+    scene.regimes = scene.regimes.filter((r) => r !== c.reg);
+    scene.regimes.push({ x: Math.round(c.x), y: Math.round(c.y), type: c.type, prio, croisement: croisementDe(c) });
+    reconstruire(); dessinerCouche(); valider('Priorité changée');
+    const n = geo.carrefours.find((q) => Math.hypot(q.x - c.x, q.y - c.y) < 5); if (n) ouvrirRegime(n);
+  };
+  const cr = $('croisement'), carre = c.branches.length >= 4;
+  cr.style.display = carre ? 'flex' : 'none';
+  cr.querySelectorAll('button').forEach((bt) => {
+    bt.classList.toggle('on', croisementDe(c) === bt.dataset.c);
+    bt.onclick = () => {
+      if (!c.reg) scene.regimes.push({ x: Math.round(c.x), y: Math.round(c.y), type: 'aucun', prio: c.prio, croisement: bt.dataset.c });
+      else c.reg.croisement = bt.dataset.c;
+      reconstruire(); dessinerCouche(); valider(bt.dataset.c === 'indonesien' ? 'Tourne-à-gauche à l\'indonésienne' : 'Tourne-à-gauche classique');
+      const n = geo.carrefours.find((q) => Math.hypot(q.x - c.x, q.y - c.y) < 5); if (n) ouvrirRegime(n);
+    };
+  });
+  const sb = $('sas');
+  sb.style.display = c.type === 'feux' ? 'block' : 'none';
+  sb.textContent = sasDe(c) ? '🚲 Sas vélo : oui (toucher pour l\'enlever)' : '🚲 Sas vélo : non (toucher pour l\'ajouter)';
+  sb.onclick = () => { c.reg.sas = !sasDe(c); reconstruire(); dessinerCouche(); valider(c.reg.sas ? 'Sas vélo ajouté' : 'Sas vélo retiré'); const n = geo.carrefours.find((q) => Math.hypot(q.x - c.x, q.y - c.y) < 5); if (n) ouvrirRegime(n); };
+  const det = $('detacher');
+  det.style.display = c.type !== 'aucun' && !(c.reg && c.reg.manuel) ? 'block' : 'none';
+  det.onclick = () => { detacher(c); fermerRegime(); choisirOutil('selection'); toast('Tu peux maintenant déplacer et tourner chaque panneau et chaque ligne'); };
+  const el = $('regime'); el.classList.add('ouvert');
+  const [sx, sy] = versEcran(c.x, c.y), w = el.offsetWidth, h = el.offsetHeight;
+  let x = sx + 90, y = sy - h / 2;
+  if (x + w > VW - 12) x = sx - 90 - w;
+  x = Math.max(12, Math.min(VW - w - 12, x)); y = Math.max(76, Math.min(VH - h - 90, y));
+  el.style.left = x + 'px'; el.style.top = y + 'px';
+}
+function retirerDetaches(c) {
+  if (!(c.reg && c.reg.manuel)) return;
+  scene.panneaux = scene.panneaux.filter((o) => o.detache !== c.cle);
+  scene.marques = scene.marques.filter((o) => o.detache !== c.cle);
+}
+function detacher(c) {               // transforme les panneaux/lignes automatiques du carrefour en objets libres
+  if (!c.reg || c.reg.manuel) return;
+  for (const a of geo.autoPanneaux) if (a.cle === c.cle) scene.panneaux.push({ type: a.type, x: a.x, y: a.y, ang: a.ang, detache: c.cle });
+  for (const v of geo.velos) if (v.cle === c.cle) scene.marques.push({ type: 'velo', x: v.x, y: v.y, ang: v.ang, detache: c.cle });
+  for (const pp of geo.passages) if (pp.cle === c.cle) scene.marques.push({ type: 'passage_pieton', x: pp.x, y: pp.y, ang: pp.ang, detache: c.cle });
+  for (const L of geo.lignes) if (L.cle === c.cle) {
+    const o = { type: L.style === 'cedez' ? 'ligne_cedez' : L.style === 'feux' ? 'ligne_feux' : 'ligne_stop', x1: L.q.x, y1: L.q.y, x2: L.q.x + L.rx * LR / 2, y2: L.q.y + L.ry * LR / 2, detache: c.cle };
+    milieu(o); scene.marques.push(o);
+  }
+  c.reg.manuel = true; c.reg.cleDetache = c.cle;
+  reconstruire(); dessinerCouche(); valider();
+}
+function autoSous(p) {               // panneau ou ligne automatique sous le doigt
+  for (const a of geo.autoPanneaux) if (Math.hypot(p[0] - a.x, p[1] - a.y) < 28) return a.cle;
+  for (const L of geo.lignes) if (distSeg(p, [L.q.x, L.q.y], [L.q.x + L.rx * LR / 2, L.q.y + L.ry * LR / 2]) < 16) return L.cle;
+  return null;
+}
+function fermerRegime() { if (carrefourOuvert) sale = true; carrefourOuvert = null; $('regime').classList.remove('ouvert'); }
+
+/* ---------------- barre de sélection ---------------- */
+function centreGroupe() { const n = groupe.length; return [groupe.reduce((t, x) => t + x.obj.x, 0) / n, groupe.reduce((t, x) => t + x.obj.y, 0) / n]; }
+function majSelbar() {
+  const b = $('selbar');
+  if (groupe) {
+    const ys = groupe.map((x) => x.obj.y - Math.min(rayonObjet(x), 60)), [cx] = centreGroupe(), [sx, sy] = versEcran(cx, Math.min(...ys));
+    $('s-tourner-g').style.display = '';
+    b.classList.add('ouvert'); b.style.left = sx + 'px'; b.style.top = Math.max(70, sy - 10) + 'px'; sale = true; return;
+  }
+  if (!selection) { b.classList.remove('ouvert'); sale = true; return; }
+  const o = selection.obj, [sx, sy] = versEcran(o.x, o.y);
+  $('s-tourner-g').style.display = selection.kind === 'marque' || outil === 'selection' ? '' : 'none';
+  b.classList.add('ouvert'); b.style.left = sx + 'px'; b.style.top = Math.max(70, sy - rayonObjet(selection) * S - 10) + 'px'; sale = true;
+}
+function tournerGroupe(da) {
+  const [cx, cy] = centreGroupe(), c = Math.cos(da), sn = Math.sin(da);
+  const rot = (x, y) => [cx + (x - cx) * c - (y - cy) * sn, cy + (x - cx) * sn + (y - cy) * c];
+  for (const { obj: o } of groupe) {
+    if (o.x1 !== undefined) { [o.x1, o.y1] = rot(o.x1, o.y1); [o.x2, o.y2] = rot(o.x2, o.y2); milieu(o); }
+    else { [o.x, o.y] = rot(o.x, o.y); o.ang = (o.ang || 0) + da; }
+  }
+  dessinerCouche(); valider(); majSelbar();
+}
+$('s-suppr').onclick = () => {
+  if (groupe) {
+    for (const it of groupe) { const l = it.kind === 'panneau' ? scene.panneaux : it.kind === 'marque' ? scene.marques : scene.decor; l.splice(l.indexOf(it.obj), 1); }
+    groupe = null; majSelbar(); dessinerCouche(); valider(); return;
+  }
+  if (!selection) return;
+  const liste = selection.kind === 'panneau' ? scene.panneaux : selection.kind === 'marque' ? scene.marques : scene.decor;
+  liste.splice(liste.indexOf(selection.obj), 1); selection = null; majSelbar(); dessinerCouche(); valider();
+};
+$('s-tourner').onclick = () => {
+  if (groupe) return tournerGroupe(Math.PI / 12);
+  if (!selection) return;
+  const o = selection.obj;
+  if (outil === 'selection' && selection.kind !== 'marque') o.ang = (o.ang || 0) + Math.PI / 12;
+  else if (selection.kind === 'decor') o.ang = (o.ang || 0) + Math.PI / 2;
+  else if (selection.kind === 'panneau') {        // passer de l'autre côté de la route, face au sens inverse
+    const n = routeLaPlusProche([o.x, o.y]);
+    if (n && n.d < LR / 2 + 60) placerPanneau(o, [2 * n.x - o.x, 2 * n.y - o.y]); else o.ang += Math.PI;
+  } else tournerMarque(o, Math.PI / 12);
+  dessinerCouche(); valider(); majSelbar();
+};
+$('s-tourner-g').onclick = () => {
+  if (groupe) return tournerGroupe(-Math.PI / 12);
+  if (!selection) return;
+  if (selection.kind !== 'marque') selection.obj.ang = (selection.obj.ang || 0) - Math.PI / 12; else tournerMarque(selection.obj, -Math.PI / 12); dessinerCouche(); valider(); majSelbar(); };
+function tournerMarque(o, da) {
+  if (LIGNES.has(o.type)) {
+    for (const k of [1, 2]) {
+      const dx = o['x' + k] - o.x, dy = o['y' + k] - o.y, c = Math.cos(da), s2 = Math.sin(da);
+      o['x' + k] = o.x + dx * c - dy * s2; o['y' + k] = o.y + dx * s2 + dy * c;
+    }
+  } else o.ang = (o.ang || 0) + da;
+}
+
+/* ---------------- outils + tiroir ---------------- */
+const TIROIRS = {
+  panneau: [['stop', 'STOP'], ['cedez', 'Cédez'], ['priorite_droite', 'Priorité à droite'], ['priorite_ponctuelle', 'Priorité ponctuelle'], ['route_prioritaire', 'Route prio.'],
+            ['sens_interdit', 'Sens interdit'], ['passage_pieton', 'Passage piéton'], ['giratoire', 'Giratoire'], ['obligation_droit', 'Tout droit'],
+            ['obligation_droite', 'À droite'], ['obligation_gauche', 'À gauche'], ['b15', 'Cédez sens inverse'], ['c18', 'Prio. sens inverse'], ['feu', 'Feu']],
+  sol: [['ligne_stop', 'Ligne STOP'], ['ligne_cedez', 'Ligne cédez'], ['ligne_feux', 'Ligne des feux'], ['ligne_continue', 'Ligne continue'], ['ligne_discontinue', 'Ligne discontinue'],
+        ['fleche_droit', 'Tout droit'], ['fleche_gauche', 'Gauche'], ['fleche_droite', 'Droite'], ['fleche_td_gauche', 'Droit + gauche'], ['fleche_td_droite', 'Droit + droite'],
+        ['passage_pieton', 'Passage piéton'], ['velo', 'Vélo'], ['zebra', 'Zébras'], ['ralentisseur', 'Ralentisseur'], ['stationnement', 'Place'],
+        ['pmr', 'PMR'], ['triangle_cedez', 'Triangle cédez'], ['sas_velo', 'Sas vélo'], ['axe', 'Axe de la route']],
+  decor: [['arbre', 'Arbre'], ['buisson', 'Buisson'], ['maison', 'Maison'], ['maison_grise', 'Bâtiment']],
+};
+function vignette(fn, fond) {
+  const c = document.createElement('canvas'); c.width = c.height = 80;
+  const g = c.getContext('2d');
+  if (fond) { g.fillStyle = fond; g.beginPath(); g.roundRect(0, 0, 80, 80, 14); g.fill(); }
+  g.setTransform(2, 0, 0, 2, 40, 40); fn(g); return c;
+}
+function vignetteTiroir(t, k) {
+  if (t === 'panneau') return vignette((g) => dessinerPictogrammeV2(g, k, 30, 'vert'));
+  if (t === 'sol') return vignette((g) => {
+    if (k === 'passage_pieton') { g.fillStyle = PEINT; for (let x = -13; x < 14; x += 7) g.fillRect(x, -11, 3.5, 22); }
+    else if (k === 'velo') veloSol(g, 22);
+    else if (k === 'axe') { g.fillStyle = PEINT; g.fillRect(-1.5, -16, 3, 9); g.fillRect(-1.5, 2, 3, 9); }
+    else if (k === 'ligne_stop') { g.fillStyle = PEINT; g.fillRect(-14, -3, 28, 6); }
+    else if (k === 'ligne_cedez') { g.fillStyle = PEINT; for (let x = -14; x < 14; x += 8) g.fillRect(x, -3, 4, 6); }
+    else if (k === 'ligne_feux') { g.fillStyle = PEINT; for (let x = -14; x < 14; x += 6) g.fillRect(x, -1.2, 3, 2.4); }
+    else if (k === 'ligne_continue') { g.fillStyle = PEINT; g.fillRect(-1.5, -16, 3, 32); }
+    else if (k === 'ligne_discontinue') { g.fillStyle = PEINT; g.fillRect(-1.5, -16, 3, 11); g.fillRect(-1.5, 5, 3, 11); }
+    else if (VIGNETTES.has(k)) { g.scale(0.15, 0.15); g.translate(-120, -120); marquageV2(g, k, 240, 240); }
+    else flecheSol(g, k, 30);
+  }, ASPH);
+  return vignette((g) => {
+    const sv = ctx; ctx = g;
+    if (k === 'arbre') arbre(0, 0, 13); else if (k === 'buisson') arbre(0, 0, 8);
+    else maison(0, 0, 30, 24, 0, k === 'maison' ? '#b5654a' : '#7d8791');
+    ctx = sv;
+  }, HERBE);
+}
+function choisirOutil(o) {
+  outil = o;
+  document.querySelectorAll('.outil').forEach((b) => b.classList.toggle('actif', b.dataset.outil === o));
+  const t = $('tiroir'); t.innerHTML = '';
+  if (TIROIRS[o]) {
+    for (const [k, nom] of TIROIRS[o]) {
+      const d = document.createElement('div'); d.className = 'item' + (choixTiroir[o] === k ? ' on' : '');
+      d.appendChild(vignetteTiroir(o, k)); d.append(nom);
+      d.onclick = () => { choixTiroir[o] = k; t.querySelectorAll('.item').forEach((x) => x.classList.toggle('on', x === d)); };
+      t.appendChild(d);
+    }
+    t.classList.add('ouvert');
+  } else t.classList.remove('ouvert');
+  if (o === 'selection') toast('Sélection : touche un élément, ou glisse pour en prendre plusieurs');
+  if (o === 'gomme') toast('Touche ou glisse sur ce que tu veux effacer');
+  fermerRegime();
+}
+document.querySelectorAll('.outil').forEach((b) => (b.onclick = () => choisirOutil(outil === b.dataset.outil ? 'selection' : b.dataset.outil)));   // re-toucher l'outil actif = mode sélection
+
+/* ---------------- mode Tester : véhicules sur trajets (tout droit, à droite, à gauche) ---------------- */
+const COULEURS = ['#3b82c4', '#e0b43a', '#d64545', '#e8e8e8', '#2f9e6b', '#8e5bd6', '#5b6270'];
+const CYCLE = 480;                       // cycle des feux (images)
+function basculerTest() {
+  if (test) { test = null; $('t-tester').textContent = 'Tester'; $('ico-play').innerHTML = '<path d="M7 4l13 8-13 8z"/>'; sale = true; return; }
+  if (!scene.routes.length) { toast('Trace d\'abord une route'); return; }
+  test = { frame: 0, vehicules: [], prochain: 0, n: 0, pietons: [], prochainPieton: 60, np: 0 };
+  $('t-tester').textContent = 'Arrêter'; $('ico-play').innerHTML = '<rect x="6" y="6" width="12" height="12" rx="2"/>';
+  fermerRegime(); selection = null; groupe = null; majSelbar();
+}
+function lanePt(g, s, dir) { const q = surRoute(g, s), hx = q.tx * dir, hy = q.ty * dir, [rx, ry] = droiteDe(hx, hy); return [q.x + rx * LR / 4, q.y + ry * LR / 4]; }
+function tangente(g, s, dir) { const q = surRoute(g, s); return [q.tx * dir, q.ty * dir]; }
+function typeVirage(hi, ho) {
+  const dot = hi[0] * ho[0] + hi[1] * ho[1], cross = hi[0] * ho[1] - hi[1] * ho[0];
+  if (dot > 0.7) return 'droit';
+  if (dot < -0.7) return 'demi';
+  return cross > 0 ? 'droite' : 'gauche';
+}
+function croisementDe(c) { return (c.reg && c.reg.croisement) || 'classique'; }
+/* courbe de virage d'une branche d'arrivée vers une branche de sortie */
+function courbeVirage(c, bIn, bOut) {
+  const gi = geo.routes.get(bIn.id), go = geo.routes.get(bOut.id);
+  const se = bIn.s + bIn.dir * DEGAGE, sx = bOut.s + bOut.dir * DEGAGE;
+  const E = lanePt(gi, se, -bIn.dir), X = lanePt(go, sx, bOut.dir);
+  const hi = tangente(gi, se, -bIn.dir), ho = tangente(go, sx, bOut.dir);
+  const tv = typeVirage(hi, ho);
+  const L = Math.hypot(X[0] - E[0], X[1] - E[1]);
+  const k = tv === 'droit' ? L / 3 : tv === 'droite' ? DEGAGE * 0.55 : croisementDe(c) === 'indonesien' ? 8 : DEGAGE * 1.7;
+  let P1 = [E[0] + hi[0] * k, E[1] + hi[1] * k], P2 = [X[0] - ho[0] * k, X[1] - ho[1] * k];
+  if (tv === 'gauche' && croisementDe(c) === 'indonesien') {   // on coupe tôt : chacun passe devant l'autre, bien écartés
+    P1 = [E[0] + hi[0] * 18 + ho[0] * 30, E[1] + hi[1] * 18 + ho[1] * 30];
+    P2 = [X[0] - ho[0] * 18 - hi[0] * 30, X[1] - ho[1] * 18 - hi[1] * 30];
+  }
+  const pts = [];
+  for (let i = 0; i <= 16; i++) {
+    const t = i / 16, u = 1 - t;
+    pts.push([u * u * u * E[0] + 3 * u * u * t * P1[0] + 3 * u * t * t * P2[0] + t * t * t * X[0],
+              u * u * u * E[1] + 3 * u * u * t * P1[1] + 3 * u * t * t * P2[1] + t * t * t * X[1]]);
+  }
+  return { pts, tv, hi, ho, sx };
+}
+function prochainCarrefour(id, s, dir) {
+  let best = null;
+  for (const c of geo.carrefours) {
+    const m = c.membres.find((q) => q.id === id); if (!m) continue;
+    const d = (m.s - s) * dir; if (d > DEGAGE + 2 && (!best || d < best.d)) best = { c, m, d };
+  }
+  return best;
+}
+function construireTrajet(id, s, dir, choix) {
+  const pts = [], evts = []; let n = 0;
+  while (true) {
+    const g = geo.routes.get(id); if (!g) break;
+    const nx = n < 4 ? prochainCarrefour(id, s, dir) : null;
+    const sFin = nx ? nx.m.s - dir * DEGAGE : (dir > 0 ? g.len : 0);
+    const L = Math.abs(sFin - s), pas = 18, nb = Math.max(1, Math.ceil(L / pas));
+    for (let i = pts.length ? 1 : 0; i <= nb; i++) pts.push(lanePt(g, s + dir * L * i / nb, dir));
+    if (!nx) break;
+    const c = nx.c, bIn = c.branches.find((b) => b.id === id && b.dir === -dir);
+    const sorties = c.branches.filter((b) => b !== bIn).map((b) => ({ b, ...courbeVirage(c, bIn, b) })).filter((o) => o.tv !== 'demi');
+    if (!bIn || !sorties.length) break;
+    const voulu = choix && choix[n];
+    let o = voulu && sorties.find((q) => q.tv === voulu);
+    if (!o) { const r = Math.random(), pref = r < 0.5 ? 'droit' : r < 0.75 ? 'droite' : 'gauche'; o = sorties.find((q) => q.tv === pref) || sorties[Math.floor(Math.random() * sorties.length)]; }
+    evts.push({ i: pts.length - 1, iFin: pts.length - 1 + o.pts.length - 1, c, route: id, tv: o.tv, hi: o.hi, secondaire: c.prio !== id });
+    for (let i = 1; i < o.pts.length; i++) pts.push(o.pts[i]);
+    id = o.b.id; s = o.sx; dir = o.b.dir; n++;
+  }
+  const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  for (const e of evts) {
+    e.sArret = cum[e.i]; e.sFin = cum[e.iFin]; e.sLigne = e.sArret - (distArret(e.c) - DEGAGE);
+    e.sAttente = e.sArret + (e.sFin - e.sArret) * (croisementDe(e.c) === 'indonesien' ? 0.18 : 0.42);
+  }
+  return { pts, cum, len: cum[cum.length - 1], evts };
+}
+function surTrajet(T, s) {
+  s = Math.max(0, Math.min(T.len, s));
+  let i = 1; while (i < T.cum.length - 1 && T.cum[i] < s) i++;
+  const a = T.pts[i - 1], b = T.pts[i], L = T.cum[i] - T.cum[i - 1] || 1, t = (s - T.cum[i - 1]) / L;
+  return { x: a[0] + (b[0] - a[0]) * t, y: a[1] + (b[1] - a[1]) * t, hx: (b[0] - a[0]) / L, hy: (b[1] - a[1]) / L };
+}
+function posVehicule(v) { const q = surTrajet(v.T, v.s); return { x: q.x, y: q.y, ang: Math.atan2(q.hy, q.hx), hx: q.hx, hy: q.hy }; }
+function entrees() {
+  const E = [];
+  for (const g of geo.routes.values()) {
+    const a = g.r.pts[0], b = g.r.pts[g.r.pts.length - 1];
+    const libre = (p) => !geo.carrefours.some((c) => Math.hypot(c.x - p[0], c.y - p[1]) < 5);
+    if (libre(a)) E.push({ route: g.r.id, dir: 1, s: 0 });
+    if (libre(b)) E.push({ route: g.r.id, dir: -1, s: g.len });
+  }
+  return E;
+}
+function lancerVehicule(route, dir, choix, easy, reaction) {
+  const g = geo.routes.get(route); if (!g) return null;
+  const s0 = dir > 0 ? 0 : g.len;
+  const T = construireTrajet(route, s0, dir, choix);
+  if (T.len < 20) return null;
+  const libre = !test.vehicules.some((w) => { const p = posVehicule(w); return Math.hypot(p.x - T.pts[0][0], p.y - T.pts[0][1]) < 130; });
+  if (!libre) return null;
+  const v = { T, s: 0, v: 2.4, attente: 0, pret: 0, reaction: reaction ?? Math.floor(Math.random() * 30), passes: new Set(), easy: easy ?? test.n === 0, coul: COULEURS[test.n % COULEURS.length] };
+  v.cws = coupePassages(T);
+  test.vehicules.push(v); test.n++; return v;
+}
+/* ---------------- piétons : ils traversent aux passages, les voitures leur cèdent le passage ---------------- */
+const COUL_PIETONS = ['#8e5bd6', '#2a9d8f', '#e76f51', '#264653', '#f4a261', '#3b82c4'];
+function passagesTest() {
+  const L = [];
+  const ajoute = (x, y, ang, route, cle) => L.push({ k: Math.round(x) + ',' + Math.round(y), x, y, u: [Math.cos(ang), Math.sin(ang)], n: [-Math.sin(ang), Math.cos(ang)], route, cle });
+  for (const p of geo.passages) ajoute(p.x, p.y, p.ang, p.route, p.cle);
+  for (const m of scene.marques) if (m.type === 'passage_pieton') { const r = routeLaPlusProche([m.x, m.y]); ajoute(m.x, m.y, m.ang, r && r.d < 20 ? r.g.r.id : null, null); }
+  return L;
+}
+function coupePassages(T) {           // abscisses où le trajet d'une voiture traverse chaque passage piéton
+  const res = [], vus = new Set();
+  for (const cw of passagesTest()) for (let i = 0; i < T.pts.length; i++) {
+    const dx = T.pts[i][0] - cw.x, dy = T.pts[i][1] - cw.y;
+    if (Math.abs(dx * cw.u[0] + dy * cw.u[1]) < 30 && Math.abs(dx * cw.n[0] + dy * cw.n[1]) < LR / 2 && !vus.has(cw.k)) { vus.add(cw.k); res.push({ k: cw.k, s: T.cum[i] }); break; }
+  }
+  return res;
+}
+function resteRouge(cle, route) {
+  const c = geo.carrefours.find((k) => k.cle === cle); if (!c) return 0;
+  const f = test.frame % CYCLE;
+  return c.prio === route ? (f >= 240 ? CYCLE - f : 0) : (f < 240 ? 240 - f : 0);
+}
+function lancerPieton(cw, dir) {
+  if (!cw || test.pietons.some((p) => p.k === cw.k && p.etat === 'attente')) return;
+  test.pietons.push({ k: cw.k, cw, t: 0, dir: dir || (Math.random() < 0.5 ? 1 : -1), etat: 'attente', du: (Math.random() - 0.5) * 34, coul: COUL_PIETONS[test.np++ % COUL_PIETONS.length] });
+}
+function posPieton(p) {
+  const W = LR / 2 + 11, d = p.dir * (-W + 2 * W * p.t), c = p.cw;
+  return [c.x + c.u[0] * p.du + c.n[0] * d, c.y + c.u[1] * p.du + c.n[1] * d];
+}
+function avancerPietons() {
+  const cws = passagesTest();
+  if (!scene.demo && cws.length && test.frame >= test.prochainPieton && test.pietons.length < 5) {
+    lancerPieton(cws[Math.floor(Math.random() * cws.length)]); test.prochainPieton = test.frame + 150 + Math.random() * 200;
+  }
+  for (const p of test.pietons) {
+    if (p.etat === 'attente') {
+      const voitureDessus = test.vehicules.some((v) => (v.cws || []).some((h) => h.k === p.k && h.s - v.s > -45 && h.s - v.s < (p.cw.cle ? 50 : 95)));
+      let ok = !voitureDessus;
+      if (p.cw.cle) ok = ok && etatFeu(p.cw.cle, p.cw.route) === 'rouge' && resteRouge(p.cw.cle, p.cw.route) > 150;   // bonhomme vert
+      if (ok) p.etat = 'traverse';
+    } else { p.t += 1.05 / (LR + 22); if (p.t >= 1) p.fini = true; }
+  }
+  test.pietons = test.pietons.filter((p) => !p.fini);
+}
+function evtEnCours(w, cle) { return w.T.evts.find((e) => e.c.cle === cle && w.s < e.sFin + 10); }
+function avancerTest() {
+  test.frame++;
+  if (scene.demo) scriptDemo();
+  else if (test.frame >= test.prochain && test.vehicules.length < 10) {
+    const E = entrees();
+    if (E.length) { const e = E[Math.floor(Math.random() * E.length)]; lancerVehicule(e.route, e.dir); }
+    test.prochain = test.frame + 70 + Math.random() * 90;
+  }
+  avancerPietons();
+  const P = test.vehicules.map(posVehicule);
+  test.vehicules.forEach((v, iv) => {
+    const p = P[iv]; let cible = 2.4;
+    // piétons engagés : priorité absolue
+    for (const h of v.cws) if (test.pietons.some((q) => q.k === h.k && q.etat === 'traverse')) {
+      const r = h.s - v.s - 38 - 8;
+      if (r > -25 && r < 150) cible = r <= 1 ? 0 : Math.min(cible, Math.max(0.3, r / 25));
+    }
+    // véhicule devant (quel que soit son trajet)
+    test.vehicules.forEach((w, iw) => {
+      if (w === v) return;
+      const q = P[iw], dx = q.x - p.x, dy = q.y - p.y, av = dx * p.hx + dy * p.hy, lat = Math.abs(dx * p.hy - dy * p.hx);
+      if (p.hx * q.hx + p.hy * q.hy < 0.35) return;
+      if (av > 0 && lat < 26) { if (av < 90) cible = 0; else if (av < 140) cible = Math.min(cible, 1.1); }
+    });
+    v.cligno = null;
+    for (const e of v.T.evts) {
+      if (e.tv !== 'droit' && v.s > e.sArret - 260 && v.s < e.sFin) v.cligno = e.tv;
+      if (v.passes.has(e)) continue;
+      const c = e.c;
+      // 1) ligne d'arrêt : feux / STOP / cédez
+      const reste = e.sLigne - v.s - 38;
+      if (!v.passes.has('L' + c.cle + e.i)) {
+        if (reste < -2) { v.passes.add('L' + c.cle + e.i); }
+        else if (reste < 130) {
+          let ok = true;
+          if (c.type === 'feux') { const et = etatFeu(c.cle, e.route); ok = et === 'vert' || (et === 'orange' && reste < 8); }
+          else if ((c.type === 'stop' || c.type === 'cedez') && e.secondaire) {
+            const libre = !test.vehicules.some((w) => {
+              if (w === v) return false; const ew = evtEnCours(w, c.cle); if (!ew || ew.secondaire) return false;
+              return ew.sArret - w.s < 260;
+            });
+            if (c.type === 'stop') { if (reste <= 1) v.attente++; ok = v.attente > 55 && libre; } else ok = libre;
+          }
+          if (!ok && reste <= 1) v.pret = v.reaction;                  // arrêté : temps de réaction au redémarrage
+          else if (ok && v.v < 0.2 && v.pret > 0) { v.pret--; ok = false; }
+          if (ok && reste <= 1) { v.passes.add('L' + c.cle + e.i); v.attente = 0; }
+          else if (!ok) cible = reste <= 1 ? 0 : Math.min(cible, Math.max(0.3, reste / 25));
+          if (!ok) break;
+        }
+      }
+      // 2) tourne-à-gauche : céder aux véhicules d'en face qui vont tout droit ou à droite
+      if (e.tv === 'gauche') {
+        const r2 = e.sAttente - v.s - 38;
+        if (r2 < -2) { v.passes.add(e); continue; }
+        if (r2 < 110) {
+          const gene = test.vehicules.some((w) => {
+            if (w === v) return false; const ew = evtEnCours(w, c.cle); if (!ew || ew.tv === 'gauche') return false;
+            if (ew.hi[0] * e.hi[0] + ew.hi[1] * e.hi[1] > -0.7) return false;              // pas en face
+            if (c.type === 'feux' && w.s < ew.sArret - 38 && etatFeu(c.cle, ew.route) !== 'vert') return false;
+            return ew.sArret - w.s < 240;
+          });
+          if (gene) { cible = r2 <= 1 ? 0 : Math.min(cible, Math.max(0.3, r2 / 25)); break; }
+        }
+      } else if (v.s > e.sFin) v.passes.add(e);
+    }
+    { let d = p.ang - (v.angAff ?? p.ang); while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; v.angAff = (v.angAff ?? p.ang) + d * Math.min(1, 0.12 + v.v * 0.05); }
+    v.v += (cible - v.v) * (cible < v.v ? 0.35 : 0.06);
+    if (cible === 0 && v.v < 0.05) v.v = 0;
+    v.s += v.v;
+    if (v.s >= v.T.len) v.fini = true;
+  });
+  test.vehicules = test.vehicules.filter((v) => !v.fini);
+  sale = true;
+}
+/* ---------------- démos : carrefour à feux, croisement classique / à l'indonésienne ---------------- */
+function scriptDemo() {
+  if (scene.demo === 'indo-voies') return scriptIndo();
+  const f = test.frame % CYCLE;
+  if (f === 300) { const cw = passagesTest().find((q) => q.route === 1 && q.x < 640); lancerPieton(cw, 1); }
+  if (f === 5) { lancerVehicule(2, -1, ['gauche'], true, 0); lancerVehicule(2, 1, ['gauche'], false, 28); }       // en face l'un de l'autre, tous deux à gauche
+  if (f === 250) { lancerVehicule(1, 1, ['droit'], false); lancerVehicule(1, -1, ['droite'], false); }
+  if (f === 300) lancerVehicule(1, 1, ['gauche'], false);
+}
+function chargerDemo(mode) {
+  const X = 640, Y = 575;
+  const G = Math.min(VIS.x0, 0) - 140, D = Math.max(VIS.x1, MONDE.W) + 140, H = Math.min(VIS.y0, 0) - 140, B = Math.max(VIS.y1, MONDE.H) + 140;
+  scene = sceneVide();
+  scene.titre = mode === 'indonesien' ? 'Feux · à l\'indonésienne' : 'Feux · croisement classique';
+  scene.demo = mode;
+  scene.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }, { id: 2, pts: [[X, H], [X, B]] }];
+  scene.id = 3;
+  scene.regimes = [{ x: X, y: Y, type: 'feux', prio: 1, croisement: mode }];
+  scene.decor = [
+    { type: 'maison', x: 330, y: 340 }, { type: 'maison_grise', x: 950, y: 340 }, { type: 'maison_grise', x: 330, y: 820 }, { type: 'maison', x: 950, y: 820 },
+    { type: 'arbre', x: 120, y: 330 }, { type: 'buisson', x: 1160, y: 330 }, { type: 'arbre', x: 1160, y: 830 }, { type: 'buisson', x: 120, y: 830 },
+  ].map((d) => ({ ang: 0, ...d }));
+  selection = null; groupe = null; majSelbar(); fermerRegime(); $('titre').textContent = scene.titre;
+  toutRefaire(mode === 'indonesien' ? 'À l\'indonésienne : les deux voitures tournent en passant devant l\'autre' : 'Classique : les deux voitures tournent en se contournant (chacune passe derrière l\'autre)');
+  if (test) basculerTest();
+  basculerTest();
+}
+
+/* ---------------- démo : croisement à l'indonésienne avec voies de tourne-à-gauche ----------------
+   Rue nord-sud à 4 voies (300 de large). Les voies de tourne-à-gauche des deux sens sont
+   dans le prolongement l'une de l'autre : les voitures arrivent face à face, puis passent
+   l'une devant l'autre.                                                                    */
+const IX = 640, IY = 575, W2 = 225;        // 3 voies : sortie, tourne-à-gauche, tout droit
+const VOIE = (k) => IX - W2 / 2 + 37.5 + 75 * k;        // centres des voies L1..L4 (k = 0..3)
+function echantillonner(segs) {                           // segments : ['l', a, b] ou ['c', p0, p1, p2, p3]
+  const pts = [];
+  for (const sg of segs) {
+    if (sg[0] === 'l') { const [, a, b] = sg, n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 18)); for (let i = pts.length ? 1 : 0; i <= n; i++) pts.push([a[0] + (b[0] - a[0]) * i / n, a[1] + (b[1] - a[1]) * i / n]); }
+    else { const [, P0, P1, P2, P3] = sg; for (let i = 1; i <= 20; i++) { const t = i / 20, u = 1 - t; pts.push([0, 1].map((j) => u * u * u * P0[j] + 3 * u * u * t * P1[j] + 3 * u * t * t * P2[j] + t * t * t * P3[j])); } }
+  }
+  const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  return { pts, cum, len: cum[cum.length - 1], evts: [] };
+}
+function sPres(T, p) { let b = 0, bd = Infinity; T.pts.forEach((q, i) => { const d = Math.hypot(q[0] - p[0], q[1] - p[1]); if (d < bd) { bd = d; b = i; } }); return T.cum[b]; }
+const G_ = () => Math.min(VIS.x0, 0) - 160, D_ = () => Math.max(VIS.x1, MONDE.W) + 160, H_ = () => Math.min(VIS.y0, 0) - 160, B_ = () => Math.max(VIS.y1, MONDE.H) + 160;
+const Y_LB = IY + D_FEUX, Y_LH = IY - D_FEUX;                        // lignes d'effet des feux rue nord-sud (bas, haut)
+const X_LO = IX - W2 / 2 - 20 - 36 - 27.5 - 14, X_LE = IX + W2 / 2 + 20 + 36 + 27.5 + 14;   // rue est-ouest (ouest, est)
+function courbesIndo() {
+  const a = VOIE(1);                                                  // voie des tourne-à-gauche (commune aux deux sens)
+  const sym = (p) => [2 * a - p[0], 2 * IY - p[1]];                  // symétrie centrale autour du point de rencontre
+  const bas = [[a, IY + 80], [a, IY + 45], [IX - 105, IY - 37.5], [IX - W2 / 2 - 30, IY - 37.5]];   // monte puis part à l'ouest
+  return { bas: ['c', ...bas], haut: ['c', ...bas.map(sym)] };        // descend puis part à l'est
+}
+function trajetIndo(type) {
+  const c = geo.carrefours[0]; if (!c) return null;
+  const a = VOIE(1), cb = courbesIndo(); let T, e;
+  const ev = (route, tv, hi, sL, sA, sF) => ({ c, route, tv, hi, secondaire: c.prio !== route, sArret: sL, sLigne: sL, sAttente: sA, sFin: sF });
+  if (type === 'gaucheBas') {
+    T = echantillonner([['l', [a, B_()], [a, IY + 80]], cb.bas, ['l', cb.bas[4], [G_(), IY - 37.5]]]);
+    e = ev(2, 'gauche', [0, -1], sPres(T, [a, Y_LB]), sPres(T, [a, IY + 80]) + 38, sPres(T, cb.bas[4]));
+  } else if (type === 'gaucheHaut') {
+    T = echantillonner([['l', [a, H_()], [a, IY - 80]], cb.haut, ['l', cb.haut[4], [D_(), IY + 37.5]]]);
+    e = ev(2, 'gauche', [0, 1], sPres(T, [a, Y_LH]), sPres(T, [a, IY - 80]) + 38, sPres(T, cb.haut[4]));
+  } else if (type === 'droitHaut') {             // L1 vers le sud, tout droit
+    const x = VOIE(0); T = echantillonner([['l', [x, H_()], [x, B_()]]]);
+    e = ev(2, 'droit', [0, 1], sPres(T, [x, Y_LH]), 0, sPres(T, [x, IY + 80]));
+  } else if (type === 'droitBas') {              // L3 vers le nord, tout droit
+    const x = VOIE(2); T = echantillonner([['l', [x, B_()], [x, H_()]]]);
+    e = ev(2, 'droit', [0, -1], sPres(T, [x, Y_LB]), 0, sPres(T, [x, IY - 80]));
+  } else if (type === 'est') {                   // vers l'est, voie sud
+    T = echantillonner([['l', [G_(), IY + 37.5], [D_(), IY + 37.5]]]);
+    e = ev(1, 'droit', [1, 0], sPres(T, [X_LO, IY + 37.5]), 0, sPres(T, [IX + W2 / 2, IY + 37.5]));
+  } else {                                       // vers l'ouest, voie nord
+    T = echantillonner([['l', [D_(), IY - 37.5], [G_(), IY - 37.5]]]);
+    e = ev(1, 'droit', [-1, 0], sPres(T, [X_LE, IY - 37.5]), 0, sPres(T, [IX - W2 / 2, IY - 37.5]));
+  }
+  T.evts = [e]; return T;
+}
+function lancerIndo(type, easy, reaction) {
+  const T = trajetIndo(type); if (!T) return;
+  if (test.vehicules.some((w) => { const p = posVehicule(w); return Math.hypot(p.x - T.pts[0][0], p.y - T.pts[0][1]) < 60; })) return;
+  const v = { T, s: 0, v: 2.4, attente: 0, pret: 0, reaction: reaction ?? 12, passes: new Set(), easy: !!easy, coul: COULEURS[test.n % COULEURS.length] };
+  v.cws = coupePassages(T); test.vehicules.push(v); test.n++;
+}
+function scriptIndo() {
+  const f = test.frame % CYCLE;
+  if (f === 5) { lancerIndo('gaucheBas', true, 0); lancerIndo('gaucheHaut', false, 20); }
+  if (f === 40) { lancerIndo('droitHaut'); }
+  if (f === 70) { lancerIndo('droitBas'); }
+  if (f === 250) { lancerIndo('est'); lancerIndo('ouest'); }
+  if (f === 300) { const cw = passagesTest().find((q) => q.route === 1 && q.x < IX); lancerPieton(cw, 1); }
+}
+function chargerDemoIndo() {
+  scene = sceneVide(); scene.titre = 'Feux · à l\'indonésienne'; scene.demo = 'indo-voies';
+  scene.routes = [
+    { id: 1, pts: [[G_(), IY], [D_(), IY]], axe: 'aucune' },
+    { id: 2, pts: [[IX, H_()], [IX, B_()]], axe: 'aucune', larg: W2 },
+  ];
+  scene.id = 3;
+  scene.regimes = [{ x: IX, y: IY, type: 'feux', prio: 1, croisement: 'indonesien', manuel: true, sas: false }];
+  const M = [];
+  const lg = (type, x1, y1, x2, y2) => { const o = { type, x1, y1, x2, y2 }; milieu(o); M.push(o); };
+  const PPH = IY - (75 + 20 + 36), PPB = IY + (75 + 20 + 36), PPO = IX - W2 / 2 - 20 - 36, PPE = IX + W2 / 2 + 20 + 36;
+  // passages piétons
+  M.push({ type: 'passage_pieton', x: IX, y: PPH, ang: Math.PI / 2, larg: W2 }, { type: 'passage_pieton', x: IX, y: PPB, ang: Math.PI / 2, larg: W2 });
+  M.push({ type: 'passage_pieton', x: PPO, y: IY, ang: 0 }, { type: 'passage_pieton', x: PPE, y: IY, ang: 0 });
+  // lignes d'effet des feux (15 cm, T'2)
+  lg('ligne_feux', IX - W2 / 2 + 75, Y_LB, IX + W2 / 2, Y_LB);        // bas : L2..L4
+  lg('ligne_feux', IX - W2 / 2, Y_LH, IX, Y_LH);                       // haut : L1..L2
+  lg('ligne_feux', X_LO, IY, X_LO, IY + 75);                           // ouest (vers l'est)
+  lg('ligne_feux', X_LE, IY - 75, X_LE, IY);                           // est (vers l'ouest)
+  // rue nord-sud : séparations (L1 | L2 | L3)
+  const xs = (k) => IX - W2 / 2 + 75 * k;                               // bords de voies
+  lg('ligne_continue', xs(1), Y_LB, xs(1), Y_LB + 260); lg('ligne_discontinue', xs(1), Y_LB + 260, xs(1), B_());      // bas : sens opposés
+  lg('ligne_continue', xs(2), Y_LB, xs(2), Y_LB + 200); lg('ligne_discontinue', xs(2), Y_LB + 200, xs(2), B_());      // bas : voie de tourne-à-gauche
+  lg('ligne_continue', xs(2), Y_LH, xs(2), Y_LH - 260); lg('ligne_discontinue', xs(2), Y_LH - 260, xs(2), H_());      // haut : sens opposés
+  lg('ligne_continue', xs(1), Y_LH, xs(1), Y_LH - 200); lg('ligne_discontinue', xs(1), Y_LH - 200, xs(1), H_());      // haut : voie de tourne-à-gauche
+  // rue est-ouest : axe
+  lg('ligne_continue', X_LO - 130, IY, X_LO, IY); lg('ligne_discontinue', G_(), IY, X_LO - 130, IY);
+  lg('ligne_continue', X_LE, IY, X_LE + 130, IY); lg('ligne_discontinue', X_LE + 130, IY, D_(), IY);
+  // flèches de sélection
+  M.push({ type: 'fleche_gauche', x: VOIE(1), y: Y_LB + 110, ang: -Math.PI / 2 }, { type: 'fleche_droit', x: VOIE(2), y: Y_LB + 110, ang: -Math.PI / 2 });
+  M.push({ type: 'fleche_gauche', x: VOIE(1), y: Y_LH - 110, ang: Math.PI / 2 }, { type: 'fleche_droit', x: VOIE(0), y: Y_LH - 110, ang: Math.PI / 2 });
+  scene.marques = M;
+  // feux (à droite de chaque arrivée)
+  scene.panneaux = [
+    { type: 'feu', x: IX + W2 / 2 + 26, y: Y_LB - 4, ang: 0, route: 2 },
+    { type: 'feu', x: IX - W2 / 2 - 26, y: Y_LH + 4, ang: Math.PI, route: 2 },
+    { type: 'feu', x: X_LO - 4, y: IY + 75 + 26, ang: Math.PI / 2, route: 1 },
+    { type: 'feu', x: X_LE + 4, y: IY - 75 - 26, ang: -Math.PI / 2, route: 1 },
+  ];
+  scene.decor = [
+    { type: 'maison', x: 300, y: 330 }, { type: 'maison_grise', x: 990, y: 330 }, { type: 'maison_grise', x: 300, y: 830 }, { type: 'maison', x: 990, y: 830 },
+    { type: 'arbre', x: 110, y: 330 }, { type: 'buisson', x: 1180, y: 330 }, { type: 'arbre', x: 1180, y: 840 }, { type: 'buisson', x: 110, y: 840 },
+  ].map((d) => ({ ang: 0, ...d }));
+  selection = null; groupe = null; majSelbar(); fermerRegime(); $('titre').textContent = scene.titre;
+  toutRefaire('Voies de tourne-à-gauche face à face : les deux voitures passent l\'une devant l\'autre');
+  const c = geo.carrefours[0]; if (c) for (const p of scene.panneaux) p.cle = c.cle;
+  dessinerCouche();
+  if (test) basculerTest();
+  basculerTest();
+}
+
+/* ---------------- pont avec le simulateur (format « Mes scènes ») ----------------
+   Le simulateur enregistre ses scènes dans localStorage['easy-simu-scenes'] (même site :
+   easycds.fr/simu). Coordonnées normalisées : x / 1280, y / 1150.                      */
+const CLE_SIMU = 'easy-simu-scenes', CLE_OUVRIR = 'easy-simu-ouvrir';
+const nrm = (x, y) => ({ x: +(x / MONDE.W).toFixed(5), y: +(y / MONDE.H).toFixed(5) });
+function lireScenesSimu() { try { return JSON.parse(localStorage.getItem(CLE_SIMU)) || {}; } catch (e) { return {}; } }
+function versFormatSimu() {
+  const routes = [], marquages = [], panneaux = [], batiments = [];
+  for (const gr of geo.routes.values()) {
+    routes.push({ pts: gr.r.pts.map(([x, y]) => nrm(x, y)), largeur: gr.r.larg || LR, trottoir: false, arrondi: false, boutsDroits: true });
+    for (const sg of segmentsAxe(gr)) {                     // ligne du milieu, tronçon par tronçon
+      const pts = [], a = surRoute(gr, sg.s0); pts.push(nrm(a.x, a.y));
+      for (let i = 1; i < gr.cum.length - 1; i++) if (gr.cum[i] > sg.s0 && gr.cum[i] < sg.s1) pts.push(nrm(...gr.r.pts[i]));
+      const b = surRoute(gr, sg.s1); pts.push(nrm(b.x, b.y));
+      marquages.push({ type: sg.cls === 1 ? 'ligne_discontinue' : 'ligne_continue', pts, arrondi: false, jaune: false });
+    }
+  }
+  const ligne2 = (type, x1, y1, x2, y2) => marquages.push({ type, pts: [nrm(x1, y1), nrm(x2, y2)], arrondi: false, jaune: false });
+  for (const L of geo.lignes) ligne2(L.style === 'stop' ? 'stop' : L.style === 'cedez' ? 'cedez' : 'ligne_effet', L.q.x, L.q.y, L.q.x + L.rx * LR / 2, L.q.y + L.ry * LR / 2);
+  const passage = (p) => { const n = [-Math.sin(p.ang), Math.cos(p.ang)], h = (p.larg || LR) / 2; ligne2('passage_pieton', p.x - n[0] * h, p.y - n[1] * h, p.x + n[0] * h, p.y + n[1] * h); };
+  const velo = (v) => ligne2('velo', v.x, v.y, v.x + Math.cos(v.ang) * 54, v.y + Math.sin(v.ang) * 54);
+  geo.passages.forEach(passage); geo.velos.forEach(velo);
+  for (const pts of [...(geo.guides || []), ...(scene.courbes || [])]) marquages.push({ type: 'ligne_discontinue', pts: pts.map(([x, y]) => nrm(x, y)), arrondi: true, jaune: false });
+  let ignores = 0;
+  for (const m of scene.marques) {
+    if (m.type === 'passage_pieton') passage(m);
+    else if (m.type === 'velo') velo(m);
+    else if (m.type.startsWith('fleche_')) { const hx = Math.cos(m.ang), hy = Math.sin(m.ang); ligne2(m.type, m.x - hx * 44, m.y - hy * 44, m.x + hx * 44, m.y + hy * 44); }
+    else if (LIGNES.has(m.type)) ligne2({ ligne_stop: 'stop', ligne_cedez: 'cedez', ligne_feux: 'ligne_effet' }[m.type] || m.type, m.x1, m.y1, m.x2, m.y2);
+    else ignores++;
+  }
+  for (const p of [...geo.autoPanneaux, ...scene.panneaux]) panneaux.push({ type: p.type, ...nrm(p.x, p.y), taille: T_PAN, etatFeu: 'rouge', angle: +(p.ang || 0).toFixed(4) });
+  for (const d of scene.decor) {
+    const arbre = d.type === 'arbre' || d.type === 'buisson', t = d.type === 'arbre' ? 68 : 40;
+    batiments.push({ type: arbre ? 'buisson' : d.type === 'maison_grise' ? 'immeuble' : 'maison', ...nrm(d.x, d.y), w: +((arbre ? t : d.w || 170) / MONDE.W).toFixed(5), h: +((arbre ? t : d.h || 130) / MONDE.H).toFixed(5), ...(d.ang ? { angle: d.ang } : {}) });
+  }
+  return { scene: { routes, marquages, panneaux, pinceau: [], batiments }, ignores };
+}
+function envoyerVersSimulation() {
+  const nom = (scene.titre || 'Scène').trim();
+  const { scene: s, ignores } = versFormatSimu();
+  try {
+    const toutes = lireScenesSimu(); toutes[nom] = s;
+    localStorage.setItem(CLE_SIMU, JSON.stringify(toutes)); localStorage.setItem(CLE_OUVRIR, nom);
+  } catch (e) { toast('Impossible d\'enregistrer (mémoire pleine ou navigation privée)'); return; }
+  toast('« ' + nom + ' » envoyée dans Mes scènes' + (ignores ? ' (' + ignores + ' marquage(s) non repris)' : ''));
+  setTimeout(() => { location.href = './'; }, 700);
+}
+function depuisFormatSimu(s, nom) {
+  const W = MONDE.W, H = MONDE.H, P = (p) => [p.x * W, p.y * H];
+  const sc = sceneVide(); sc.titre = nom;
+  let ignores = 0;
+  for (const r of s.routes || []) {
+    if (r.trottoir || !r.pts || r.pts.length < 2) { ignores++; continue; }
+    let pts = r.pts.map(P); if (r.arrondi && pts.length > 2) pts = chaikin(pts, 3);
+    sc.routes.push({ id: sc.id++, pts, axe: 'aucune', ...(r.largeur && r.largeur !== LR ? { larg: r.largeur } : {}) });
+  }
+  for (const m of s.marquages || []) {
+    if (!m.pts || m.pts.length < 2) { ignores++; continue; }
+    const [a, b] = [P(m.pts[0]), P(m.pts[m.pts.length - 1])], ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+    const seg = (type) => { for (let i = 1; i < m.pts.length; i++) { const p = P(m.pts[i - 1]), q = P(m.pts[i]); const o = { type, x1: p[0], y1: p[1], x2: q[0], y2: q[1] }; milieu(o); sc.marques.push(o); } };
+    if (m.type === 'stop') seg('ligne_stop');
+    else if (m.type === 'cedez') seg('ligne_cedez');
+    else if (m.type === 'ligne_effet') seg('ligne_feux');
+    else if (m.type === 'ligne_continue' || m.type === 'ligne_discontinue') seg(m.type);
+    else if (m.type === 'passage_pieton') { const L = Math.hypot(b[0] - a[0], b[1] - a[1]); sc.marques.push({ type: 'passage_pieton', x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2, ang: ang - Math.PI / 2, ...(Math.abs(L - LR) > 20 ? { larg: L } : {}) }); }
+    else if (m.type.startsWith('fleche_')) { const L = Math.max(54, Math.hypot(b[0] - a[0], b[1] - a[1])); sc.marques.push({ type: m.type, x: a[0] + Math.cos(ang) * L / 2, y: a[1] + Math.sin(ang) * L / 2, ang }); }
+    else if (m.type === 'velo') sc.marques.push({ type: 'velo', x: a[0], y: a[1], ang });
+    else ignores++;
+  }
+  for (const p of s.panneaux || []) sc.panneaux.push({ type: p.type, x: p.x * W, y: p.y * H, ang: p.angle || 0 });
+  for (const d of s.batiments || []) {
+    if (d.type === 'buisson') sc.decor.push({ type: d.w * W > 50 ? 'arbre' : 'buisson', x: d.x * W, y: d.y * H, ang: 0 });
+    else if (['maison', 'immeuble', 'ecole', 'parking'].includes(d.type)) sc.decor.push({ type: d.type === 'maison' ? 'maison' : 'maison_grise', x: d.x * W, y: d.y * H, w: d.w * W, h: d.h * H, ang: d.angle || 0 });
+    else ignores++;
+  }
+  if ((s.pinceau || []).length) ignores++;
+  return { sc, ignores };
+}
+function ouvrirListeSimu() {
+  const toutes = lireScenesSimu(), noms = Object.keys(toutes).sort((a, b) => a.localeCompare(b));
+  const box = $('liste-scenes'), ul = $('ls-noms'); ul.innerHTML = '';
+  if (!noms.length) ul.innerHTML = '<p class="ls-vide">Aucune scène enregistrée dans le simulateur sur cet appareil.</p>';
+  for (const nm of noms) {
+    const b = document.createElement('button'); b.className = 'ls-item'; b.textContent = nm;
+    b.onclick = () => {
+      const { sc, ignores } = depuisFormatSimu(toutes[nm], nm);
+      scene = sc; selection = null; groupe = null; majSelbar(); fermerRegime(); $('titre').textContent = scene.titre;
+      box.classList.remove('ouvert');
+      toutRefaire('« ' + nm + ' » ouverte' + (ignores ? ' — ' + ignores + ' élément(s) non repris' : ''));
+    };
+    ul.appendChild(b);
+  }
+  box.classList.add('ouvert'); fermerMenu();
+}
+$('m-ouvrir-simu').onclick = ouvrirListeSimu;
+$('m-envoyer').onclick = () => { fermerMenu(); envoyerVersSimulation(); };
+$('ls-fermer').onclick = () => $('liste-scenes').classList.remove('ouvert');
+
+/* ---------------- verrou : même mot de passe que l'éditeur du simulateur ---------------- */
+function empreinteMdp(str, seed = 7) {
+  let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+  for (let i = 0, ch; i < str.length; i++) { ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507); h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507); h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+(function verrou() {
+  let ok = false; try { ok = sessionStorage.getItem('easy-editeur-ok') === '1'; } catch (e) {}
+  if (ok || location.protocol === 'file:') return;
+  const v = $('verrou'); v.classList.add('ouvert');
+  const essayer = () => {
+    if (empreinteMdp($('verrou-mdp').value) === '4tp9hh82gz') { try { sessionStorage.setItem('easy-editeur-ok', '1'); } catch (e) {} v.classList.remove('ouvert'); }
+    else { $('verrou-err').hidden = false; $('verrou-mdp').select(); }
+  };
+  $('verrou-ok').onclick = essayer;
+  $('verrou-mdp').addEventListener('keydown', (e) => { if (e.key === 'Enter') essayer(); });
+  setTimeout(() => $('verrou-mdp').focus(), 80);
+})();
+
+/* ---------------- divers UI ---------------- */
+let toastT = 0;
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('vu'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('vu'), 2200); }
+function majAide() { $('aide').style.display = scene.routes.length ? 'none' : 'block'; }
+function fermerMenu() { $('menu').classList.remove('ouvert'); }
+$('b-menu').onclick = () => $('menu').classList.toggle('ouvert');
+$('m-exemple').onclick = () => { chargerExemple(); fermerMenu(); };
+$('m-demo1').onclick = () => { chargerDemo('classique'); fermerMenu(); };
+$('m-demo2').onclick = () => { chargerDemoIndo(); fermerMenu(); };
+$('aide-ex').onclick = chargerExemple;
+$('m-vider').onclick = () => { const t = scene.titre; scene = sceneVide(); scene.titre = t; selection = null; majSelbar(); fermerRegime(); toutRefaire('Scène vidée — Annuler pour revenir'); fermerMenu(); };
+$('b-annuler').onclick = annuler; $('b-retablir').onclick = retablir; $('b-tester').onclick = basculerTest;
+$('titre').addEventListener('blur', () => { scene.titre = $('titre').textContent.trim() || 'Nouvelle scène'; valider(); });
+$('titre').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('titre').blur(); } });
+addEventListener('keydown', (e) => {
+  if (document.activeElement === $('titre')) return;
+  const mod = e.metaKey || e.ctrlKey;
+  if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? retablir() : annuler(); }
+  else if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); retablir(); }
+  else if ((e.key === 'Delete' || e.key === 'Backspace') && (selection || groupe)) $('s-suppr').onclick();
+  else if (e.key === 'Escape') { selection = null; groupe = null; majSelbar(); fermerRegime(); fermerMenu(); }
+  else if (e.key === ' ') { e.preventDefault(); basculerTest(); }
+});
+addEventListener('resize', () => { redimensionner(); majSelbar(); if (carrefourOuvert) { const c = geo.carrefours.find((k) => k.cle === carrefourOuvert); if (c) ouvrirRegime(c); } });
+
+function chargerExemple() {
+  // Agglomération : rue principale prioritaire, un carrefour STOP et une rue en T avec cédez-le-passage
+  const Y = 560, XB = 420, XC = 980;
+  const G = Math.min(VIS.x0, 0) - 140, D = Math.max(VIS.x1, MONDE.W) + 140, H = Math.min(VIS.y0, 0) - 140, B = Math.max(VIS.y1, MONDE.H) + 140;
+  scene = sceneVide(); scene.titre = 'Carrefours en ville';
+  scene.routes = [
+    { id: 1, pts: [[G, Y], [D, Y]] },                 // rue principale
+    { id: 2, pts: [[XB, H], [XB, B]] },               // rue qui croise (STOP)
+    { id: 3, pts: [[XC, B], [XC, Y]] },               // rue en T (cédez)
+  ];
+  scene.id = 4;
+  scene.regimes = [{ x: XB, y: Y, type: 'stop', prio: 1 }, { x: XC, y: Y, type: 'cedez', prio: 1 }];
+  scene.marques = [
+    { type: 'passage_pieton', x: XB - 130, y: Y, ang: 0 },
+    { type: 'passage_pieton', x: XC + 130, y: Y, ang: 0 },
+  ];
+  scene.decor = [
+    { type: 'maison', x: 180, y: 330 }, { type: 'maison', x: 640, y: 330 }, { type: 'maison_grise', x: 880, y: 330 }, { type: 'maison', x: 1140, y: 330 },
+    { type: 'maison', x: 190, y: 815 }, { type: 'maison_grise', x: 700, y: 820 }, { type: 'maison', x: 1185, y: 820 },
+    { type: 'buisson', x: 760, y: 300 }, { type: 'buisson', x: 1010, y: 300 },
+    { type: 'arbre', x: 70, y: 950 }, { type: 'arbre', x: 280, y: 955 }, { type: 'arbre', x: 845, y: 950 }, { type: 'buisson', x: 565, y: 955 }, { type: 'arbre', x: 1250, y: 960 },
+  ].map((d) => ({ ang: 0, ...d }));
+  selection = null; groupe = null; majSelbar(); fermerRegime(); $('titre').textContent = scene.titre;
+  toutRefaire('Exemple chargé');
+}
+
+/* ---------------- boucle ---------------- */
+function boucle() {
+  if (test) avancerTest();
+  if (sale || test) rendre();
+  requestAnimationFrame(boucle);
+}
+
+/* ---------------- démarrage ---------------- */
+redimensionner();
+choisirOutil('route');
+let initial = null; try { initial = localStorage.getItem(CLE_SAUVE); } catch (e) {}
+if (initial) { try { charger(initial); } catch (e) { scene = sceneVide(); reconstruire(); } }
+else reconstruire();
+dessinerCouche(); majAide();
+histo = [JSON.stringify(scene)]; histoIdx = 0; majBoutons();
+requestAnimationFrame(boucle);
+
+</script>
+</body>
+</html>
+
