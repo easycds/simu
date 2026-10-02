@@ -2935,10 +2935,17 @@ cv.addEventListener('wheel', (e) => {
 $('recentrer').onclick = () => { VUE.z = 1; VUE.dx = 0; VUE.dy = 0; appliquerVue(); apresVue(); };
 
 /* ---------------- boucle ---------------- */
-function boucle() {
-  if (test) avancerTest();
-  if (mode === 'seance') avancerSeance();
-  if (sale || test) rendre();
+/* La circulation avance à 60 pas par seconde, quel que soit l'écran : sur un écran 120, 144 ou 240 Hz,
+   une image n'est plus un pas (sinon tout va 2 à 4 fois trop vite). Sur un appareil lent, on rattrape. */
+const PAS_MS = 1000 / 60;
+let tPrec = 0, accu = 0;
+function boucle(t) {
+  accu += Math.min(100, tPrec ? t - tPrec : PAS_MS); tPrec = t;
+  let n = 0;
+  while (accu >= PAS_MS - 0.5 && n < 4) { accu -= PAS_MS; n++; if (test) avancerTest(); if (mode === 'seance') avancerSeance(); }
+  if (accu > PAS_MS * 4) accu = 0;
+  if (accu < 0) accu = 0;
+  if (sale || (test && n)) rendre();
   requestAnimationFrame(boucle);
 }
 
@@ -3725,7 +3732,10 @@ dessinerCouche(); majAide();
 histo = [JSON.stringify(scene)]; histoIdx = 0; majBoutons();
 requestAnimationFrame(boucle);
 if (scene.titre === 'Carrefours en ville' && scene.routes.length === 3) scene.modele = true;      // l'exemple enregistré par une ancienne version
-if (scene.modele && !scene.origine) { const d = SCENES_COURS.find((s) => s[1] === scene.titre); if (d) scene.origine = d[0]; }      // scènes toutes faites enregistrées avant la remise à zéro
+if (scene.modele && !scene.origine) {      // scène enregistrée par une version précédente : toute faite seulement si elle est restée telle quelle
+  const d = SCENES_COURS.find((s) => s[1] === scene.titre), ref = d && d[2](), n = (s) => [s.routes.length, s.marques.length, s.panneaux.length, s.regimes.length, s.decor.length].join();
+  if (ref && n(ref) === n(scene)) scene.origine = d[0]; else delete scene.modele;      // une scène retouchée reste personnelle, jamais écrasée
+}
 if (scene.origine && !scene.note && NOTES[scene.origine]) scene.note = NOTES[scene.origine];
 if (SUR_SITE) {                      // sur le site : on arrive en Séance, sur le choix des scènes
   if (!initial) chargerExemple();
