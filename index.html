@@ -118,7 +118,7 @@
   #selbar-seance .btn.on { background:#f59e0b; color:#111; }
   #selbar-seance #ss-frein.on { background:#ff3131; color:#fff; }
   body.presentation .pill, body.presentation .chip, body.presentation #tiroir-usagers, body.presentation #toast { display:none !important; }
-  #sortie-pres { display:none; position:fixed; left:0; top:0; width:80px; height:80px; background:transparent; border:0; z-index:30; cursor:pointer; }
+  #sortie-pres { display:none; position:fixed; border:0; z-index:30; cursor:pointer; }
   body.presentation #sortie-pres { display:block; }
   #toast { position:fixed; left:50%; bottom:92px; transform:translateX(-50%); background:rgba(17,20,24,.9); color:#fff; padding:10px 16px; border-radius:12px; font-size:14px;
            font-weight:550; z-index:7; opacity:0; transition:opacity .2s; pointer-events:none; max-width:calc(100vw - 32px); text-align:center; }
@@ -130,6 +130,63 @@
                background:rgba(17,20,24,.88); color:#fff; font:inherit; font-size:13px; font-weight:650; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.25); }
   #recentrer.vu { display:block; }
   body.presentation #recentrer { display:none !important; }
+
+  /* ---- moniteur : menu selon le mode, barre de séance courte, consigne, accueil, aide ---- */
+  body.mode-seance .ed-seul, body:not(.mode-seance) .se-seul { display:none !important; }
+  body.mode-seance #modes, body.mode-seance #barre-d .sep { display:none; }
+  body.mode-seance #titre { cursor:pointer; }
+  body.mode-seance #titre::after { content:" ▾"; opacity:.6; font-size:13px; }
+  #plus-seance { position:fixed; display:none; flex-direction:column; align-items:stretch; padding:6px; z-index:6; bottom:calc(84px + env(safe-area-inset-bottom, 0px)); }
+  body.mode-seance #plus-seance.ouvert { display:flex; }
+  #plus-seance .btn { justify-content:flex-start; white-space:nowrap; }
+  #plus-seance .btn.actif { background:rgba(255,255,255,.16); color:#fff; }
+  #dock-seance [hidden], #plus-seance [hidden] { display:none !important; }
+  #dock-seance #so-circ.marche { background:#fff; color:#111; }
+  #dock-seance #so-stop { background:#ff3131; color:#fff; }
+  #chip-dessins { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(84px + env(safe-area-inset-bottom, 0px)); display:none; height:38px; padding:0 16px; border-radius:999px; border:0;
+                  background:#fff; color:#111; font:inherit; font-size:13.5px; font-weight:650; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.25); z-index:5; }
+  body.mode-seance.crayon #chip-dessins { display:block; }
+  body.mode-seance.crayon #toast { bottom:calc(134px + env(safe-area-inset-bottom, 0px)); }
+  body.presentation #chip-dessins, body.presentation #consigne, body.presentation #plus-seance { display:none !important; }
+  #sortie-pres { width:auto; height:36px; padding:0 12px; left:10px; top:calc(10px + env(safe-area-inset-top, 0px)); border-radius:999px; background:rgba(17,20,24,.38); color:#fff; font:inherit; font-size:12.5px; font-weight:650; opacity:.7; }
+  #sortie-pres:hover { opacity:1; }
+  #consigne { position:fixed; left:20px; top:calc(78px + env(safe-area-inset-top, 0px)); max-width:min(470px, calc(100vw - 40px)); display:none; text-align:left; border:0; cursor:pointer;
+              background:rgba(255,255,255,.94); color:#1c2430; border-radius:12px; padding:9px 13px 10px; font:inherit; font-size:13.5px; line-height:1.4; box-shadow:0 4px 14px rgba(0,0,0,.2); z-index:4; }
+  #consigne b { display:block; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#c8102e; margin-bottom:2px; }
+  #consigne.plie { padding:7px 12px; border-radius:999px; } #consigne.plie span { display:none; } #consigne.plie b { margin:0; }
+  body.mode-seance #consigne.vu { display:block; }
+  #accueil { position:fixed; inset:0; z-index:12; background:#f1f2f4; overflow-y:auto; -webkit-overflow-scrolling:touch; display:none; }
+  #accueil.ouvert { display:block; }
+  .ac-page { max-width:1120px; margin:0 auto; padding:calc(22px + env(safe-area-inset-top, 0px)) 20px calc(40px + env(safe-area-inset-bottom, 0px)); }
+  .ac-page header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:6px; }
+  .ac-page h2 { margin:0; font-size:28px; font-weight:800; letter-spacing:-.01em; } .ac-page h2 i { font-style:normal; color:var(--rouge); }
+  #ac-sous { margin:2px 0 0; font-size:15px; color:var(--gris); }
+  #ac-fermer { flex:none; width:44px; height:44px; border-radius:12px; border:0; background:#fff; font-size:18px; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.08); color:var(--encre); }
+  .ac-page h3 { margin:22px 0 10px; font-size:12.5px; font-weight:750; letter-spacing:.08em; text-transform:uppercase; color:var(--gris); }
+  .ac-grille { display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:14px; }
+  .ac-carte { position:relative; display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; text-align:left; padding:0; border:0; border-radius:14px; overflow:hidden; background:#fff; font:inherit; color:inherit; cursor:pointer;
+              box-shadow:0 2px 8px rgba(0,0,0,.08); outline:3px solid transparent; transition:outline-color .12s, transform .12s; }
+  .ac-carte:hover, .ac-carte:focus-visible { outline-color:var(--rouge); }
+  .ac-carte:active { transform:scale(.985); }
+  .ac-carte canvas, .ac-carte .ac-vide { display:block; width:100%; aspect-ratio:8/5; background:#8ab583; }
+  .ac-carte .ac-vide { display:flex; align-items:center; justify-content:center; background:#e6e8ec; color:var(--gris); font-size:34px; font-weight:300; }
+  .ac-t { display:block; padding:10px 12px 0; font-size:15px; font-weight:700; line-height:1.25; }
+  .ac-n { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; padding:3px 12px 0; font-size:12.5px; line-height:1.35; color:var(--gris); }
+  .ac-carte::after { content:""; display:block; height:12px; flex:none; }
+  .ac-carte canvas, .ac-carte .ac-vide { flex:none; }
+  .ac-suppr { position:absolute; right:8px; top:8px; height:30px; min-width:30px; padding:0 9px; border-radius:999px; border:0; background:rgba(17,20,24,.72); color:#fff; font:inherit; font-size:12.5px; font-weight:650; cursor:pointer; }
+  .ac-suppr.sur { background:var(--rouge); }
+  .ac-pied { display:flex; flex-wrap:wrap; gap:10px; margin-top:26px; }
+  .ac-pied button, .ac-pied a { height:44px; padding:0 16px; border-radius:12px; border:0; background:#fff; color:var(--encre); font:inherit; font-size:14px; font-weight:650; cursor:pointer; text-decoration:none; display:flex; align-items:center; gap:8px; box-shadow:0 2px 6px rgba(0,0,0,.08); }
+  .ac-pied svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  #gestes { position:fixed; inset:0; background:rgba(10,12,16,.5); display:none; align-items:center; justify-content:center; z-index:13; padding:16px; }
+  #gestes.ouvert { display:flex; }
+  #gestes .ls-boite { width:min(560px, 100%); }
+  #ge-corps { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:10px 0 12px; }
+  .ge { border:2px solid #eceef1; border-radius:12px; padding:10px 10px 12px; text-align:center; }
+  .ge svg { display:block; width:100%; height:74px; margin-bottom:6px; }
+  .ge b { display:block; font-size:14px; margin-bottom:2px; } .ge span { font-size:12.5px; color:var(--gris); line-height:1.35; display:block; }
+  #ge-fermer { height:44px; width:100%; border-radius:10px; border:0; background:var(--rouge); color:#fff; font:inherit; font-weight:700; cursor:pointer; }
   /* ---- écrans compacts : téléphone (portrait ou paysage), petite tablette ---- */
   @media (max-width: 900px), (max-height: 520px) {
     .lbl, #titre, #t-tester { display:none; }
@@ -153,10 +210,21 @@
     #cats.ouvert ~ #toast { bottom:calc(196px + env(safe-area-inset-bottom, 0px)); }
     #recentrer { top:calc(60px + env(safe-area-inset-top, 0px)); right:10px; }
     #aide { max-width:calc(100vw - 40px); padding:16px 18px; }
+    #dock-seance .btn { flex-direction:column; gap:1px; height:50px; padding:0 7px; }
+    #dock-seance .lbl { display:block; font-size:10px; font-weight:650; line-height:1.1; }
+    #plus-seance, #chip-dessins { bottom:calc(72px + env(safe-area-inset-bottom, 0px)); }
+    #plus-seance { max-width:calc(100vw - 16px); } #plus-seance .btn { height:44px; }
+    body.mode-seance #tiroir-usagers.ouvert { bottom:calc(72px + env(safe-area-inset-bottom, 0px)); }
+    #consigne { left:10px; top:calc(60px + env(safe-area-inset-top, 0px)); max-width:calc(100vw - 20px); font-size:12.5px; }
+    .ac-page { padding-left:12px; padding-right:12px; } .ac-page h2 { font-size:23px; }
+    .ac-grille { grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; }
+    .ac-t { font-size:14px; } .ac-n { font-size:12px; }
   }
   @media (max-width: 430px) {            /* petit téléphone en portrait : tout tient dans la barre */
     .btn { min-width:36px; padding:0 6px; } .sep { display:none; }
-    #dock-seance .btn, #dock .btn { height:38px; }
+    #dock .btn { height:38px; }
+    #dock-seance .btn { min-width:44px; padding:0 5px; }
+    #ge-corps { gap:8px; } .ge svg { height:60px; }
   }
   @media (max-height: 520px) {           /* téléphone en paysage : on gagne de la hauteur */
     .item { padding:4px 0 2px; } .item canvas { width:28px; height:28px; }
@@ -172,20 +240,21 @@
   <div id="titre" contenteditable="true" spellcheck="false">Nouvelle scène</div>
 </div>
 <div class="pill" id="menu">
+  <button class="btn" id="m-accueil"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="3" y="13" width="8" height="7" rx="1.5"/><rect x="13" y="13" width="8" height="7" rx="1.5"/></svg>Choisir une scène</button>
+  <button class="btn" id="m-aide"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-.9.6-1.5 1.1-1.5 2.2M12 17v.5"/></svg>Aide : les gestes</button>
+  <div class="sep-h"></div>
+  <button class="btn se-seul" id="m-editer"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>Créer ou modifier une scène</button>
+  <button class="btn ed-seul" id="m-note"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H10l-5 4z"/></svg>Consigne pour le moniteur…</button>
+  <button class="btn ed-seul" id="m-ouvrir-simu"><svg viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"/></svg>Ouvrir une scène du simulateur</button>
+  <button class="btn ed-seul" id="m-envoyer"><svg viewBox="0 0 24 24"><path d="M5 12h12M13 6l6 6-6 6"/></svg>Ouvrir dans l'ancienne version</button>
+  <button class="btn ed-seul" id="m-vider"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Tout effacer</button>
+  <div class="sep-h"></div>
   <a class="btn" id="m-outils" href="/"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Mes outils</a>
   <a class="btn" id="m-retour" href="ancien.html"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Ancienne version du simulateur</a>
-  <button class="btn" id="m-ouvrir-simu"><svg viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"/></svg>Ouvrir une scène du simulateur</button>
-  <button class="btn" id="m-envoyer"><svg viewBox="0 0 24 24"><path d="M5 12h12M13 6l6 6-6 6"/></svg>Ouvrir dans l'ancienne version</button>
-  <div class="sep-h"></div>
-  <button class="btn" id="m-cours"><svg viewBox="0 0 24 24"><path d="M4 5h7a2 2 0 012 2v12a2 2 0 00-2-2H4zM20 5h-7a2 2 0 00-2 2v12a2 2 0 012-2h7z"/></svg>Scènes du cours</button>
-  <button class="btn" id="m-demo1"><svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="20" rx="3"/><circle cx="12" cy="7" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="17" r="1.5"/></svg>Démo feux · croisement classique</button>
-  <button class="btn" id="m-demo2"><svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="20" rx="3"/><circle cx="12" cy="7" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="17" r="1.5"/></svg>Démo feux · à l'indonésienne</button>
-  <button class="btn" id="m-exemple"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></svg>Charger l'exemple</button>
-  <div class="sep-h"></div>
-  <button class="btn" id="m-vider"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Tout effacer</button>
 </div>
 <div class="pill" id="modes"><button class="btn on" id="mode-ed"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg><span class="lbl">Éditer</span></button><button class="btn" id="mode-se"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span class="lbl">Séance</span></button></div>
 <div class="pill" id="barre-d" style="right:20px;top:18px">
+  <button class="btn" id="b-aide" title="Aide : les gestes"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-.9.6-1.5 1.1-1.5 2.2M12 17v.5"/></svg></button>
   <button class="btn" id="b-annuler" title="Annuler"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
   <button class="btn" id="b-retablir" title="Rétablir"><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 000 12h3"/></svg></button>
   <div class="sep"></div>
@@ -195,7 +264,7 @@
 <div class="pill" id="dock">
   <button class="btn outil actif" data-outil="route"><svg viewBox="0 0 24 24"><path d="M6 21C8 14 10 9 18 3"/><path d="M11 20c2-6 5-11 10-14" opacity=".45"/></svg><span class="lbl">Route</span></button>
   <button class="btn outil" data-outil="panneau"><svg viewBox="0 0 24 24"><path d="M12 3l8 8-8 8-8-8z"/><path d="M12 19v3"/></svg><span class="lbl">Panneau</span></button>
-  <button class="btn outil" data-outil="sol"><svg viewBox="0 0 24 24"><path d="M12 21V5"/><path d="M7 10l5-5 5 5"/></svg><span class="lbl">Sol</span></button>
+  <button class="btn outil" data-outil="sol"><svg viewBox="0 0 24 24"><path d="M12 21V5"/><path d="M7 10l5-5 5 5"/></svg><span class="lbl">Marquage</span></button>
   <button class="btn outil" data-outil="decor"><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="6"/><path d="M12 16v6"/></svg><span class="lbl">Décor</span></button>
   <div class="sep"></div>
   <button class="btn outil" data-outil="gomme"><svg viewBox="0 0 24 24"><path d="M20 20H8l-5-5 10-10 8 8-6 6"/></svg><span class="lbl">Gomme</span></button>
@@ -203,19 +272,26 @@
 <div id="tiroir"></div>
 <div id="cats"></div>
 <div class="pill" id="dock-seance">
-  <button class="btn" data-so="usager"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="5"/><path d="M8 8h8"/></svg><span class="lbl">Usagers</span></button>
-  <button class="btn" data-so="crayon"><svg viewBox="0 0 24 24"><path d="M4 20l4-1L19 8l-3-3L5 16z"/></svg><span class="lbl">Crayon</span></button>
-  <button class="btn" id="so-feux"><svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="20" rx="3"/><circle cx="12" cy="7" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="17" r="1.5"/></svg><span class="lbl">Feux auto</span></button>
-  <button class="btn" id="so-num"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M11 9l2-1v8"/></svg><span class="lbl">N°</span></button>
+  <button class="btn rouge" id="so-circ" title="Circulation automatique"></button>
+  <button class="btn" data-so="crayon"><svg viewBox="0 0 24 24"><path d="M4 20l4-1L19 8l-3-3L5 16z"/></svg><span class="lbl">Dessiner</span></button>
+  <button class="btn" data-so="usager"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="5"/><path d="M8 8h8"/></svg><span class="lbl">Véhicule</span></button>
   <div class="sep"></div>
-  <button class="btn" id="so-rec" title="Enregistrer ce que tu fais"></button>
-  <button class="btn" id="so-debut" title="Revenir au départ"><svg viewBox="0 0 24 24"><path d="M6 5v14M19 5l-10 7 10 7z"/></svg></button>
-  <button class="btn rouge" id="so-lecture"></button>
-  <div class="sep"></div>
-  <button class="btn" id="so-circ" title="Circulation automatique"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0114-5M20 12a8 8 0 01-14 5"/><path d="M18 3v4h-4M6 21v-4h4"/></svg><span class="lbl">Circulation</span></button>
-  <button class="btn" id="so-effacer" title="Effacer les dessins"><svg viewBox="0 0 24 24"><path d="M20 20H8l-5-5 10-10 8 8-6 6"/></svg></button>
-  <button class="btn" id="so-pres" title="Présentation"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+  <button class="btn" id="so-stop" hidden><svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg><span class="lbl">Fin d'enregistrement</span></button>
+  <button class="btn" id="so-lecture" hidden></button>
+  <button class="btn" id="so-zero" title="Tout remettre comme au début"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 103-6.3"/><path d="M4 4v5h5"/></svg><span class="lbl">Remettre à zéro</span></button>
+  <button class="btn" id="so-plus" title="Plus d'options"><svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><span class="lbl">Plus</span></button>
 </div>
+<div class="pill" id="plus-seance">
+  <button class="btn" id="so-feux"><svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="20" rx="3"/><circle cx="12" cy="7" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="17" r="1.5"/></svg><span></span></button>
+  <button class="btn" id="so-num"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M11 9l2-1v8"/></svg><span></span></button>
+  <button class="btn" id="so-effacer"><svg viewBox="0 0 24 24"><path d="M20 20H8l-5-5 10-10 8 8-6 6"/></svg><span>Effacer les dessins</span></button>
+  <div class="sep-h"></div>
+  <button class="btn" id="so-rec"><svg viewBox="0 0 24 24" style="fill:#ff3131;stroke:none"><circle cx="12" cy="12" r="6"/></svg><span>Enregistrer un déplacement</span></button>
+  <button class="btn" id="so-debut"><svg viewBox="0 0 24 24"><path d="M6 5v14M19 5l-10 7 10 7z"/></svg><span>Revenir au début de l'enregistrement</span></button>
+  <div class="sep-h"></div>
+  <button class="btn" id="so-pres"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span>Plein écran</span></button>
+</div>
+<button id="chip-dessins">Effacer les dessins</button>
 <div id="tiroir-usagers"></div>
 <div class="pill" id="selbar-seance">
   <button class="btn" id="ss-cligG" title="Clignotant gauche"><svg viewBox="0 0 24 24"><path d="M14 6l-6 6 6 6"/></svg></button>
@@ -224,7 +300,8 @@
   <div class="sep"></div>
   <button class="btn" id="ss-suppr" title="Retirer"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button>
 </div>
-<button id="sortie-pres" aria-label="Quitter la présentation"></button>
+<button id="sortie-pres" aria-label="Quitter le plein écran">✕ Retrouver les boutons</button>
+<button id="consigne"><b>À montrer</b><span id="consigne-txt"></span></button>
 
 <div id="regime">
   <h4>Ce carrefour est réglé en…</h4>
@@ -244,12 +321,17 @@
   <button class="btn" id="s-suppr" title="Supprimer"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button>
 </div>
 
-<div id="aide"><b>Glisse pour tracer une route</b><span>Elle s'accroche toute seule aux autres routes et aux bords.<br>Touche ensuite un carrefour pour le régler.</span><br><button id="aide-ex">Voir l'exemple</button></div>
+<div id="aide"><b>Glisse pour tracer une route</b><span>Elle s'accroche toute seule aux autres routes et aux bords.<br>Touche ensuite un carrefour pour le régler.</span><br><button id="aide-ex">Partir d'une scène toute faite</button></div>
 <div id="liste-scenes"><div class="ls-boite"><h4>Mes scènes du simulateur</h4><p>Elles s'ouvrent ici pour être modifiées. Le simulateur garde l'original.</p><div id="ls-noms"></div><button id="ls-fermer">Fermer</button></div></div>
 <div id="saisie"><div class="ls-boite"><h4>Texte au sol</h4><p>Il sera peint sur la chaussée (BUS, TAXI, PAYANT, 30…).</p><input type="text" id="saisie-txt" maxlength="20" autocomplete="off" placeholder="Ton texte"><button id="saisie-ok">Valider</button> <button id="saisie-annuler" class="verrou-retour">Annuler</button></div></div>
 <div id="verrou"><div class="ls-boite"><h4>Mode Éditer</h4><p>L'édition des scènes est réservée aux moniteurs.</p>
 <input type="password" id="verrou-mdp" autocomplete="current-password" placeholder="Mot de passe"><p id="verrou-err" hidden style="color:#c8102e;margin:8px 0 0">Mot de passe incorrect.</p>
 <button id="verrou-ok">Entrer</button> <button id="verrou-annuler" class="verrou-retour">Annuler</button></div></div>
+<div id="accueil"><div class="ac-page">
+  <header><div><h2>Simulateur <i>Easy</i></h2><p id="ac-sous">Choisis la scène de ton cours</p></div><button id="ac-fermer" aria-label="Fermer">✕</button></header>
+  <div id="ac-corps"></div>
+</div></div>
+<div id="gestes"><div class="ls-boite"><h4 id="ge-titre">Les gestes</h4><div id="ge-corps"></div><p id="ge-plus"></p><button id="ge-fermer">J'ai compris</button></div></div>
 <button id="recentrer">⤢ Vue classe</button>
 <div id="toast"></div>
 
@@ -1412,10 +1494,10 @@ function carrefourSous(p) {
 }
 
 /* ---------------- historique + sauvegarde ---------------- */
-let demarrage = true;
-function marquerModele() { if (mode === 'seance' || demarrage) { scene.modele = true; histo[histoIdx] = JSON.stringify(scene, (k, v) => (k[0] === '_' ? undefined : v)); sauverLocal(); } }
+let demarrage = true, pose = false;
+function marquerModele() { if ((mode === 'seance' || demarrage) && scene.origine) { scene.modele = true; histo[histoIdx] = JSON.stringify(scene, (k, v) => (k[0] === '_' ? undefined : v)); sauverLocal(); } }
 function valider(msg) {
-  majAide(); if (mode === 'editeur' && !demarrage) delete scene.modele;
+  majAide(); if (mode === 'editeur' && !demarrage && !pose) { delete scene.modele; delete scene.origine; }
   histo = histo.slice(0, histoIdx + 1); histo.push(JSON.stringify(scene, (k, v) => (k[0] === '_' ? undefined : v))); histoIdx = histo.length - 1;
   if (histo.length > 80) { histo.shift(); histoIdx--; }
   try { localStorage.setItem(CLE_SAUVE, histo[histoIdx]); } catch (e) {}
@@ -1424,7 +1506,7 @@ function valider(msg) {
 function charger(json) {
   scene = JSON.parse(json); selection = null; groupe = null; fermerRegime(); majSelbar();
   $('titre').textContent = scene.titre || 'Nouvelle scène';
-  reconstruire(); dessinerCouche(); majAide();
+  reconstruire(); dessinerCouche(); majAide(); majConsigne(); majDockSeance();
 }
 function annuler() { if (histoIdx > 0) { histoIdx--; charger(histo[histoIdx]); sauverLocal(); majBoutons(); } }
 function retablir() { if (histoIdx < histo.length - 1) { histoIdx++; charger(histo[histoIdx]); sauverLocal(); majBoutons(); } }
@@ -1752,10 +1834,14 @@ $('s-dupliquer').onclick = () => {
   else if (selection.kind === 'decor' && estRect(o)) { const pas = dimRect(o)[0] + 24; dx = Math.cos(o.ang || 0) * pas; dy = Math.sin(o.ang || 0) * pas; }
   selection = copie(selection, dx, dy); majSelbar(); dessinerCouche(); valider();
 };
-function demanderTexte(valeur, suite) {
+function demanderTexte(valeur, suite, o) {
+  o = o || {};
   const box = $('saisie'), inp = $('saisie-txt');
+  box.querySelector('h4').textContent = o.titre || 'Texte au sol';
+  box.querySelector('p').textContent = o.aide || 'Il sera peint sur la chaussée (BUS, TAXI, PAYANT, 30…).';
+  inp.maxLength = o.max || 20; inp.style.textTransform = o.brut ? 'none' : 'uppercase'; inp.placeholder = o.brut ? 'Ta phrase' : 'Ton texte';
   inp.value = valeur || ''; box.classList.add('ouvert'); setTimeout(() => inp.focus(), 30);
-  const fin = (ok) => { box.classList.remove('ouvert'); const t = inp.value.trim().toUpperCase(); if (ok && t) suite(t); };
+  const fin = (ok) => { box.classList.remove('ouvert'); const t = o.brut ? inp.value.trim() : inp.value.trim().toUpperCase(); if (ok && (t || o.brut)) suite(t); };
   $('saisie-ok').onclick = () => fin(true); $('saisie-annuler').onclick = () => fin(false);
   inp.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') fin(true); else if (e.key === 'Escape') fin(false); };
 }
@@ -1899,11 +1985,14 @@ document.querySelectorAll('.outil').forEach((b) => (b.onclick = () => choisirOut
 const COULEURS = ['#3b82c4', '#e0b43a', '#d64545', '#e8e8e8', '#2f9e6b', '#8e5bd6', '#5b6270'];
 const CYCLE = 480;                       // cycle des feux (images)
 function basculerTest() {
-  if (test) { test = null; $('t-tester').textContent = 'Tester'; $('ico-play').innerHTML = '<path d="M7 4l13 8-13 8z"/>'; sale = true; return; }
-  if (!scene.routes.length && !scene.fond) { toast('Trace d\'abord une route'); return; }
-  test = { frame: 0, vehicules: [], prochain: 0, n: 0, pietons: [], prochainPieton: 60, np: 0 };
-  $('t-tester').textContent = 'Arrêter'; $('ico-play').innerHTML = '<rect x="6" y="6" width="12" height="12" rx="2"/>';
-  fermerRegime(); selection = null; groupe = null; majSelbar();
+  if (test) { test = null; $('t-tester').textContent = 'Tester'; $('ico-play').innerHTML = '<path d="M7 4l13 8-13 8z"/>'; sale = true; }
+  else if (!scene.routes.length && !scene.fond) toast('Trace d\'abord une route');
+  else {
+    test = { frame: 0, vehicules: [], prochain: 0, n: 0, pietons: [], prochainPieton: 60, np: 0 };
+    $('t-tester').textContent = 'Arrêter'; $('ico-play').innerHTML = '<rect x="6" y="6" width="12" height="12" rx="2"/>';
+    fermerRegime(); selection = null; groupe = null; majSelbar();
+  }
+  majDockSeance();
 }
 function lanePt(g, s, dir) { const q = surRoute(g, s), hx = q.tx * dir, hy = q.ty * dir, [rx, ry] = droiteDe(hx, hy); return [q.x + rx * LR / 4, q.y + ry * LR / 4]; }
 function tangente(g, s, dir) { const q = surRoute(g, s); return [q.tx * dir, q.ty * dir]; }
@@ -2152,24 +2241,22 @@ function scriptDemo() {
   if (f === 250) { lancerVehicule(1, 1, ['droit'], false); lancerVehicule(1, -1, ['droite'], false); }
   if (f === 300) lancerVehicule(1, 1, ['gauche'], false);
 }
-function chargerDemo(mode) {
+function sceneDemo(mode) {
   const X = 640, Y = 575;
   const G = Math.min(VIS.x0, 0) - 140, D = Math.max(VIS.x1, MONDE.W) + 140, H = Math.min(VIS.y0, 0) - 140, B = Math.max(VIS.y1, MONDE.H) + 140;
-  scene = sceneVide();
-  scene.titre = mode === 'indonesien' ? 'Feux · à l\'indonésienne' : 'Feux · croisement classique';
-  scene.demo = mode;
-  scene.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }, { id: 2, pts: [[X, H], [X, B]] }];
-  scene.id = 3;
-  scene.regimes = [{ x: X, y: Y, type: 'feux', prio: 1, croisement: mode }];
-  scene.decor = [
+  const sc = sceneVide();
+  sc.titre = mode === 'indonesien' ? 'Feux · à l\'indonésienne' : 'Feux · croisement classique';
+  sc.demo = mode;
+  sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }, { id: 2, pts: [[X, H], [X, B]] }];
+  sc.id = 3;
+  sc.regimes = [{ x: X, y: Y, type: 'feux', prio: 1, croisement: mode }];
+  sc.decor = [
     { type: 'maison', x: 330, y: 340 }, { type: 'maison_grise', x: 950, y: 340 }, { type: 'maison_grise', x: 330, y: 820 }, { type: 'maison', x: 950, y: 820 },
     { type: 'arbre', x: 120, y: 330 }, { type: 'buisson', x: 1160, y: 330 }, { type: 'arbre', x: 1160, y: 830 }, { type: 'buisson', x: 120, y: 830 },
   ].map((d) => ({ ang: 0, ...d }));
-  selection = null; groupe = null; majSelbar(); fermerRegime(); $('titre').textContent = scene.titre;
-  toutRefaire(mode === 'indonesien' ? 'À l\'indonésienne : les deux voitures tournent en passant devant l\'autre' : 'Classique : les deux voitures tournent en se contournant (chacune passe derrière l\'autre)'); marquerModele();
-  if (test) basculerTest();
-  basculerTest();
+  return sc;
 }
+function chargerDemo(m) { if (m === 'indonesien') poserScene(sceneDemo(m), 'À l\'indonésienne : les deux voitures tournent en passant devant l\'autre'); else chargerSceneCours('feux_classique'); basculerTest(); }
 
 /* ---------------- démo : croisement à l'indonésienne avec voies de tourne-à-gauche ----------------
    Rue nord-sud à 4 voies (300 de large). Les voies de tourne-à-gauche des deux sens sont
@@ -2235,14 +2322,14 @@ function scriptIndo() {
   if (f === 250) { lancerIndo('est'); lancerIndo('ouest'); }
   if (f === 300) { const cw = passagesTest().find((q) => q.route === 1 && q.x < IX); lancerPieton(cw, 1); }
 }
-function chargerDemoIndo() {
-  scene = sceneVide(); scene.titre = 'Feux · à l\'indonésienne'; scene.demo = 'indo-voies';
-  scene.routes = [
+function sceneDemoIndo() {
+  const sc = sceneVide(); sc.titre = 'Feux · à l\'indonésienne'; sc.demo = 'indo-voies';
+  sc.routes = [
     { id: 1, pts: [[G_(), IY], [D_(), IY]], axe: 'aucune' },
     { id: 2, pts: [[IX, H_()], [IX, B_()]], axe: 'aucune', larg: W2 },
   ];
-  scene.id = 3;
-  scene.regimes = [{ x: IX, y: IY, type: 'feux', prio: 1, croisement: 'indonesien', manuel: true, sas: false }];
+  sc.id = 3;
+  sc.regimes = [{ x: IX, y: IY, type: 'feux', prio: 1, croisement: 'indonesien', manuel: true, sas: false }];
   const M = [];
   const lg = (type, x1, y1, x2, y2) => { const o = { type, x1, y1, x2, y2 }; milieu(o); M.push(o); };
   const PPH = IY - (75 + 20 + 36), PPB = IY + (75 + 20 + 36), PPO = IX - W2 / 2 - 20 - 36, PPE = IX + W2 / 2 + 20 + 36;
@@ -2266,25 +2353,22 @@ function chargerDemoIndo() {
   // flèches de sélection
   M.push({ type: 'fleche_gauche', x: VOIE(1), y: Y_LB + 110, ang: -Math.PI / 2 }, { type: 'fleche_droit', x: VOIE(2), y: Y_LB + 110, ang: -Math.PI / 2 });
   M.push({ type: 'fleche_gauche', x: VOIE(1), y: Y_LH - 110, ang: Math.PI / 2 }, { type: 'fleche_droit', x: VOIE(0), y: Y_LH - 110, ang: Math.PI / 2 });
-  scene.marques = M;
+  sc.marques = M;
   // feux (à droite de chaque arrivée)
-  scene.panneaux = [
+  sc.panneaux = [
     { type: 'feu', x: IX + W2 / 2 + 26, y: Y_LB - 4, ang: 0, route: 2 },
     { type: 'feu', x: IX - W2 / 2 - 26, y: Y_LH + 4, ang: Math.PI, route: 2 },
     { type: 'feu', x: X_LO - 4, y: IY + 75 + 26, ang: Math.PI / 2, route: 1 },
     { type: 'feu', x: X_LE + 4, y: IY - 75 - 26, ang: -Math.PI / 2, route: 1 },
   ];
-  scene.decor = [
+  sc.decor = [
     { type: 'maison', x: 300, y: 330 }, { type: 'maison_grise', x: 990, y: 330 }, { type: 'maison_grise', x: 300, y: 830 }, { type: 'maison', x: 990, y: 830 },
     { type: 'arbre', x: 110, y: 330 }, { type: 'buisson', x: 1180, y: 330 }, { type: 'arbre', x: 1180, y: 840 }, { type: 'buisson', x: 110, y: 840 },
   ].map((d) => ({ ang: 0, ...d }));
-  selection = null; groupe = null; majSelbar(); fermerRegime(); $('titre').textContent = scene.titre;
-  toutRefaire('Voies de tourne-à-gauche face à face : les deux voitures passent l\'une devant l\'autre'); marquerModele();
-  const c = geo.carrefours[0]; if (c) for (const p of scene.panneaux) p.cle = c.cle;
-  dessinerCouche();
-  if (test) basculerTest();
-  basculerTest();
+  for (const p of sc.panneaux) p.cle = IX + ',' + IY;      // les feux posés à la main suivent le carrefour
+  return sc;
 }
+function chargerDemoIndo() { chargerSceneCours('feux_indo'); basculerTest(); }
 
 /* ---------------- pont avec le simulateur (format « Mes scènes ») ----------------
    Le simulateur enregistre ses scènes dans localStorage['easy-simu-scenes'] (même site :
@@ -2391,7 +2475,7 @@ function ouvrirListeSimu() {
     const b = document.createElement('button'); b.className = 'ls-item'; b.textContent = nm;
     b.onclick = () => {
       const { sc, ignores } = depuisFormatSimu(toutes[nm], nm);
-      scene = sc; selection = null; groupe = null; majSelbar(); fermerRegime(); $('titre').textContent = scene.titre;
+      rangerScene(); scene = sc; selection = null; groupe = null; majSelbar(); fermerRegime(); $('titre').textContent = scene.titre;
       box.classList.remove('ouvert');
       toutRefaire('« ' + nm + ' » ouverte' + (ignores ? ' — ' + ignores + ' élément(s) non repris' : ''));
     };
@@ -2430,18 +2514,24 @@ function demanderMdp(suite) {        // l'édition est protégée, la séance es
 let toastT = 0;
 function toast(t, duree) { const el = $('toast'); el.textContent = t; el.classList.add('vu'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('vu'), duree || 2200); }
 function majAide() { $('aide').style.display = scene.routes.length || scene.marques.length || scene.decor.length || scene.fond ? 'none' : 'block'; }
-function fermerMenu() { $('menu').classList.remove('ouvert'); }
-$('b-menu').onclick = () => $('menu').classList.toggle('ouvert');
-$('m-exemple').onclick = () => { chargerExemple(); fermerMenu(); };
-$('m-demo1').onclick = () => { chargerDemo('classique'); fermerMenu(); };
-$('m-demo2').onclick = () => { chargerDemoIndo(); fermerMenu(); };
-$('aide-ex').onclick = chargerExemple;
+function fermerMenu() { $('menu').classList.remove('ouvert'); $('plus-seance').classList.remove('ouvert'); }
+$('b-menu').onclick = () => { $('plus-seance').classList.remove('ouvert'); $('menu').classList.toggle('ouvert'); };
+$('m-accueil').onclick = () => ouvrirAccueil();
+$('m-aide').onclick = $('b-aide').onclick = () => ouvrirGestes();
+$('m-editer').onclick = () => { fermerMenu(); demanderMdp(() => basculerMode('editeur')); };
+$('m-note').onclick = () => { fermerMenu(); demanderTexte(scene.note, (t) => { if (t) scene.note = t; else delete scene.note; valider(t ? 'Consigne enregistrée : elle s\'affiche en Séance' : 'Consigne retirée'); majConsigne(true); },
+  { titre: 'Consigne pour le moniteur', aide: 'Une phrase : ce qu\'il faut montrer avec cette scène. Elle s\'affiche en Séance, sous le titre.', max: 240, brut: true }); };
+$('aide-ex').onclick = () => ouvrirAccueil();
+$('titre').addEventListener('click', () => { if (mode === 'seance') ouvrirAccueil(); });
 $('m-vider').onclick = () => { const t = scene.titre; scene = sceneVide(); scene.titre = t; selection = null; majSelbar(); fermerRegime(); toutRefaire('Scène vidée — Annuler pour revenir'); fermerMenu(); };
 $('b-annuler').onclick = annuler; $('b-retablir').onclick = retablir; $('b-tester').onclick = basculerTest;
 $('titre').addEventListener('blur', () => { scene.titre = $('titre').textContent.trim() || 'Nouvelle scène'; valider(); });
 $('titre').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('titre').blur(); } });
 addEventListener('keydown', (e) => {
   if (document.activeElement === $('titre')) return;
+  if ($('gestes').classList.contains('ouvert')) { if (e.key === 'Escape') $('gestes').classList.remove('ouvert'); return; }
+  if ($('accueil').classList.contains('ouvert')) { if (e.key === 'Escape') fermerAccueil(); return; }
+  if ($('verrou').classList.contains('ouvert') || $('saisie').classList.contains('ouvert')) return;
   const mod = e.metaKey || e.ctrlKey;
   if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? retablir() : annuler(); }
   else if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); retablir(); }
@@ -2451,31 +2541,31 @@ addEventListener('keydown', (e) => {
 });
 addEventListener('resize', () => { redimensionner(); majSelbar(); if (carrefourOuvert) { const c = geo.carrefours.find((k) => k.cle === carrefourOuvert); if (c) ouvrirRegime(c); } });
 
-function chargerExemple() {
+function sceneExemple() {
   // Agglomération : rue principale prioritaire, un carrefour STOP et une rue en T avec cédez-le-passage
   const Y = 560, XB = 420, XC = 980;
   const G = Math.min(VIS.x0, 0) - 420, D = Math.max(VIS.x1, MONDE.W) + 420, H = Math.min(VIS.y0, 0) - 420, B = Math.max(VIS.y1, MONDE.H) + 420;
-  scene = sceneVide(); scene.titre = 'Carrefours en ville';
-  scene.routes = [
+  const sc = sceneVide(); sc.titre = 'Carrefours en ville';
+  sc.routes = [
     { id: 1, pts: [[G, Y], [D, Y]] },                 // rue principale
     { id: 2, pts: [[XB, H], [XB, B]] },               // rue qui croise (STOP)
     { id: 3, pts: [[XC, B], [XC, Y]] },               // rue en T (cédez)
   ];
-  scene.id = 4;
-  scene.regimes = [{ x: XB, y: Y, type: 'stop', prio: 1 }, { x: XC, y: Y, type: 'cedez', prio: 1 }];
-  scene.marques = [
+  sc.id = 4;
+  sc.regimes = [{ x: XB, y: Y, type: 'stop', prio: 1 }, { x: XC, y: Y, type: 'cedez', prio: 1 }];
+  sc.marques = [
     { type: 'passage_pieton', x: XB - 130, y: Y, ang: 0 },
     { type: 'passage_pieton', x: XC + 130, y: Y, ang: 0 },
   ];
-  scene.decor = [
+  sc.decor = [
     { type: 'maison', x: 180, y: 330 }, { type: 'maison', x: 640, y: 330 }, { type: 'maison_grise', x: 880, y: 330 }, { type: 'maison', x: 1140, y: 330 },
     { type: 'maison', x: 190, y: 815 }, { type: 'maison_grise', x: 700, y: 820 }, { type: 'maison', x: 1185, y: 820 },
     { type: 'buisson', x: 760, y: 300 }, { type: 'buisson', x: 1010, y: 300 },
     { type: 'arbre', x: 70, y: 950 }, { type: 'arbre', x: 280, y: 955 }, { type: 'arbre', x: 845, y: 950 }, { type: 'buisson', x: 565, y: 955 }, { type: 'arbre', x: 1250, y: 960 },
   ].map((d) => ({ ang: 0, ...d }));
-  selection = null; groupe = null; majSelbar(); fermerRegime(); $('titre').textContent = scene.titre;
-  toutRefaire('Exemple chargé'); marquerModele();
+  return sc;
 }
+function chargerExemple() { chargerSceneCours('exemple'); }
 
 /* =====================================================================
    SÉANCE — la vue de cours, sur la même scène que l'éditeur.
@@ -2498,6 +2588,7 @@ const USAGERS = [['ecole', 'Voiture école'], ['voiture', 'Voiture'], ['camion',
 const COUL_USAGERS = ['#3b82c4', '#e0b43a', '#d64545', '#e8e8e8', '#2f9e6b', '#5b6270'];
 const DIM = { ecole: [74, 38], voiture: [74, 38], camion: [150, 46], moto: [44, 18], velo: [36, 14], pieton: [16, 16] };
 const usagers = () => (scene.usagers || (scene.usagers = []));
+const dureeEnreg = () => Math.max(0, ...usagers().map((u) => (u.rec && u.rec.length ? u.rec[u.rec.length - 1].t : 0)));
 const aPoignee = (u) => u.type !== 'pieton';
 const longLaisse = (u) => DIM[u.type][0] / 2 + Math.max(26, 30 / S);   // sur petit écran, la poignée s'éloigne un peu du capot
 
@@ -2567,9 +2658,9 @@ function noter(u) { if (seance.enreg) (u.rec || (u.rec = [])).push({ t: seance.t
 function demarrerEnreg() {
   seance.enreg = true; seance.lecture = false; seance.t = 0;
   for (const u of usagers()) { u.depart = etatDe(u); u.rec = [{ t: 0, ...etatDe(u) }]; }
-  majDockSeance(); toast('● Enregistrement : déplace les usagers, puis ■');
+  majDockSeance(); toast('● Enregistrement : déplace les véhicules, puis « Fin d\'enregistrement »', 3500);
 }
-function arreterEnreg() { seance.enreg = false; seance.dureeRec = seance.t; majDockSeance(); valider(); toast('Enregistré : ▶ pour rejouer'); }
+function arreterEnreg() { seance.enreg = false; seance.dureeRec = seance.t; majDockSeance(); valider(); toast('Enregistré : « Rejouer » pour le revoir'); }
 function auDepart() {
   seance.lecture = false; seance.t = 0;
   for (const u of usagers()) if (u.depart) Object.assign(u, u.depart);
@@ -2729,31 +2820,42 @@ function choisirOutilSeance(o) {
   seance.outil = o;
   document.querySelectorAll('#dock-seance [data-so]').forEach((b) => b.classList.toggle('actif', b.dataset.so === o));
   $('tiroir-usagers').classList.toggle('ouvert', o === 'usager');
-  if (o === 'crayon') toast('Crayon : dessine sur la scène');
+  document.body.classList.toggle('crayon', o === 'crayon'); $('plus-seance').classList.remove('ouvert');
+  if (o === 'crayon') toast('Dessine sur la scène avec le doigt');
 }
+const ICO = {
+  jouer: '<svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><path d="M7 4l13 8-13 8z"/></svg>',
+  stop: '<svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',
+  pause: '<svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>',
+  rejouer: '<svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 11-3-6.3"/><path d="M20 4v5h-5"/><path d="M10 9l5 3-5 3z" style="fill:currentColor"/></svg>',
+};
 function majDockSeance() {
+  const circ = $('so-circ');
+  circ.innerHTML = test ? ICO.stop + '<span class="lbl">Arrêter</span>' : ICO.jouer + '<span class="lbl">Circulation</span>';
+  circ.classList.toggle('marche', !!test);
   const lect = $('so-lecture');
-  lect.innerHTML = seance.lecture ? '<svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg><span class="lbl">Pause</span>'
-                                  : '<svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><path d="M7 4l13 8-13 8z"/></svg><span class="lbl">Rejouer</span>';
-  lect.disabled = !seance.dureeRec || seance.enreg;
-  $('so-rec').innerHTML = seance.enreg ? '<svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg><span class="lbl">Arrêter</span>'
-                                       : '<svg viewBox="0 0 24 24" style="fill:#ff3131;stroke:none"><circle cx="12" cy="12" r="6"/></svg><span class="lbl">Enregistrer</span>';
-  $('so-rec').classList.toggle('actif', seance.enreg);
-  $('so-feux').classList.toggle('actif', seance.feuxAuto);
-  $('so-feux').querySelector('.lbl').textContent = seance.feuxAuto ? 'Feux auto' : 'Feux main';
-  $('so-num').classList.toggle('actif', seance.numeros);
+  lect.hidden = !seance.dureeRec || seance.enreg;
+  lect.innerHTML = seance.lecture ? ICO.pause + '<span class="lbl">Pause</span>' : ICO.rejouer + '<span class="lbl">Rejouer</span>';
+  $('so-stop').hidden = !seance.enreg;
+  $('so-rec').hidden = seance.enreg; $('so-debut').hidden = !seance.dureeRec || seance.enreg;
+  $('so-feux').hidden = !geo.carrefours.some((c) => c.type === 'feux');
+  $('so-feux').lastElementChild.textContent = seance.feuxAuto ? 'Feux : passer à la main' : 'Feux : repasser en automatique';
+  $('so-num').lastElementChild.textContent = seance.numeros ? 'Retirer les numéros' : 'Numéroter les véhicules';
+  $('so-effacer').hidden = !seance.traits.length;
 }
 function basculerMode(m) {
   if (m === 'editeur' && scene.modele) {      // on entre dans la création par une page vide (↶ pour retrouver la scène)
-    mode = m; scene = sceneVide(); selection = null; groupe = null; $('titre').textContent = scene.titre; toutRefaire('Page vide — ☰ pour repartir d\'une scène du cours');
+    mode = m; scene = sceneVide(); selection = null; groupe = null; $('titre').textContent = scene.titre; toutRefaire('Page vide — ☰ « Choisir une scène » pour partir d\'une scène toute faite');
   }
   mode = m;
   document.body.classList.toggle('mode-seance', m === 'seance');
   $('mode-ed').classList.toggle('on', m === 'editeur'); $('mode-se').classList.toggle('on', m === 'seance');
-  selection = null; groupe = null; majSelbar(); fermerRegime(); seance.sel = null; majSelSeance();
+  $('titre').contentEditable = m === 'editeur' ? 'true' : 'false';      // en Séance, le titre ouvre le choix des scènes
+  selection = null; groupe = null; majSelbar(); fermerRegime(); fermerMenu(); seance.sel = null; majSelSeance();
   if (test) basculerTest();
-  seance.lecture = false; seance.enreg = false; seance.dureeRec = Math.max(0, ...usagers().map((u) => (u.rec && u.rec.length ? u.rec[u.rec.length - 1].t : 0)));
-  choisirOutilSeance(null); majDockSeance(); sale = true;
+  seance.lecture = false; seance.enreg = false; seance.dureeRec = dureeEnreg();
+  if (m === 'seance') noterDepart();
+  choisirOutilSeance(null); majDockSeance(); majConsigne(); sale = true;
 }
 (function initSeance() {
   const t = $('tiroir-usagers');
@@ -2767,19 +2869,26 @@ function basculerMode(m) {
   $('mode-ed').onclick = () => demanderMdp(() => basculerMode('editeur'));
   $('mode-se').onclick = () => basculerMode('seance');
   document.querySelectorAll('#dock-seance [data-so]').forEach((b) => (b.onclick = () => { const o = b.dataset.so; choisirOutilSeance(seance.outil === o ? null : o); }));
-  $('so-rec').onclick = () => (seance.enreg ? arreterEnreg() : demarrerEnreg());
+  $('so-rec').onclick = () => { fermerMenu(); demarrerEnreg(); };
+  $('so-stop').onclick = arreterEnreg;
   $('so-lecture').onclick = () => {
     if (seance.lecture) { seance.lecture = false; majDockSeance(); return; }
     if (seance.t >= seance.dureeRec || seance.t === 0) { auDepart(); }
     seance.lecture = true; seance.sel = null; majSelSeance(); majDockSeance();
   };
-  $('so-debut').onclick = auDepart;
-  $('so-feux').onclick = () => { seance.feuxAuto = !seance.feuxAuto; majDockSeance(); toast(seance.feuxAuto ? 'Feux automatiques' : 'Feux à la main : touche un carrefour pour les changer'); };
-  $('so-num').onclick = () => { seance.numeros = !seance.numeros; majDockSeance(); sale = true; };
-  $('so-effacer').onclick = () => { seance.traits = []; sale = true; toast('Dessins effacés'); };
-  $('so-circ').onclick = () => { basculerTest(); $('so-circ').classList.toggle('actif', !!test); };
-  $('so-pres').onclick = () => { seance.presentation = true; document.body.classList.add('presentation'); seance.sel = null; majSelSeance(); };
-  $('sortie-pres').onclick = () => { seance.presentation = false; document.body.classList.remove('presentation'); };
+  $('so-debut').onclick = () => { fermerMenu(); auDepart(); };
+  $('so-feux').onclick = () => { fermerMenu(); seance.feuxAuto = !seance.feuxAuto; majDockSeance(); toast(seance.feuxAuto ? 'Feux automatiques' : 'Feux à la main : touche un carrefour pour les changer'); };
+  $('so-num').onclick = () => { fermerMenu(); seance.numeros = !seance.numeros; majDockSeance(); sale = true; };
+  $('so-effacer').onclick = $('chip-dessins').onclick = () => { fermerMenu(); seance.traits = []; sale = true; toast('Dessins effacés'); };
+  $('so-circ').onclick = () => { fermerMenu(); basculerTest(); };
+  $('so-zero').onclick = () => { fermerMenu(); remettreAZero(); };
+  $('so-plus').onclick = () => {
+    const p = $('plus-seance'), ouvert = p.classList.contains('ouvert'); fermerMenu(); if (ouvert) return;
+    majDockSeance(); choisirOutilSeance(null);
+    const r = $('so-plus').getBoundingClientRect(); p.style.right = Math.max(8, innerWidth - r.right - 6) + 'px'; p.classList.add('ouvert');
+  };
+  $('so-pres').onclick = () => { fermerMenu(); seance.presentation = true; document.body.classList.add('presentation'); seance.sel = null; majSelSeance(); };
+  $('sortie-pres').onclick = () => { seance.presentation = false; document.body.classList.remove('presentation'); sale = true; };
   const bascule = (f) => () => { const u = seance.sel; if (!u) return; f(u); noter(u); majSelSeance(); if (!seance.enreg) valider(); sale = true; };
   $('ss-cligG').onclick = bascule((u) => (u.cligno = u.cligno === 'gauche' ? null : 'gauche'));
   $('ss-cligD').onclick = bascule((u) => (u.cligno = u.cligno === 'droite' ? null : 'droite'));
@@ -3404,27 +3513,207 @@ const SCENES_COURS = [
     sc.usagers.push(usager(9, 'ecole', 120, 543, 0, '#3b82c4'), usager(10, 'voiture', 1180, 543, Math.PI, '#e0b43a'));
     return sc;
   }],
+  ['exemple', 'Carrefours en ville', () => sceneExemple()],
+  ['feux_classique', 'Feux · croisement classique', () => sceneDemo('classique')],
+  ['feux_indo', 'Feux · à l\'indonésienne', () => sceneDemoIndo()],
 ];
-function chargerSceneCours(cle) {
-  const def = SCENES_COURS.find((s) => s[0] === cle); if (!def) return;
+/* =====================================================================
+   POUR LE MONITEUR — accueil par vignettes, consigne « à montrer », remise à zéro, aide des gestes
+   ===================================================================== */
+const NOTES = {
+  cedez: 'Au cédez-le-passage, je ralentis et je regarde : je ne m\'arrête que si quelqu\'un arrive. Lance la circulation et fais dire qui passe en premier.',
+  stop: 'Arrêt complet à la ligne, même s\'il n\'y a personne. Entre deux voitures arrêtées au STOP, c\'est la priorité à droite qui départage.',
+  exemple: 'Une rue prioritaire, un STOP et un cédez-le-passage : fais nommer le régime de chaque carrefour, puis dire qui passe.',
+  etroit: 'Passage étroit : le panneau rond (B15) cède le passage à celui d\'en face, le carré bleu (C18) est prioritaire.',
+  briollay1: 'Je m\'arrête à la ligne des feux, avant le sas vélo. Touche le carrefour pour faire passer le feu à l\'orange, puis au rouge.',
+  briollay2: 'Deux carrefours à feux qui se suivent : je ne m\'engage que si je peux dégager le carrefour.',
+  sonnettes: 'Grand carrefour à feux : je choisis ma voie selon ma direction avant d\'arriver à la ligne.',
+  feux_classique: 'Tourne-à-gauche classique : les deux voitures qui se font face se contournent, chacune passe derrière l\'autre.',
+  feux_indo: 'Tourne-à-gauche à l\'indonésienne : les deux voitures tournent en passant l\'une devant l\'autre, sans se contourner.',
+  giratoire: 'Je cède le passage à ceux qui sont sur l\'anneau. Lance la circulation : la voiture école sort à droite, puis tout droit, puis à gauche, avec les bons clignotants.',
+  giratoire_velo: 'Avec une bande cyclable : avant de sortir, je contrôle à droite et je laisse passer le vélo qui continue sur l\'anneau.',
+  giratoire2: 'Deux voies : voie de droite pour aller à droite ou tout droit, voie de gauche pour aller à gauche. Je me rabats avant de sortir.',
+  haricot: 'Giratoire allongé, mêmes règles : je cède en entrant, clignotant à droite dès que j\'ai passé la sortie d\'avant.',
+  haricot_velo: 'Giratoire allongé avec bande cyclable : je cède en entrant, et je laisse passer le vélo avant de sortir.',
+  autoroute: 'Voie d\'insertion : celui qui s\'insère cède le passage. Lance la circulation, trois cas s\'enchaînent : voie libre, voiture qui se déporte, deux voies occupées.',
+  sortie: 'Sortie : clignotant, je garde ma vitesse tant que je suis sur l\'autoroute. Je ne freine qu\'une fois dans la voie de décélération.',
+  manoeuvres: 'Créneau, bataille, épi : tire le point devant le capot de la voiture école pour montrer la trajectoire et les contrôles.',
+  parking: 'Tous les stationnements : bataille, épi, créneau, PMR, livraison, recharge. Fais dire où l\'on a le droit de se garer.',
+};
+const THEMES = [
+  ['Intersections', ['cedez', 'stop', 'exemple', 'etroit']],
+  ['Feux tricolores', ['briollay1', 'briollay2', 'sonnettes', 'feux_classique', 'feux_indo']],
+  ['Giratoires', ['giratoire', 'giratoire_velo', 'giratoire2', 'haricot', 'haricot_velo']],
+  ['Autoroute', ['autoroute', 'sortie']],
+  ['Stationnement', ['manoeuvres', 'parking']],
+];
+const sansPrive = (k, v) => (k[0] === '_' ? undefined : v);
+function construireScene(cle) {
+  const def = SCENES_COURS.find((s) => s[0] === cle); if (!def) return null;
+  const sc = def[2](); sc.titre = def[1]; sc.origine = cle; if (NOTES[cle]) sc.note = NOTES[cle];
+  return sc;
+}
+
+/* ---------- mes scènes : une scène personnelle n'est jamais perdue quand on en ouvre une autre ---------- */
+const CLE_MES = 'trace_mes_scenes';
+function lireMes() { try { return JSON.parse(localStorage.getItem(CLE_MES)) || {}; } catch (e) { return {}; } }
+function ecrireMes(m) { try { localStorage.setItem(CLE_MES, JSON.stringify(m)); } catch (e) {} }
+const estVide = (sc) => !(sc.routes.length || sc.marques.length || sc.decor.length || sc.panneaux.length || sc.fond || (sc.usagers && sc.usagers.length));
+const estPerso = (sc) => !sc.modele && !sc.origine && !estVide(sc);
+function rangerScene() {
+  if (!estPerso(scene)) return;
+  const m = lireMes();
+  if (!scene.titre || scene.titre === 'Nouvelle scène') { let n = 1; while (m['Ma scène ' + n]) n++; scene.titre = 'Ma scène ' + n; }
+  m[scene.titre] = JSON.stringify(scene, sansPrive); ecrireMes(m);
+}
+
+/* ---------- poser une scène, la remettre à zéro ---------- */
+let departSeance = null;
+function noterDepart() { departSeance = JSON.stringify(scene, sansPrive); }
+function razSeance() { seance.sel = null; seance.traits = []; seance.feux = {}; seance.feuxAuto = true; seance.lecture = false; seance.enreg = false; seance.t = 0; }
+function poserScene(sc, msg) {
   if (test) basculerTest();
-  scene = def[2](); scene.titre = def[1];
-  selection = null; groupe = null; majSelbar(); fermerRegime(); $('titre').textContent = scene.titre;
-  seance.sel = null; seance.traits = []; if (typeof majSelSeance === 'function') majSelSeance();
-  toutRefaire('« ' + def[1] + ' » chargée'); marquerModele();
+  rangerScene();
+  scene = sc; selection = null; groupe = null; majSelbar(); fermerRegime(); $('titre').textContent = scene.titre;
+  razSeance();
+  pose = true; toutRefaire(msg); pose = false; marquerModele();
+  seance.dureeRec = dureeEnreg(); noterDepart(); majSelSeance(); majDockSeance(); majConsigne(true);
 }
-function ouvrirScenesCours() {
-  const box = $('liste-scenes'), ul = $('ls-noms'); ul.innerHTML = '';
-  box.querySelector('h4').textContent = 'Scènes du cours';
-  box.querySelector('p').textContent = 'Les situations de l’ancien simulateur, refaites pour le nouveau.';
-  for (const [cle, nom] of SCENES_COURS) {
-    const b = document.createElement('button'); b.className = 'ls-item'; b.textContent = nom;
-    b.onclick = () => { box.classList.remove('ouvert'); chargerSceneCours(cle); };
-    ul.appendChild(b);
+function chargerSceneCours(cle) { const sc = construireScene(cle); if (sc) poserScene(sc, '« ' + sc.titre + ' » chargée'); }
+function remettreAZero() {
+  if (test) basculerTest();
+  seance.traits = []; seance.sel = null; seance.feux = {}; seance.feuxAuto = true; seance.numeros = false;
+  VUE.z = 1; VUE.dx = 0; VUE.dy = 0; appliquerVue();
+  if (seance.dureeRec && !seance.enreg) {      // un déplacement est enregistré : on revient à son début, sans le perdre
+    auDepart(); choisirOutilSeance(null); majSelSeance(); toast('Retour au début de ton enregistrement'); return;
   }
-  box.classList.add('ouvert'); fermerMenu();
+  let sc = scene.origine ? construireScene(scene.origine) : null;
+  if (sc) { if (scene.modele) sc.modele = true; } else if (departSeance) sc = JSON.parse(departSeance); else return;
+  scene = sc; selection = null; groupe = null; $('titre').textContent = scene.titre || 'Nouvelle scène';
+  razSeance();
+  pose = true; toutRefaire('Scène remise à zéro — ↶ pour revenir'); pose = false;
+  seance.dureeRec = dureeEnreg(); choisirOutilSeance(null); majSelSeance(); majDockSeance(); majConsigne();
 }
-$('m-cours').onclick = ouvrirScenesCours;
+
+/* ---------- consigne : ce qu'il faut montrer avec la scène ---------- */
+let consignePliee = false;
+function majConsigne(ouvrir) {
+  if (ouvrir) consignePliee = false;
+  const el = $('consigne');
+  el.classList.toggle('vu', !!scene.note); el.classList.toggle('plie', consignePliee);
+  $('consigne-txt').textContent = scene.note || '';
+}
+$('consigne').onclick = () => { consignePliee = !consignePliee; majConsigne(); };
+
+/* ---------- accueil : les scènes en vignettes, rangées par thème ---------- */
+const vigCache = new Map();
+function vignetteScene(sc) {
+  const lw = 240, lh = 150, d = 2, k = lw / MONDE.W;
+  const c = document.createElement('canvas'); c.width = lw * d; c.height = lh * d;
+  const g = c.getContext('2d'), sv = { scene, ctx, test, geste };
+  g.fillStyle = HERBE; g.fillRect(0, 0, c.width, c.height);
+  try {
+    scene = sc; test = null; geste = null; reconstruire();
+    g.setTransform(k * d, 0, 0, k * d, (lw / 2 - MONDE.W / 2 * k) * d, (lh / 2 - MONDE.H / 2 * k) * d); ctx = g;
+    dessinerFond(g); dessinerRoutes(g);
+    for (const m of sc.marques) dessinerMarque(g, m);
+    for (const o of sc.decor) if (o.type !== 'aire') dessinerDecor(o);
+    for (const p of geo.autoPanneaux) dessinerPanneau(g, p.type, p.x, p.y, p.ang, p.type === 'feu' ? 'rouge' : null);
+    for (const p of sc.panneaux) dessinerPanneau(g, p.type, p.x, p.y, p.ang, p.type === 'feu' ? 'rouge' : null, null, p.ech);
+    for (const u of sc.usagers || []) dessinerUsager(g, u);
+  } catch (e) {}
+  scene = sv.scene; ctx = sv.ctx; test = sv.test; geste = sv.geste; reconstruire();
+  return c;
+}
+function fermerAccueil() { $('accueil').classList.remove('ouvert'); }
+function ouvrirAccueil() {
+  fermerMenu(); if (test) basculerTest();
+  const corps = $('ac-corps'), ed = mode === 'editeur', file = []; corps.innerHTML = '';
+  $('ac-sous').textContent = ed ? 'Pars d\'une scène toute faite, ou d\'une page vide' : 'Choisis la scène de ton cours';
+  const section = (nom) => { const h = document.createElement('h3'); h.textContent = nom; const gr = document.createElement('div'); gr.className = 'ac-grille'; corps.append(h, gr); return gr; };
+  const carte = (gr, titre, note, cle, fabrique, action) => {
+    const b = document.createElement('button'); b.className = 'ac-carte';
+    if (fabrique) {
+      const cvs = document.createElement('canvas'); cvs.width = 480; cvs.height = 300; b.appendChild(cvs);
+      file.push(() => { let img = cle && vigCache.get(cle); if (!img) { img = vignetteScene(fabrique()); if (cle) vigCache.set(cle, img); } cvs.getContext('2d').drawImage(img, 0, 0); });
+    } else { const v = document.createElement('span'); v.className = 'ac-vide'; v.textContent = '+'; b.appendChild(v); }
+    const t = document.createElement('span'); t.className = 'ac-t'; t.textContent = titre; b.appendChild(t);
+    if (note) { const n = document.createElement('span'); n.className = 'ac-n'; n.textContent = note; b.appendChild(n); }
+    b.onclick = () => { fermerAccueil(); action(); };
+    gr.appendChild(b); return b;
+  };
+  // la scène ouverte, puis les scènes personnelles
+  const mes = lireMes(), noms = Object.keys(mes).filter((n) => !(estPerso(scene) && scene.titre === n)).sort((a, b) => a.localeCompare(b));
+  if (!estVide(scene) || ed) {
+    const gr = section('En cours');
+    if (!estVide(scene)) carte(gr, (ed ? 'Continuer : ' : 'Reprendre : ') + (scene.titre || 'ma scène'), '', null, () => scene, () => {});
+    if (ed) carte(gr, 'Page vide', 'Je trace mes routes moi-même.', null, null, () => poserScene(sceneVide(), 'Page vide'));
+  }
+  if (noms.length) {
+    const gr = section('Mes scènes');
+    for (const n of noms) {
+      const b = carte(gr, n, '', null, () => JSON.parse(mes[n]), () => poserScene(JSON.parse(mes[n]), '« ' + n + ' » ouverte'));
+      if (ed) {                                  // suppression en deux temps, réservée à l'éditeur
+        const x = document.createElement('span'); x.className = 'ac-suppr'; x.textContent = '✕'; x.setAttribute('role', 'button');
+        x.onclick = (e) => { e.stopPropagation(); if (!x.classList.contains('sur')) { x.classList.add('sur'); x.textContent = 'Supprimer ?'; return; } const m = lireMes(); delete m[n]; ecrireMes(m); b.remove(); };
+        b.appendChild(x);
+      }
+    }
+  }
+  for (const [nom, cles] of THEMES) {
+    const gr = section(nom);
+    for (const cle of cles) { const def = SCENES_COURS.find((s) => s[0] === cle); if (def) carte(gr, def[1], NOTES[cle], cle, () => construireScene(cle), () => chargerSceneCours(cle)); }
+  }
+  const pied = document.createElement('div'); pied.className = 'ac-pied';
+  if (!ed) {
+    const b = document.createElement('button');
+    b.innerHTML = '<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>Créer ou modifier une scène';
+    b.onclick = () => demanderMdp(() => { fermerAccueil(); basculerMode('editeur'); });
+    pied.appendChild(b);
+  }
+  const g = document.createElement('button');
+  g.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-.9.6-1.5 1.1-1.5 2.2M12 17v.5"/></svg>Aide : les gestes';
+  g.onclick = () => ouvrirGestes(); pied.appendChild(g);
+  corps.appendChild(pied);
+  const a = $('accueil'); a.classList.add('ouvert'); a.scrollTop = 0;
+  const suite = () => { const f = file.shift(); if (!f || !a.classList.contains('ouvert')) return; f(); setTimeout(suite, 0); };
+  setTimeout(suite, 20);
+}
+$('ac-fermer').onclick = fermerAccueil;
+
+/* ---------- aide : les gestes en images ---------- */
+const AUTO = (x, y) => '<rect x="' + x + '" y="' + y + '" width="46" height="24" rx="7" fill="#3b82c4"/><rect x="' + (x + 29) + '" y="' + (y + 4) + '" width="9" height="16" rx="3" fill="#cfe3f5"/>';
+const TRAIT = 'fill="none" stroke="#1c2430" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"';
+const DOIGT = (x, y) => '<circle cx="' + x + '" cy="' + y + '" r="9" fill="rgba(255,49,49,.22)" stroke="#ff3131" stroke-width="2"/>';
+const STOPV = (x, y) => '<path d="M' + (x - 7) + ' ' + (y - 17) + 'h14l10 10v14l-10 10h-14l-10-10v-14z" fill="#d22" stroke="#fff" stroke-width="2.5"/><rect x="' + (x - 9) + '" y="' + (y - 2.5) + '" width="18" height="5" rx="1" fill="#fff"/>';
+const GESTES = {
+  seance: [
+    [AUTO(14, 25) + DOIGT(37, 37) + '<path d="M70 37h32M94 29l8 8-8 8" ' + TRAIT + '/>', 'Déplacer', 'Pose le doigt sur le véhicule et glisse.'],
+    [AUTO(10, 34) + '<path d="M56 46h14" stroke="#1c2430" stroke-width="2.5"/><circle cx="78" cy="46" r="8" fill="#fff" stroke="#1c2430" stroke-width="2.5"/>' + DOIGT(78, 46) + '<path d="M84 30c3-11 11-16 22-16M98 8l8 6-7 7" ' + TRAIT + '/>', 'Rouler et tourner', 'Tire le rond devant le capot : la voiture avance et braque.'],
+    ['<rect x="26" y="6" width="68" height="24" rx="8" fill="#1c2430"/><path d="M44 12l-6 6 6 6M76 12l6 6-6 6" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="60" cy="18" r="5" fill="#ff3131"/>' + AUTO(37, 42) + DOIGT(60, 54), 'Clignotants, frein', 'Touche le véhicule : sa barre apparaît. La corbeille le retire.'],
+    ['<circle cx="44" cy="46" r="8" fill="rgba(255,49,49,.22)" stroke="#ff3131" stroke-width="2"/><circle cx="76" cy="28" r="8" fill="rgba(255,49,49,.22)" stroke="#ff3131" stroke-width="2"/><path d="M34 54l-14 9M20 54v9h9M86 20l14-9M91 11h9v9" ' + TRAIT + '/>', 'Zoomer', 'Écarte deux doigts, ou la molette. « Vue classe » pour revenir.'],
+  ],
+  editeur: [
+    [STOPV(34, 37) + DOIGT(34, 37) + '<path d="M66 37h34M92 29l8 8-8 8" ' + TRAIT + '/>', 'Déplacer', 'Touche l\'élément puis glisse-le.'],
+    [STOPV(60, 40) + '<path d="M26 40a34 34 0 0114-26M22 16l-1 14 13-4M94 40a34 34 0 00-14-26M98 16l1 14-13-4" ' + TRAIT + '/>', 'Tourner', 'Sélectionne-le, puis les deux flèches rondes de la barre.'],
+    [STOPV(50, 34) + '<circle cx="50" cy="34" r="27" fill="none" stroke="#1c2430" stroke-width="2" stroke-dasharray="6 5"/><circle cx="69" cy="53" r="6" fill="#ff3131" stroke="#fff" stroke-width="2"/><path d="M80 60l22 8M94 60l8 8-10 3" ' + TRAIT + '/>', 'Agrandir', 'Tire le point rouge sur le cercle.'],
+    ['<path d="M42 22h36M52 22v-7h16v7M47 22l3 40h20l3-40M56 32v20M64 32v20" ' + TRAIT + '/>', 'Effacer', 'La corbeille de la barre, ou l\'outil Gomme.'],
+  ],
+};
+function ouvrirGestes() {
+  fermerMenu();
+  const ed = mode === 'editeur', c = $('ge-corps'); c.innerHTML = '';
+  $('ge-titre').textContent = ed ? 'Créer une scène : les gestes' : 'En séance : les gestes';
+  for (const [svg, titre, texte] of GESTES[ed ? 'editeur' : 'seance']) {
+    const d = document.createElement('div'); d.className = 'ge';
+    d.innerHTML = '<svg viewBox="0 0 120 74">' + svg + '</svg><b></b><span></span>'; d.querySelector('b').textContent = titre; d.querySelector('span').textContent = texte; c.appendChild(d);
+  }
+  $('ge-plus').textContent = ed ? 'Au-dessus des tiroirs Panneau et Marquage : « Aligné sur la route » place l\'élément tout seul, « Placement libre » le pose là où tu touches.'
+                                : 'Feux : touche le carrefour pour les faire changer. « Remettre à zéro » remet la scène comme au début.';
+  $('gestes').classList.add('ouvert');
+}
+$('ge-fermer').onclick = () => $('gestes').classList.remove('ouvert');
+$('gestes').addEventListener('click', (e) => { if (e.target === $('gestes')) $('gestes').classList.remove('ouvert'); });
 
 /* ---------------- démarrage ---------------- */
 redimensionner();
@@ -3436,9 +3725,11 @@ dessinerCouche(); majAide();
 histo = [JSON.stringify(scene)]; histoIdx = 0; majBoutons();
 requestAnimationFrame(boucle);
 if (scene.titre === 'Carrefours en ville' && scene.routes.length === 3) scene.modele = true;      // l'exemple enregistré par une ancienne version
-if (SUR_SITE) {                      // sur le site : on arrive en Séance, prêt pour le cours
+if (scene.modele && !scene.origine) { const d = SCENES_COURS.find((s) => s[1] === scene.titre); if (d) scene.origine = d[0]; }      // scènes toutes faites enregistrées avant la remise à zéro
+if (scene.origine && !scene.note && NOTES[scene.origine]) scene.note = NOTES[scene.origine];
+if (SUR_SITE) {                      // sur le site : on arrive en Séance, sur le choix des scènes
   if (!initial) chargerExemple();
-  if (location.hash === '#editer') demanderMdp(() => basculerMode('editeur')); else basculerMode('seance');
+  if (location.hash === '#editer') demanderMdp(() => basculerMode('editeur')); else { basculerMode('seance'); ouvrirAccueil(); }
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 demarrage = false;
