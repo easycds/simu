@@ -42,6 +42,13 @@
   #tiroir { position:fixed; left:50%; bottom:84px; transform:translateX(-50%); display:none; gap:6px; padding:8px; background:#fff; border-radius:16px;
             box-shadow:0 12px 30px rgba(0,0,0,.28); z-index:5; max-width:calc(100vw - 24px); overflow-x:auto; }
   #tiroir.ouvert { display:flex; }
+  #cats { position:fixed; left:50%; bottom:190px; transform:translateX(-50%); display:none; gap:6px; z-index:5; max-width:calc(100vw - 16px); overflow-x:auto; padding:2px; }
+  #cats.ouvert { display:flex; }
+  #cats button { flex:none; height:34px; padding:0 13px; border-radius:999px; border:0; background:rgba(17,20,24,.88); color:#e9ecf0; font:inherit; font-size:13px; font-weight:650; cursor:pointer; white-space:nowrap; }
+  #cats button.on { background:#fff; color:#111; }
+  #cats button.aim { background:#fff; color:#111; box-shadow:inset 0 0 0 2px #1c2430; margin-right:6px; }
+  #cats button.aim.libre { background:var(--rouge); color:#fff; box-shadow:none; }
+  body.mode-seance #cats, body.presentation #cats { display:none !important; }
   .item { flex:none; width:64px; border-radius:12px; border:2px solid #eceef1; padding:6px 0 4px; text-align:center; font-size:10.5px; font-weight:650; color:#3a4250; cursor:pointer; line-height:1.15; }
   .item:hover { border-color:#d4d7dd; }
   .item.on { border-color:var(--rouge); background:#fff4f4; color:#111; }
@@ -79,6 +86,10 @@
   .sep-h { height:1px; background:rgba(255,255,255,.15); margin:4px 6px; }
   #liste-scenes { position:fixed; inset:0; background:rgba(10,12,16,.45); display:none; align-items:center; justify-content:center; z-index:9; padding:16px; }
   #liste-scenes.ouvert { display:flex; }
+  #saisie { position:fixed; inset:0; background:rgba(10,12,16,.45); display:none; align-items:center; justify-content:center; z-index:9; padding:16px; }
+  #saisie.ouvert { display:flex; }
+  #saisie input { width:100%; height:44px; border-radius:10px; border:2px solid #e2e5ea; padding:0 12px; font:inherit; font-size:16px; text-transform:uppercase; }
+  #saisie-ok { margin-top:12px; height:44px; width:100%; border-radius:10px; border:0; background:var(--rouge); color:#fff; font:inherit; font-weight:650; cursor:pointer; }
   .ls-boite { background:#fff; border-radius:16px; padding:18px; width:min(420px, 100%); max-height:80vh; overflow:auto; box-shadow:0 20px 50px rgba(0,0,0,.35); }
   .ls-boite h4 { margin:0 0 4px; font-size:16px; } .ls-boite p { margin:0 0 12px; font-size:13px; color:var(--gris); }
   .ls-item { display:block; width:100%; text-align:left; padding:12px 14px; margin-bottom:6px; border-radius:10px; border:2px solid #eceef1; background:#fff; font:inherit; font-size:14px; font-weight:600; cursor:pointer; }
@@ -113,6 +124,7 @@
            font-weight:550; z-index:7; opacity:0; transition:opacity .2s; pointer-events:none; max-width:calc(100vw - 32px); text-align:center; }
   #toast.vu { opacity:1; }
   #tiroir.ouvert ~ #toast { bottom:calc(200px + env(safe-area-inset-bottom, 0px)); }
+  #cats.ouvert ~ #toast { bottom:calc(244px + env(safe-area-inset-bottom, 0px)); }
   .lbl { }
   #recentrer { position:fixed; right:12px; top:calc(80px + env(safe-area-inset-top, 0px)); z-index:5; display:none; height:40px; padding:0 14px; border-radius:12px; border:0;
                background:rgba(17,20,24,.88); color:#fff; font:inherit; font-size:13px; font-weight:650; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.25); }
@@ -138,6 +150,7 @@
     #regime p { display:none; }
     #toast { bottom:calc(66px + env(safe-area-inset-bottom, 0px)); font-size:13px; }
     #tiroir.ouvert ~ #toast { bottom:calc(150px + env(safe-area-inset-bottom, 0px)); }
+    #cats.ouvert ~ #toast { bottom:calc(196px + env(safe-area-inset-bottom, 0px)); }
     #recentrer { top:calc(60px + env(safe-area-inset-top, 0px)); right:10px; }
     #aide { max-width:calc(100vw - 40px); padding:16px 18px; }
   }
@@ -188,6 +201,7 @@
   <button class="btn outil" data-outil="gomme"><svg viewBox="0 0 24 24"><path d="M20 20H8l-5-5 10-10 8 8-6 6"/></svg><span class="lbl">Gomme</span></button>
 </div>
 <div id="tiroir"></div>
+<div id="cats"></div>
 <div class="pill" id="dock-seance">
   <button class="btn" data-so="usager"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="5"/><path d="M8 8h8"/></svg><span class="lbl">Usagers</span></button>
   <button class="btn" data-so="crayon"><svg viewBox="0 0 24 24"><path d="M4 20l4-1L19 8l-3-3L5 16z"/></svg><span class="lbl">Crayon</span></button>
@@ -225,11 +239,14 @@
 <div class="pill" id="selbar">
   <button class="btn" id="s-tourner-g" title="Tourner à gauche"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 103-6.3"/><path d="M4 4v5h5"/></svg></button>
   <button class="btn" id="s-tourner" title="Tourner"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 11-3-6.3"/><path d="M20 4v5h-5"/></svg></button>
+  <button class="btn" id="s-texte" title="Changer le texte" style="display:none"><b style="font-size:15px">Aa</b></button>
+  <button class="btn" id="s-dupliquer" title="Dupliquer"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/></svg></button>
   <button class="btn" id="s-suppr" title="Supprimer"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button>
 </div>
 
 <div id="aide"><b>Glisse pour tracer une route</b><span>Elle s'accroche toute seule aux autres routes et aux bords.<br>Touche ensuite un carrefour pour le régler.</span><br><button id="aide-ex">Voir l'exemple</button></div>
 <div id="liste-scenes"><div class="ls-boite"><h4>Mes scènes du simulateur</h4><p>Elles s'ouvrent ici pour être modifiées. Le simulateur garde l'original.</p><div id="ls-noms"></div><button id="ls-fermer">Fermer</button></div></div>
+<div id="saisie"><div class="ls-boite"><h4>Texte au sol</h4><p>Il sera peint sur la chaussée (BUS, TAXI, PAYANT, 30…).</p><input type="text" id="saisie-txt" maxlength="20" autocomplete="off" placeholder="Ton texte"><button id="saisie-ok">Valider</button> <button id="saisie-annuler" class="verrou-retour">Annuler</button></div></div>
 <div id="verrou"><div class="ls-boite"><h4>Mode Éditer</h4><p>L'édition des scènes est réservée aux moniteurs.</p>
 <input type="password" id="verrou-mdp" autocomplete="current-password" placeholder="Mot de passe"><p id="verrou-err" hidden style="color:#c8102e;margin:8px 0 0">Mot de passe incorrect.</p>
 <button id="verrou-ok">Entrer</button> <button id="verrou-annuler" class="verrou-retour">Annuler</button></div></div>
@@ -281,6 +298,13 @@ function v2Fleche(ctx, x0, y0, x1, y1, ep, tete, coul) {
 function dessinerPictogrammeV2(ctx, type, t, etatFeu) {
   const r = t / 2;
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  if (type.startsWith('limite_')) {          // B14 : limitation de vitesse
+    const R = (k) => { ctx.beginPath(); ctx.arc(0, 0, r * k, 0, Math.PI * 2); };
+    ctx.fillStyle = V2.rougeF; R(1); ctx.fill(); ctx.fillStyle = V2.rouge; R(0.96); ctx.fill(); ctx.fillStyle = V2.blanc; R(0.72); ctx.fill();
+    const txt = type.slice(7);
+    ctx.fillStyle = V2.noir; ctx.font = `800 ${t * (txt.length > 2 ? 0.36 : 0.46)}px "Arial Narrow", Arial, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, 0, t * 0.02);
+    return;
+  }
   const rond = (k) => { ctx.beginPath(); ctx.arc(0, 0, r * k, 0, Math.PI * 2); };
   const carre = (k, rr) => { const c = t * k; ctx.beginPath(); ctx.roundRect(-c / 2, -c / 2, c, c, rr || t * 0.08); };
   const losange = (k) => v2Poly(ctx, [[0, -r * k], [r * k, 0], [0, r * k], [-r * k, 0]]);
@@ -376,6 +400,18 @@ function dessinerPictogrammeV2(ctx, type, t, etatFeu) {
       v2Fleche(ctx, -r * 0.2, -r * 0.5, -r * 0.2, r * 0.52, t * 0.13, t * 0.2, V2.noir);   // noire vers le bas (large)
       v2Fleche(ctx, r * 0.22, r * 0.5, r * 0.22, -r * 0.52, t * 0.07, t * 0.15, V2.rouge); // rouge vers le haut (fine)
       v2Reflet(ctx, () => rond(0.96), r);
+      break;
+    }
+    case 'autoroute': {        // C207 : début d'autoroute
+      ctx.fillStyle = V2.bleuF; carre(0.96); ctx.fill();
+      ctx.fillStyle = V2.blanc; carre(0.9); ctx.fill();
+      ctx.fillStyle = V2.bleu; carre(0.84); ctx.fill();
+      ctx.fillStyle = V2.blanc;
+      v2Poly(ctx, [[-r * 0.5, r * 0.62], [-r * 0.16, -r * 0.62], [-r * 0.07, -r * 0.62], [-r * 0.2, r * 0.62]]); ctx.fill();     // chaussée de gauche
+      v2Poly(ctx, [[r * 0.5, r * 0.62], [r * 0.16, -r * 0.62], [r * 0.07, -r * 0.62], [r * 0.2, r * 0.62]]); ctx.fill();         // chaussée de droite
+      ctx.fillRect(-r * 0.62, -r * 0.2, r * 1.24, r * 0.13);                                                                    // pont
+      ctx.fillRect(-r * 0.5, -r * 0.08, r * 0.1, r * 0.2); ctx.fillRect(r * 0.4, -r * 0.08, r * 0.1, r * 0.2);
+      v2Reflet(ctx, () => carre(0.84), r);
       break;
     }
     case 'c18': {
@@ -756,6 +792,7 @@ function panneauGiratoire(u, v, angle) {
 const MONDE = { W: 1280, H: 1150 };
 const LR = 150, TR = 20;              // largeur route (2 voies) / trottoir
 const M1 = 21;                        // 1 m ≈ 21 unités monde
+const T1 = [50, 165], T2 = [50, 58], T4 = [215, 72];   // lignes d'autoroute (trait, vide), ramenées à la taille des voitures du simulateur
 const TIRET = 1.5 * M1, VIDE = 0.75 * M1; // ligne discontinue : trait raccourci (demande moniteur), même rythme que T3
 const PP_FEUX = LR / 2 + TR + 36;       // centre du passage piéton aux feux
 const D_FEUX = PP_FEUX + 27.5 + 14;      // ligne d'effet des feux : en amont du passage piéton (IISR art. 117-4.C)
@@ -939,9 +976,9 @@ function sprite(type, t, etat) {
   panneauV2(o, type, t, etat);
   c._T = T; sprites.set(k, c); return c;
 }
-function dessinerPanneau(g, type, x, y, ang, etat, alpha) {
+function dessinerPanneau(g, type, x, y, ang, etat, alpha, ech) {
   const sp = sprite(type, T_PAN, etat);
-  g.save(); g.translate(x, y); g.rotate(ang); if (alpha) g.globalAlpha = alpha;
+  g.save(); g.translate(x, y); g.rotate(ang); if (alpha) g.globalAlpha = alpha; if (ech && ech !== 1) g.scale(ech, ech);
   g.drawImage(sp, -sp._T / 2, -sp._T / 2, sp._T, sp._T); g.restore();
 }
 
@@ -974,7 +1011,10 @@ function segmentsAxe(gr) {           // tronçons de la ligne du milieu : 1 = di
 }
 function dessinerRoutes(g) {
   g.lineCap = 'round'; g.lineJoin = 'round';
+  const aires = scene.decor.filter((d) => d.type === 'aire' && !(geste && geste.type === 'deplacer' && geste.obj === d && geste.bouge));
+  for (const d of aires) aire(g, d, 'bord');
   for (const gr of geo.routes.values()) { tracerChemin(g, gr.r.pts); g.strokeStyle = TROT; g.lineWidth = (gr.r.larg || LR) + 2 * TR; g.stroke(); }
+  for (const d of aires) aire(g, d, 'goudron');
   for (const gr of geo.routes.values()) { tracerChemin(g, gr.r.pts); g.strokeStyle = ASPH; g.lineWidth = gr.r.larg || LR; g.stroke(); }
   // ligne axiale : discontinue / continue près des carrefours réglés / coupée dans les carrefours
   g.lineCap = 'butt'; g.strokeStyle = PEINT; g.lineWidth = 3;          // 2u ≈ 12 cm
@@ -1009,8 +1049,41 @@ function dessinerRoutes(g) {
     g.restore();
   }
 }
-const LIGNES = new Set(['ligne_stop', 'ligne_cedez', 'ligne_feux', 'ligne_continue', 'ligne_discontinue', 'ligne_guidage', 'ligne_bus']);
-const VIGNETTES = new Set(['zebra', 'ralentisseur', 'stationnement', 'pmr', 'triangle_cedez', 'sas_velo']);
+const LIGNES = new Set(['ligne_stop', 'ligne_cedez', 'ligne_feux', 'ligne_continue', 'ligne_discontinue', 'ligne_guidage', 'ligne_bus', 'ligne_zigzag', 'ligne_jaune', 'ligne_jaune_disc', 'ligne_t1', 'ligne_t2', 'ligne_bau']);
+const VIGNETTES = new Set(['zebra', 'ralentisseur', 'stationnement', 'pmr', 'triangle_cedez', 'sas_velo', 'damier_bus']);
+/* places de stationnement : [largeur le long de la file, profondeur, pas pour dupliquer] — 1 m ≈ 21 u */
+const PLACES = { place_bataille: [54, 100, 54], place_epi: [60, 100, 60], place_creneau: [112, 46, 112], place_pmr: [72, 100, 72], place_livraison: [150, 50, 150], place_elec: [54, 100, 54] };
+const EPI = 56;                          // décalage du fond d'une place en épi (≈ 60°)
+const RECTS = { maison: [170, 130], maison_grise: [170, 130], aire: [420, 260], terreplein: [110, 28] };
+const estRect = (o) => !!RECTS[o.type];
+const dimRect = (o) => [o.w || RECTS[o.type][0], o.h || RECTS[o.type][1]];
+function placeSol(g, type) {             // repère local : x le long de la file, côté ouvert vers +y (l'allée)
+  const [w, d] = PLACES[type], x0 = -w / 2, x1 = w / 2, y0 = -d / 2, y1 = d / 2;
+  const trait = (pts, coul, ep) => { g.strokeStyle = coul || PEINT; g.lineWidth = ep || 3; g.lineCap = 'butt'; g.lineJoin = 'miter'; g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke(); };
+  if (type === 'place_epi') { const k = EPI / 2; trait([[x0 - k, y1], [x0 + k, y0], [x1 + k, y0], [x1 - k, y1]]); return; }
+  if (type === 'place_pmr') {
+    g.fillStyle = '#2f6fc0'; g.fillRect(x0, y0, w, d); trait([[x0, y1], [x0, y0], [x1, y0], [x1, y1]]);
+    g.save(); g.translate(0, 4); pmrSol(g, 46); g.restore(); return;
+  }
+  if (type === 'place_elec') {
+    g.fillStyle = '#2f9e6b'; g.fillRect(x0, y0, w, d); trait([[x0, y1], [x0, y0], [x1, y0], [x1, y1]]);
+    g.fillStyle = PEINT; g.beginPath(); for (const [x, y] of [[4, -22], [-11, 3], [-1, 3], [-5, 22], [11, -4], [1, -4]]) g.lineTo(x, y); g.closePath(); g.fill(); return;
+  }
+  if (type === 'place_livraison') {
+    trait([[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]], JAUNE); trait([[x0, y0], [x1, y1]], JAUNE, 2.5); trait([[x1, y0], [x0, y1]], JAUNE, 2.5);
+    g.fillStyle = ASPH; g.fillRect(-52, -10, 104, 20); g.fillStyle = JAUNE; g.font = '800 15px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('LIVRAISON', 0, 1); return;
+  }
+  trait([[x0, y1], [x0, y0], [x1, y0], [x1, y1]]);
+}
+function aire(g, d, partie) {            // surface goudronnée (parking, cour) : bordure de trottoir puis goudron
+  const [w, h] = dimRect(d);
+  g.save(); g.translate(d.x, d.y); g.rotate(d.ang || 0);
+  if (partie !== 'goudron') { g.fillStyle = TROT; g.beginPath(); g.roundRect(-w / 2 - TR, -h / 2 - TR, w + 2 * TR, h + 2 * TR, 14); g.fill(); }
+  if (partie !== 'bord') { g.fillStyle = ASPH; g.fillRect(-w / 2, -h / 2, w, h); }
+  g.restore();
+}
+
+function coinRect(o) { const [w, h] = dimRect(o), c = Math.cos(o.ang || 0), sn = Math.sin(o.ang || 0); return [o.x + (w / 2) * c - (h / 2) * sn, o.y + (w / 2) * sn + (h / 2) * c]; }
 function milieu(m) { m.x = (m.x1 + m.x2) / 2; m.y = (m.y1 + m.y2) / 2; }
 function dessinerLigne(g, m) {
   const L = Math.hypot(m.x2 - m.x1, m.y2 - m.y1);
@@ -1020,16 +1093,27 @@ function dessinerLigne(g, m) {
   else if (m.type === 'ligne_feux') for (let x = 0; x < L; x += 21) g.fillRect(x, -1.6, Math.min(10.5, L - x), 3.2);
   else if (m.type === 'ligne_continue') g.fillRect(0, -1.5, L, 3);
   else if (m.type === 'ligne_guidage') for (let x = 0; x < L; x += M1) g.fillRect(x, -1.1, Math.min(M1 / 2, L - x), 2.2);   // T'2, 10 cm
-  else if (m.type === 'ligne_bus') for (let x = 0; x < L; x += TIRET + VIDE) g.fillRect(x, -3.2, Math.min(TIRET, L - x), 6.4);   // couloir bus : T3 large
+  else if (m.type === 'ligne_bus') for (let x = 0; x < L; x += 3 * M1 + 1.33 * M1) g.fillRect(x, -3.2, Math.min(3 * M1, L - x), 6.4);   // couloir bus : T3 large (3 m / 1,33 m), blanc
+  else if (m.type === 'ligne_t1') for (let x = 0; x < L; x += T1[0] + T1[1]) g.fillRect(x, -1.5, Math.min(T1[0], L - x), 3);            // entre les voies : 3 m / 10 m
+  else if (m.type === 'ligne_t2') for (let x = 0; x < L; x += T2[0] + T2[1]) g.fillRect(x, -3.75, Math.min(T2[0], L - x), 7.5);        // voie d'insertion / de sortie : 3 m / 3,5 m, large
+  else if (m.type === 'ligne_bau') for (let x = 0; x < L; x += T4[0] + T4[1]) g.fillRect(x, -2.25, Math.min(T4[0], L - x), 4.5);       // bande d'arrêt d'urgence : 39 m / 13 m
+  else if (m.type === 'ligne_jaune') { g.fillStyle = JAUNE; g.fillRect(0, -1.6, L, 3.2); }                                        // arrêt et stationnement interdits
+  else if (m.type === 'ligne_jaune_disc') { g.fillStyle = JAUNE; for (let x = 0; x < L; x += M1 * 1.5) g.fillRect(x, -1.6, Math.min(M1 * 0.75, L - x), 3.2); }   // stationnement interdit
+  else if (m.type === 'ligne_zigzag') {                                                                                           // arrêt de bus : zigzag jaune
+    g.strokeStyle = JAUNE; g.lineWidth = 3; g.lineJoin = 'miter'; g.beginPath();
+    for (let k = 0, x = 0; x <= L + 0.1; k++, x += M1) g[k ? 'lineTo' : 'moveTo'](Math.min(x, L), (k % 2 ? -1 : 1) * M1 * 0.5);
+    g.stroke();
+  }
   else for (let x = 0; x < L; x += TIRET + VIDE) g.fillRect(x, -1.5, Math.min(TIRET, L - x), 3);
   g.restore();
 }
 function dessinerMarque(g, m) {
   if (LIGNES.has(m.type)) { dessinerLigne(g, m); return; }
-  g.save(); g.translate(m.x, m.y); g.fillStyle = PEINT;
+  g.save(); g.translate(m.x, m.y); g.fillStyle = PEINT; if (m.ech && m.ech !== 1) g.scale(m.ech, m.ech);
   if (VIGNETTES.has(m.type)) { g.rotate(m.ang + Math.PI / 2); g.scale(0.7, 0.7); g.translate(-120, -120); marquageV2(g, m.type, 240, 240); g.restore(); return; }
   if (m.type === 'zone_zebra') { zoneZebra(g, m); g.restore(); return; }
-  if (m.type === 'texte') { g.rotate((m.ang || 0) + Math.PI / 2); g.scale(1, 2.2); g.font = '800 ' + (m.taille || 22) + 'px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(m.texte || '', 0, 0); g.restore(); return; }
+  if (PLACES[m.type]) { g.rotate(m.ang || 0); if (m.miroir) g.scale(-1, 1); placeSol(g, m.type); g.restore(); return; }
+  if (m.type === 'texte') { g.rotate((m.ang || 0) + Math.PI / 2); g.scale(1, 2.2); if (m.jaune) g.fillStyle = JAUNE; g.font = '800 ' + (m.taille || 22) + 'px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(m.texte || '', 0, 0); g.restore(); return; }
   if (m.type === 'passage_pieton') {
     g.rotate(m.ang);
     const lp = m.larg || LR;
@@ -1054,6 +1138,7 @@ function terreplein(g, d) {
 }
 function dessinerDecor(d) {
   if (d.type === 'terreplein') { terreplein(ctx, d); return; }
+  if (d.type === 'aire') { ctx.save(); ctx.globalAlpha = .75; aire(ctx, d); ctx.restore(); return; }
   if (d.type === 'arbre') arbre(d.x, d.y, 34);
   else if (d.type === 'buisson') arbre(d.x, d.y, 20);
   else maison(d.x, d.y, d.w || 170, d.h || 130, d.ang || 0, d.type === 'maison_grise' ? '#7d8791' : '#b5654a');
@@ -1066,12 +1151,13 @@ function dessinerCouche() {
   // texture d'herbe (reproductible)
   let gr = 11; const al = () => ((gr = (gr * 1664525 + 1013904223) >>> 0) / 4294967296);
   for (let i = 0; i < 2200; i++) { g.fillStyle = al() < .5 ? 'rgba(255,255,255,.035)' : 'rgba(0,0,0,.04)'; g.beginPath(); g.arc(-420 + al() * (MONDE.W + 840), -420 + al() * (MONDE.H + 840), 3 + al() * 9, 0, 7); g.fill(); }
+  dessinerFond(g);
   dessinerRoutes(g);
   const enMain = geste && geste.type === 'deplacer' ? geste.obj : null;
   for (const m of scene.marques) if (m !== enMain) dessinerMarque(g, m);
-  for (const d of scene.decor) if (d !== enMain) dessinerDecor(d);
+  for (const d of scene.decor) if (d !== enMain && d.type !== 'aire') dessinerDecor(d);
   for (const p of geo.autoPanneaux) if (p.type !== 'feu') dessinerPanneau(g, p.type, p.x, p.y, p.ang);
-  for (const p of scene.panneaux) if (p !== enMain && p.type !== 'feu') dessinerPanneau(g, p.type, p.x, p.y, p.ang);
+  for (const p of scene.panneaux) if (p !== enMain && p.type !== 'feu') dessinerPanneau(g, p.type, p.x, p.y, p.ang, null, null, p.ech);
   sale = true;
 }
 
@@ -1091,7 +1177,7 @@ function rendre() {
   ctx = g;
   // feux (animés)
   for (const p of geo.autoPanneaux) if (p.type === 'feu') dessinerPanneau(g, 'feu', p.x, p.y, p.ang, etatFeu(p.cle, p.route));
-  for (const p of scene.panneaux) if (p.type === 'feu') dessinerPanneau(g, 'feu', p.x, p.y, p.ang, p.cle ? etatFeu(p.cle, p.route) : test ? (test.frame % 400 < 200 ? 'vert' : 'rouge') : 'rouge');
+  for (const p of scene.panneaux) if (p.type === 'feu') dessinerPanneau(g, 'feu', p.x, p.y, p.ang, p.cle ? etatFeu(p.cle, p.route) : test ? (test.frame % 400 < 200 ? 'vert' : 'rouge') : 'rouge', null, p.ech);
   // tracé en cours
   if (geste && geste.type === 'trace' && geste.pts.length > 1) {
     const ap = geste.apercu || { pts: geste.pts };
@@ -1105,7 +1191,7 @@ function rendre() {
   // objet en main
   if (geste && geste.type === 'deplacer') {
     const o = geste.obj;
-    if (geste.kind === 'panneau') dessinerPanneau(g, o.type, o.x, o.y, o.ang, 'rouge');
+    if (geste.kind === 'panneau') dessinerPanneau(g, o.type, o.x, o.y, o.ang, 'rouge', null, o.ech);
     else if (geste.kind === 'marque') dessinerMarque(g, o);
     else dessinerDecor(o);
   }
@@ -1123,7 +1209,14 @@ function rendre() {
         for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { g.moveTo(x + dx * R * 0.55, y + dy * R * 0.55); g.lineTo(x + dx * R * 1.5, y + dy * R * 1.5); }
         g.stroke();
       }
-    } else { g.beginPath(); g.arc(o.x, o.y, r, 0, 7); g.stroke(); }
+    } else if (selection.kind === 'decor' && estRect(o)) {              // cadre + coin rouge pour changer la taille
+      const [w, h] = dimRect(o), [hx, hy] = coinRect(o), R = Math.max(9, 11 / S);
+      g.save(); g.translate(o.x, o.y); g.rotate(o.ang || 0); g.strokeRect(-w / 2 - 5, -h / 2 - 5, w + 10, h + 10); g.restore();
+      g.setLineDash([]); g.fillStyle = '#ff3131'; g.strokeStyle = '#fff'; g.lineWidth = Math.max(2, 2.5 / S); g.beginPath(); g.arc(hx, hy, R, 0, 7); g.fill(); g.stroke();
+    } else {
+      g.beginPath(); g.arc(o.x, o.y, r, 0, 7); g.stroke();
+      if (tailleLibre(selection)) { const [hx, hy] = coinTaille(selection), R = Math.max(8, 10 / S); g.setLineDash([]); g.fillStyle = '#ff3131'; g.strokeStyle = '#fff'; g.lineWidth = Math.max(2, 2.5 / S); g.beginPath(); g.arc(hx, hy, R, 0, 7); g.fill(); g.stroke(); }   // point rouge : tirer pour agrandir ou réduire
+    }
     g.restore();
   }
   if (geste && geste.type === 'lasso' && geste.bouge) {
@@ -1143,7 +1236,8 @@ function rendre() {
   if (test) for (const v of test.vehicules) {
     const P = posVehicule(v); if (v.angAff !== undefined) P.ang = v.angAff;
     const cl = v.cligno && (test.frame % 40 < 22) ? v.cligno : null;
-    if (v.easy) { voitureEasy(P.x, P.y, P.ang); if (cl) clignoEasy(g, P, cl); } else voiture(P.x, P.y, P.ang, v.coul, cl);
+    if (v.easy) { voitureEasy(P.x, P.y, P.ang); if (cl) clignoEasy(g, P, cl); } else if (v.type === 'camion') dessinerCamion(g, P.x, P.y, P.ang, v.coul); else if (v.type === 'velo') cycliste(P.x, P.y, P.ang); else voiture(P.x, P.y, P.ang, v.coul, cl);
+    if (v.frein) feuxStop(g, P, v.type === 'camion' ? 150 : 74, v.type === 'camion' ? 46 : 38);
   }
   if (mode === 'seance') rendreSeance(g);
   sale = false;
@@ -1259,22 +1353,38 @@ function placerSurVoie(p, decal) {        // renvoie position + orientation selo
   const hx = n.tx * cote, hy = n.ty * cote, [dx, dy] = droiteDe(hx, hy);
   return { x: n.x + dx * decal, y: n.y + dy * decal, cap: Math.atan2(hy, hx), n };
 }
+let aligner = true; try { aligner = localStorage.getItem('trace_aimant') !== '0'; } catch (e) {}
 function placerPanneau(o, p) {
+  if (!aligner) { o.x = p[0]; o.y = p[1]; return; }          // placement libre : là où on touche, sans changer l'orientation
   const P = placerSurVoie(p, LR / 2 + 26);
   if (P) { o.x = P.x; o.y = P.y; o.ang = P.cap + Math.PI / 2; } else { o.x = p[0]; o.y = p[1]; }
 }
 function placerMarque(o, p) {
+  if (!aligner) { o.x = p[0]; o.y = p[1]; if (o.ang === 0 && !PLACES[o.type] && o.type !== 'passage_pieton') o.ang = -Math.PI / 2; return; }
   if (o.type === 'passage_pieton') {
     const n = routeLaPlusProche(p);
     if (n && n.d < LR / 2 + 30) { o.x = n.x; o.y = n.y; o.ang = Math.atan2(n.ty, n.tx); } else { o.x = p[0]; o.y = p[1]; }
     return;
   }
+  if (PLACES[o.type]) {                // place de stationnement : parallèle à la route voisine, ouverte vers elle
+    o.x = p[0]; o.y = p[1]; o.ang = 0;
+    const n = routeLaPlusProche(p);
+    if (n && n.d < LR / 2 + 130) {
+      o.ang = Math.atan2(n.ty, n.tx);
+      if ((n.x - p[0]) * -Math.sin(o.ang) + (n.y - p[1]) * Math.cos(o.ang) < 0) o.ang += Math.PI;
+    } else { const v = scene.marques.filter((q) => PLACES[q.type]).sort((a, b) => Math.hypot(a.x - p[0], a.y - p[1]) - Math.hypot(b.x - p[0], b.y - p[1]))[0]; if (v && Math.hypot(v.x - p[0], v.y - p[1]) < 220) o.ang = v.ang; }
+    return;
+  }
+  if (o.type === 'texte' || o.type === 'damier_bus') { const P2 = placerSurVoie(p, LR / 4); o.x = p[0]; o.y = p[1]; o.ang = P2 ? P2.cap : -Math.PI / 2; return; }
   const P = placerSurVoie(p, LR / 4);
   if (P) { o.x = P.x; o.y = P.y; o.ang = P.cap; } else { o.x = p[0]; o.y = p[1]; }
 }
 
 /* ---------------- sélection / hit test ---------------- */
-function rayonObjet(sel) { if (sel.kind === 'marque' && LIGNES.has(sel.obj.type)) return 20; return sel.kind === 'panneau' ? 30 : sel.kind === 'marque' ? 50 : sel.obj.type.startsWith('maison') ? 95 : sel.obj.type === 'buisson' ? 26 : 40; }
+function rayonBase(sel) { if (sel.kind === 'marque' && LIGNES.has(sel.obj.type)) return 20; if (sel.kind === 'marque' && PLACES[sel.obj.type]) return 46; if (sel.kind === 'decor' && estRect(sel.obj)) { const [w, h] = dimRect(sel.obj); return Math.min(Math.hypot(w, h) / 2, 110); } return sel.kind === 'panneau' ? 30 : sel.kind === 'marque' ? 50 : sel.obj.type.startsWith('maison') ? 95 : sel.obj.type === 'buisson' ? 26 : 40; }
+const tailleLibre = (sel) => sel && (sel.kind === 'panneau' || (sel.kind === 'marque' && !LIGNES.has(sel.obj.type) && sel.obj.type !== 'zone_zebra'));
+function rayonObjet(sel) { return rayonBase(sel) * (tailleLibre(sel) ? sel.obj.ech || 1 : 1); }
+function coinTaille(sel) { const r = rayonObjet(sel) * Math.SQRT1_2; return [sel.obj.x + r, sel.obj.y + r]; }
 function tousObjets() {
   return [...scene.panneaux.map((o) => ({ kind: 'panneau', obj: o })), ...scene.decor.map((o) => ({ kind: 'decor', obj: o })), ...scene.marques.map((o) => ({ kind: 'marque', obj: o }))];
 }
@@ -1284,10 +1394,12 @@ function objetSous(p) {
   for (const c of cands) {
     let d = Math.hypot(p[0] - c.obj.x, p[1] - c.obj.y), r = rayonObjet(c);
     if (c.kind === 'marque' && LIGNES.has(c.obj.type)) { d = distSeg(p, [c.obj.x1, c.obj.y1], [c.obj.x2, c.obj.y2]); r = 18; }
-    if (c.kind === 'decor' && (c.obj.type.startsWith('maison') || c.obj.type === 'terreplein')) {       // rectangle
+    if (c.kind === 'decor' && estRect(c.obj)) {       // rectangle
       const a = -(c.obj.ang || 0), dx = p[0] - c.obj.x, dy = p[1] - c.obj.y;
       const lx = dx * Math.cos(a) - dy * Math.sin(a), ly = dx * Math.sin(a) + dy * Math.cos(a);
-      d = Math.abs(lx) < (c.obj.w || 170) / 2 && Math.abs(ly) < (c.obj.h || 130) / 2 ? 0 : Infinity; r = 1;
+      const [rw, rh] = dimRect(c.obj);
+      d = Math.abs(lx) < rw / 2 && Math.abs(ly) < rh / 2 ? 0 : Infinity; r = 1;
+      if (c.obj.type === 'aire' && d === 0) { if (outil !== 'selection' && outil !== 'decor') continue; d = 900; r = 901; }   // l'aire passe après tout ce qui est posé dessus ; elle ne se prend qu'avec Sélection ou Décor
     }
     if (d < r && d < bd) { bd = d; best = c; }
   }
@@ -1300,7 +1412,10 @@ function carrefourSous(p) {
 }
 
 /* ---------------- historique + sauvegarde ---------------- */
+let demarrage = true;
+function marquerModele() { if (mode === 'seance' || demarrage) { scene.modele = true; histo[histoIdx] = JSON.stringify(scene, (k, v) => (k[0] === '_' ? undefined : v)); sauverLocal(); } }
 function valider(msg) {
+  majAide(); if (mode === 'editeur' && !demarrage) delete scene.modele;
   histo = histo.slice(0, histoIdx + 1); histo.push(JSON.stringify(scene, (k, v) => (k[0] === '_' ? undefined : v))); histoIdx = histo.length - 1;
   if (histo.length > 80) { histo.shift(); histoIdx--; }
   try { localStorage.setItem(CLE_SAUVE, histo[histoIdx]); } catch (e) {}
@@ -1330,6 +1445,14 @@ cv.addEventListener('pointerdown', (e) => {
     for (const [k, x, y] of [[1, o.x1, o.y1], [2, o.x2, o.y2]]) if (Math.hypot(p[0] - x, p[1] - y) < tol) {
       geste.type = 'bout'; geste.bout = k; geste.obj = o; $('selbar').classList.remove('ouvert'); return;
     }
+  }
+  if (tailleLibre(selection)) {
+    const [hx, hy] = coinTaille(selection);
+    if (Math.hypot(p[0] - hx, p[1] - hy) < Math.max(22, 24 / S)) { geste.type = 'echelle'; geste.obj = selection.obj; geste.base = rayonBase(selection); $('selbar').classList.remove('ouvert'); return; }
+  }
+  if (selection && selection.kind === 'decor' && estRect(selection.obj)) {
+    const [hx, hy] = coinRect(selection.obj);
+    if (Math.hypot(p[0] - hx, p[1] - hy) < Math.max(24, 26 / S)) { geste.type = 'taille'; geste.obj = selection.obj; $('selbar').classList.remove('ouvert'); return; }
   }
   if (groupe) {
     const h = objetSous(p);
@@ -1366,7 +1489,7 @@ cv.addEventListener('pointermove', (e) => {
     if (dist(l, p) > 6) { geste.pts.push(p); geste.apercu = construireTrace(geste.pts); sale = true; }
   } else if (geste.type === 'deplacer') {
     const o = geste.obj, q = [p[0] + geste.dx, p[1] + geste.dy];
-    if (geste.kind === 'panneau' && outil !== 'selection') placerPanneau(o, q);
+    if (geste.kind === 'panneau' && outil !== 'selection' && aligner) placerPanneau(o, q);
     else if (geste.kind === 'panneau') { o.x = q[0]; o.y = q[1]; }
     else if (geste.kind === 'marque') {            // déplacement libre, orientation conservée
       const dx = p[0] - geste.p0[0], dy = p[1] - geste.p0[1], a = geste.orig;
@@ -1389,6 +1512,12 @@ cv.addEventListener('pointermove', (e) => {
   else if (geste.type === 'ligne') {
     const [x2, y2] = angleAimante(geste.p0, p);
     geste.ligne = { type: choixTiroir.sol, x1: geste.p0[0], y1: geste.p0[1], x2, y2 }; milieu(geste.ligne); sale = true;
+  } else if (geste.type === 'echelle') {
+    const o = geste.obj; o.ech = Math.round(Math.max(0.35, Math.min(6, Math.hypot(p[0] - o.x, p[1] - o.y) / geste.base)) * 100) / 100; dessinerCouche();
+  } else if (geste.type === 'taille') {
+    const o = geste.obj, a = -(o.ang || 0), dx = p[0] - o.x, dy = p[1] - o.y;
+    const lx = dx * Math.cos(a) - dy * Math.sin(a), ly = dx * Math.sin(a) + dy * Math.cos(a), mini = o.type === 'terreplein' ? 20 : 50;
+    o.w = Math.round(Math.max(mini, 2 * Math.abs(lx))); o.h = Math.round(Math.max(mini, 2 * Math.abs(ly))); dessinerCouche();
   } else if (geste.type === 'bout') {
     const o = geste.obj, fixe = geste.bout === 1 ? [o.x2, o.y2] : [o.x1, o.y1], [x, y] = angleAimante(fixe, p);
     if (geste.bout === 1) { o.x1 = x; o.y1 = y; } else { o.x2 = x; o.y2 = y; }
@@ -1396,6 +1525,7 @@ cv.addEventListener('pointermove', (e) => {
   }
 });
 function angleAimante(a, p) {        // aimante l'angle tous les 15° (tolérance 4°)
+  if (!aligner) return [p[0], p[1]];
   const ang = Math.atan2(p[1] - a[1], p[0] - a[0]), L = Math.hypot(p[0] - a[0], p[1] - a[1]);
   const q = Math.round(ang / (Math.PI / 12)) * (Math.PI / 12);
   return Math.abs(ang - q) < 0.07 ? [a[0] + Math.cos(q) * L, a[1] + Math.sin(q) * L] : [p[0], p[1]];
@@ -1430,7 +1560,7 @@ function finGeste(e) {
     if (dedans.length === 1) selection = dedans[0]; else if (dedans.length > 1) { groupe = dedans; toast(dedans.length + ' éléments sélectionnés : glisse-les ou tourne-les'); }
     majSelbar(); sale = true; return;
   }
-  if (g.type === 'bout') { dessinerCouche(); valider(); majSelbar(); return; }
+  if (g.type === 'bout' || g.type === 'taille' || g.type === 'echelle') { dessinerCouche(); valider(); majSelbar(); return; }
   if (g.type === 'ligne' && g.bouge && g.ligne && Math.hypot(g.ligne.x2 - g.ligne.x1, g.ligne.y2 - g.ligne.y1) > 15) {
     scene.marques.push(g.ligne); selection = { kind: 'marque', obj: g.ligne }; dessinerCouche(); valider(); majSelbar(); return;
   }
@@ -1455,17 +1585,22 @@ function finGeste(e) {
     }
     if (LIGNES.has(choixTiroir.sol)) {            // toucher une voie : ligne en travers de la voie
       const n = routeLaPlusProche(p);
-      if (choixTiroir.sol.match(/stop|cedez|feux/) && n && n.d < LR / 2) {
+      if (aligner && choixTiroir.sol.match(/stop|cedez|feux/) && n && n.d < LR / 2) {
         const [rx, ry] = droiteDe(n.tx, n.ty), cote = (p[0] - n.x) * rx + (p[1] - n.y) * ry >= 0 ? 1 : -1;
         const o = { type: choixTiroir.sol, x1: n.x, y1: n.y, x2: n.x + rx * cote * LR / 2, y2: n.y + ry * cote * LR / 2 }; milieu(o);
         scene.marques.push(o); dessinerCouche(); valider('Glisse la ligne pour la déplacer, tire les points pour l\'ajuster');
       } else toast('Glisse pour tracer la ligne');
       return;
     }
-    const o = { type: choixTiroir.sol, x: 0, y: 0, ang: 0 }; placerMarque(o, p);
+    const k = choixTiroir.sol;
+    if (k === 'texte_libre') { demanderTexte('', (t) => { const o = { type: 'texte', texte: t, x: 0, y: 0, ang: 0 }; placerMarque(o, p); scene.marques.push(o); dessinerCouche(); valider(); }); return; }
+    const o = k.startsWith('texte_') ? { type: 'texte', texte: k.slice(6).toUpperCase(), x: 0, y: 0, ang: 0 } : k === 'place_epi_inv' ? { type: 'place_epi', miroir: true, x: 0, y: 0, ang: 0 } : { type: k, x: 0, y: 0, ang: 0 };
+    placerMarque(o, p);
     scene.marques.push(o); dessinerCouche(); valider();
   } else if (outil === 'decor') {
-    scene.decor.push({ type: choixTiroir.decor, x: p[0], y: p[1], ang: 0 }); dessinerCouche(); valider();
+    const o = { type: choixTiroir.decor, x: p[0], y: p[1], ang: 0 };
+    if (o.type === 'aire') { scene.decor.unshift(o); selection = { kind: 'decor', obj: o }; majSelbar(); dessinerCouche(); valider('Tire le coin rouge pour agrandir l\'aire'); return; }
+    scene.decor.push(o); dessinerCouche(); valider();
   }
 }
 function effacerSous(p) {
@@ -1574,12 +1709,13 @@ function majSelbar() {
   const b = $('selbar');
   if (groupe) {
     const ys = groupe.map((x) => x.obj.y - Math.min(rayonObjet(x), 60)), [cx] = centreGroupe(), [sx, sy] = versEcran(cx, Math.min(...ys));
-    $('s-tourner-g').style.display = '';
+    $('s-tourner-g').style.display = ''; $('s-texte').style.display = 'none';
     b.classList.add('ouvert'); b.style.left = sx + 'px'; b.style.top = Math.max(70, sy - 10) + 'px'; sale = true; return;
   }
   if (!selection) { b.classList.remove('ouvert'); sale = true; return; }
   const o = selection.obj, [sx, sy] = versEcran(o.x, o.y);
-  $('s-tourner-g').style.display = selection.kind === 'marque' || outil === 'selection' ? '' : 'none';
+  $('s-tourner-g').style.display = selection.kind === 'marque' || outil === 'selection' || !aligner ? '' : 'none';
+  $('s-texte').style.display = selection.obj.type === 'texte' ? '' : 'none';
   b.classList.add('ouvert');
   if (selection.kind === 'marque' && LIGNES.has(o.type)) {            // ligne : la barre se met à côté, jamais sur la ligne ni ses bouts
     const [ax, ay] = versEcran(o.x1, o.y1), [bx, by] = versEcran(o.x2, o.y2), m = 34;
@@ -1601,6 +1737,29 @@ function tournerGroupe(da) {
   }
   dessinerCouche(); valider(); majSelbar();
 }
+$('s-dupliquer').onclick = () => {
+  const listeDe = (k) => (k === 'panneau' ? scene.panneaux : k === 'marque' ? scene.marques : scene.decor);
+  const copie = (it, dx, dy) => {
+    const c = JSON.parse(JSON.stringify(it.obj));
+    if (c.x1 !== undefined) { c.x1 += dx; c.y1 += dy; c.x2 += dx; c.y2 += dy; milieu(c); } else { c.x += dx; c.y += dy; }
+    listeDe(it.kind).push(c); return { kind: it.kind, obj: c };
+  };
+  if (groupe) { groupe = groupe.map((it) => copie(it, 60, 60)); majSelbar(); dessinerCouche(); valider('Groupe dupliqué'); return; }
+  if (!selection) return;
+  const o = selection.obj; let dx = 60, dy = 0;
+  if (o.x1 !== undefined) { const L = Math.hypot(o.x2 - o.x1, o.y2 - o.y1) || 1; dx = -(o.y2 - o.y1) / L * 37.5; dy = (o.x2 - o.x1) / L * 37.5; }   // ligne : une demi-voie à côté
+  else if (selection.kind === 'marque' && PLACES[o.type]) { const pas = PLACES[o.type][2]; dx = Math.cos(o.ang || 0) * pas; dy = Math.sin(o.ang || 0) * pas; }   // place : la suivante dans la file
+  else if (selection.kind === 'decor' && estRect(o)) { const pas = dimRect(o)[0] + 24; dx = Math.cos(o.ang || 0) * pas; dy = Math.sin(o.ang || 0) * pas; }
+  selection = copie(selection, dx, dy); majSelbar(); dessinerCouche(); valider();
+};
+function demanderTexte(valeur, suite) {
+  const box = $('saisie'), inp = $('saisie-txt');
+  inp.value = valeur || ''; box.classList.add('ouvert'); setTimeout(() => inp.focus(), 30);
+  const fin = (ok) => { box.classList.remove('ouvert'); const t = inp.value.trim().toUpperCase(); if (ok && t) suite(t); };
+  $('saisie-ok').onclick = () => fin(true); $('saisie-annuler').onclick = () => fin(false);
+  inp.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') fin(true); else if (e.key === 'Escape') fin(false); };
+}
+$('s-texte').onclick = () => { if (selection && selection.obj.type === 'texte') { const o = selection.obj; demanderTexte(o.texte, (t) => { o.texte = t; dessinerCouche(); valider(); }); } };
 $('s-suppr').onclick = () => {
   if (groupe) {
     for (const it of groupe) { const l = it.kind === 'panneau' ? scene.panneaux : it.kind === 'marque' ? scene.marques : scene.decor; l.splice(l.indexOf(it.obj), 1); }
@@ -1614,7 +1773,7 @@ $('s-tourner').onclick = () => {
   if (groupe) return tournerGroupe(Math.PI / 12);
   if (!selection) return;
   const o = selection.obj;
-  if (outil === 'selection' && selection.kind !== 'marque') o.ang = (o.ang || 0) + Math.PI / 12;
+  if ((outil === 'selection' || !aligner) && selection.kind !== 'marque') o.ang = (o.ang || 0) + Math.PI / 12;
   else if (selection.kind === 'decor') o.ang = (o.ang || 0) + Math.PI / 2;
   else if (selection.kind === 'panneau') {        // passer de l'autre côté de la route, face au sens inverse
     const n = routeLaPlusProche([o.x, o.y]);
@@ -1639,13 +1798,27 @@ function tournerMarque(o, da) {
 const TIROIRS = {
   panneau: [['stop', 'STOP'], ['cedez', 'Cédez'], ['priorite_droite', 'Priorité à droite'], ['priorite_ponctuelle', 'Priorité ponctuelle'], ['route_prioritaire', 'Route prio.'],
             ['sens_interdit', 'Sens interdit'], ['passage_pieton', 'Passage piéton'], ['giratoire', 'Giratoire'], ['obligation_droit', 'Tout droit'],
-            ['obligation_droite', 'À droite'], ['obligation_gauche', 'À gauche'], ['b15', 'Cédez sens inverse'], ['c18', 'Prio. sens inverse'], ['feu', 'Feu']],
+            ['obligation_droite', 'À droite'], ['obligation_gauche', 'À gauche'], ['b15', 'Cédez sens inverse'], ['c18', 'Prio. sens inverse'], ['autoroute', 'Autoroute'], ['limite_30', '30'], ['limite_50', '50'], ['limite_70', '70'], ['limite_90', '90'], ['limite_110', '110'], ['limite_130', '130'], ['feu', 'Feu']],
   sol: [['ligne_stop', 'Ligne STOP'], ['ligne_cedez', 'Ligne cédez'], ['ligne_feux', 'Ligne des feux'], ['ligne_continue', 'Ligne continue'], ['ligne_discontinue', 'Ligne discontinue'],
+        ['ligne_guidage', 'Guidage'], ['axe', 'Axe de la route'],
         ['fleche_droit', 'Tout droit'], ['fleche_gauche', 'Gauche'], ['fleche_droite', 'Droite'], ['fleche_td_gauche', 'Droit + gauche'], ['fleche_td_droite', 'Droit + droite'],
-        ['passage_pieton', 'Passage piéton'], ['velo', 'Vélo'], ['zebra', 'Zébras'], ['ralentisseur', 'Ralentisseur'], ['stationnement', 'Place'],
-        ['pmr', 'PMR'], ['triangle_cedez', 'Triangle cédez'], ['sas_velo', 'Sas vélo'], ['axe', 'Axe de la route']],
-  decor: [['arbre', 'Arbre'], ['buisson', 'Buisson'], ['maison', 'Maison'], ['maison_grise', 'Bâtiment']],
+        ['passage_pieton', 'Passage piéton'], ['zebra', 'Zébras'], ['ralentisseur', 'Ralentisseur'], ['triangle_cedez', 'Triangle cédez'],
+        ['ligne_bus', 'Voie réservée (bus, vélo)'], ['texte_bus', 'BUS'], ['ligne_zigzag', 'Zigzag arrêt bus'], ['damier_bus', 'Damier bus'], ['texte_taxi', 'TAXI'], ['texte_libre', 'Texte…'],
+        ['velo', 'Vélo'], ['sas_velo', 'Sas vélo'],
+        ['place_bataille', 'Place bataille'], ['place_epi', 'Place épi'], ['place_epi_inv', 'Épi inversé'], ['place_creneau', 'Place créneau'], ['place_pmr', 'Place PMR'], ['place_livraison', 'Livraison'], ['place_elec', 'Recharge'],
+        ['ligne_jaune', 'Jaune continue'], ['ligne_jaune_disc', 'Jaune discontinue'], ['pmr', 'Logo PMR'],
+        ['ligne_t1', 'Entre les voies'], ['ligne_t2', 'Insertion / sortie'], ['ligne_bau', 'Bande d\'arrêt d\'urgence']],
+  decor: [['arbre', 'Arbre'], ['buisson', 'Buisson'], ['maison', 'Maison'], ['maison_grise', 'Bâtiment'], ['aire', 'Parking / cour'], ['terreplein', 'Terre-plein']],
 };
+let catSol = '';
+const CATS_SOL = [
+  ['lignes', 'Lignes', ['ligne_stop', 'ligne_cedez', 'ligne_feux', 'ligne_continue', 'ligne_discontinue', 'ligne_guidage', 'axe', 'ligne_jaune', 'ligne_jaune_disc']],
+  ['fleches', 'Flèches', ['fleche_droit', 'fleche_gauche', 'fleche_droite', 'fleche_td_gauche', 'fleche_td_droite', 'triangle_cedez']],
+  ['passages', 'Passages & texte', ['passage_pieton', 'zebra', 'ralentisseur', 'texte_libre']],
+  ['bus', 'Bus & vélo', ['ligne_bus', 'texte_bus', 'ligne_zigzag', 'damier_bus', 'texte_taxi', 'velo', 'sas_velo']],
+  ['autoroute', 'Autoroute', ['ligne_t1', 'ligne_t2', 'ligne_bau', 'ligne_continue', 'zebra']],
+  ['parking', 'Stationnement', ['place_bataille', 'place_epi', 'place_epi_inv', 'place_creneau', 'place_pmr', 'place_livraison', 'place_elec', 'pmr']],
+];
 function vignette(fn, fond) {
   const c = document.createElement('canvas'); c.width = c.height = 80;
   const g = c.getContext('2d');
@@ -1663,12 +1836,24 @@ function vignetteTiroir(t, k) {
     else if (k === 'ligne_feux') { g.fillStyle = PEINT; for (let x = -14; x < 14; x += 6) g.fillRect(x, -1.2, 3, 2.4); }
     else if (k === 'ligne_continue') { g.fillStyle = PEINT; g.fillRect(-1.5, -16, 3, 32); }
     else if (k === 'ligne_discontinue') { g.fillStyle = PEINT; g.fillRect(-1.5, -16, 3, 11); g.fillRect(-1.5, 5, 3, 11); }
+    else if (k === 'ligne_guidage') { g.fillStyle = PEINT; for (let y = -16; y < 16; y += 7) g.fillRect(-1, y, 2, 3.5); }
+    else if (k === 'ligne_bus') { g.fillStyle = PEINT; g.fillRect(-3, -16, 6, 13); g.fillRect(-3, 3, 6, 13); }
+    else if (k === 'ligne_jaune') { g.fillStyle = JAUNE; g.fillRect(-2, -16, 4, 32); }
+    else if (k === 'ligne_t1') { g.fillStyle = PEINT; g.fillRect(-1.2, -16, 2.4, 7); g.fillRect(-1.2, 9, 2.4, 7); }
+    else if (k === 'ligne_t2') { g.fillStyle = PEINT; for (let y = -16; y < 16; y += 12) g.fillRect(-3, y, 6, 7); }
+    else if (k === 'ligne_bau') { g.fillStyle = PEINT; g.fillRect(-2, -16, 4, 22); g.fillRect(-2, 10, 4, 6); }
+    else if (k === 'ligne_jaune_disc') { g.fillStyle = JAUNE; for (let y = -16; y < 16; y += 9) g.fillRect(-2, y, 4, 5); }
+    else if (k === 'ligne_zigzag') { g.strokeStyle = JAUNE; g.lineWidth = 2.5; g.beginPath(); for (let i = 0, y = -16; y <= 16; i++, y += 6.4) g[i ? 'lineTo' : 'moveTo']((i % 2 ? -1 : 1) * 5, y); g.stroke(); }
+    else if (k.startsWith('texte_')) { g.fillStyle = PEINT; g.font = '800 ' + (k === 'texte_libre' ? 15 : 11) + 'px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.save(); g.scale(1, k === 'texte_libre' ? 1 : 1.9); g.fillText(k === 'texte_libre' ? 'Aa' : k.slice(6).toUpperCase(), 0, 0); g.restore(); }
+    else if (PLACES[k] || k === 'place_epi_inv') { const t = k === 'place_epi_inv' ? 'place_epi' : k, [w, d] = PLACES[t], e = 26 / Math.max(w, d + (t === 'place_epi' ? 30 : 0)); g.scale(k === 'place_epi_inv' ? -e : e, e); placeSol(g, t); }
     else if (VIGNETTES.has(k)) { g.scale(0.15, 0.15); g.translate(-120, -120); marquageV2(g, k, 240, 240); }
     else flecheSol(g, k, 30);
   }, ASPH);
   return vignette((g) => {
     const sv = ctx; ctx = g;
     if (k === 'arbre') arbre(0, 0, 13); else if (k === 'buisson') arbre(0, 0, 8);
+    else if (k === 'aire') aire(g, { type: 'aire', x: 0, y: 0, w: 26, h: 18, ang: 0 }, 'goudron'), g.strokeStyle = TROT, g.lineWidth = 3, g.strokeRect(-13, -9, 26, 18);
+    else if (k === 'terreplein') terreplein(g, { x: 0, y: 0, w: 30, h: 10, ang: 0 });
     else maison(0, 0, 30, 24, 0, k === 'maison' ? '#b5654a' : '#7d8791');
     ctx = sv;
   }, HERBE);
@@ -1677,14 +1862,32 @@ function choisirOutil(o) {
   outil = o;
   document.querySelectorAll('.outil').forEach((b) => b.classList.toggle('actif', b.dataset.outil === o));
   const t = $('tiroir'); t.innerHTML = '';
+  const cats = $('cats'); cats.innerHTML = ''; cats.classList.toggle('ouvert', o === 'sol' || o === 'panneau');
+  if (o === 'sol' || o === 'panneau') {      // aligné tout seul sur la route, ou posé librement
+    const b = document.createElement('button'); b.id = 'b-aimant'; b.className = aligner ? 'aim' : 'aim libre';
+    b.textContent = aligner ? 'Aligné sur la route' : 'Placement libre';
+    b.onclick = () => { aligner = !aligner; try { localStorage.setItem('trace_aimant', aligner ? '1' : '0'); } catch (e) {} choisirOutil(outil); toast(aligner ? 'Les panneaux et marquages se placent tout seuls dans le sens de la route' : 'Placement libre : l\'élément se pose là où tu touches, tu le tournes comme tu veux'); };
+    cats.appendChild(b);
+  }
+  if (o === 'sol') {                 // le marquage au sol est rangé par familles
+    if (!CATS_SOL.some((c) => c[0] === catSol)) catSol = (CATS_SOL.find((c) => c[2].includes(choixTiroir.sol)) || CATS_SOL[0])[0];
+    for (const [id, nom] of CATS_SOL) {
+      const b = document.createElement('button'); b.textContent = nom; b.className = id === catSol ? 'on' : '';
+      b.onclick = () => { catSol = id; const liste = CATS_SOL.find((c) => c[0] === id)[2]; if (!liste.includes(choixTiroir.sol)) choixTiroir.sol = liste[0]; choisirOutil('sol'); };
+      cats.appendChild(b);
+    }
+  }
   if (TIROIRS[o]) {
+    const visibles = o === 'sol' ? CATS_SOL.find((c) => c[0] === catSol)[2] : null;
     for (const [k, nom] of TIROIRS[o]) {
+      if (visibles && !visibles.includes(k)) continue;
       const d = document.createElement('div'); d.className = 'item' + (choixTiroir[o] === k ? ' on' : '');
       d.appendChild(vignetteTiroir(o, k)); d.append(nom);
       d.onclick = () => { choixTiroir[o] = k; t.querySelectorAll('.item').forEach((x) => x.classList.toggle('on', x === d)); };
       t.appendChild(d);
     }
     t.classList.add('ouvert');
+    if (o === 'sol' || o === 'panneau') cats.style.bottom = (innerHeight - t.getBoundingClientRect().top + 6) + 'px';
   } else t.classList.remove('ouvert');
   if (o === 'selection') toast('Sélection : touche un élément, ou glisse pour en prendre plusieurs');
   if (o === 'gomme') toast('Touche ou glisse sur ce que tu veux effacer');
@@ -1697,7 +1900,7 @@ const COULEURS = ['#3b82c4', '#e0b43a', '#d64545', '#e8e8e8', '#2f9e6b', '#8e5bd
 const CYCLE = 480;                       // cycle des feux (images)
 function basculerTest() {
   if (test) { test = null; $('t-tester').textContent = 'Tester'; $('ico-play').innerHTML = '<path d="M7 4l13 8-13 8z"/>'; sale = true; return; }
-  if (!scene.routes.length) { toast('Trace d\'abord une route'); return; }
+  if (!scene.routes.length && !scene.fond) { toast('Trace d\'abord une route'); return; }
   test = { frame: 0, vehicules: [], prochain: 0, n: 0, pietons: [], prochainPieton: 60, np: 0 };
   $('t-tester').textContent = 'Arrêter'; $('ico-play').innerHTML = '<rect x="6" y="6" width="12" height="12" rx="2"/>';
   fermerRegime(); selection = null; groupe = null; majSelbar();
@@ -1773,7 +1976,7 @@ function surTrajet(T, s) {
   const a = T.pts[i - 1], b = T.pts[i], L = T.cum[i] - T.cum[i - 1] || 1, t = (s - T.cum[i - 1]) / L;
   return { x: a[0] + (b[0] - a[0]) * t, y: a[1] + (b[1] - a[1]) * t, hx: (b[0] - a[0]) / L, hy: (b[1] - a[1]) / L };
 }
-function posVehicule(v) { const q = surTrajet(v.T, v.s); return { x: q.x, y: q.y, ang: Math.atan2(q.hy, q.hx), hx: q.hx, hy: q.hy }; }
+function posVehicule(v) { if (v.pos) return v.pos; const q = surTrajet(v.T, v.s); return { x: q.x, y: q.y, ang: Math.atan2(q.hy, q.hx), hx: q.hx, hy: q.hy }; }
 function entrees() {
   const E = [];
   for (const g of geo.routes.values()) {
@@ -1842,6 +2045,7 @@ function avancerPietons() {
 }
 function evtEnCours(w, cle) { return w.T.evts.find((e) => e.c.cle === cle && w.s < e.sFin + 10); }
 function avancerTest() {
+  if (scene.fond) { const t = scene.fond.type; if (t === 'giratoire') return avancerGiratoire(); if (t.startsWith('autoroute')) return avancerAutoroute(); }
   test.frame++;
   if (scene.demo) scriptDemo();
   else if (test.frame >= test.prochain && test.vehicules.length < 10) {
@@ -1934,6 +2138,9 @@ function avancerTest() {
     if (v.s >= v.T.len) v.fini = true;
   });
   test.vehicules = test.vehicules.filter((v) => !v.fini);
+  // carrefour totalement bloqué (très rare) : au bout de 7 s sans que personne ne bouge, on repart d'une circulation neuve
+  test.gel = test.vehicules.length >= 4 && test.vehicules.every((v) => v.v < 0.05) ? (test.gel || 0) + 1 : 0;
+  if (test.gel > 420) { test.vehicules = []; test.gel = 0; }
   sale = true;
 }
 /* ---------------- démos : carrefour à feux, croisement classique / à l'indonésienne ---------------- */
@@ -1959,7 +2166,7 @@ function chargerDemo(mode) {
     { type: 'arbre', x: 120, y: 330 }, { type: 'buisson', x: 1160, y: 330 }, { type: 'arbre', x: 1160, y: 830 }, { type: 'buisson', x: 120, y: 830 },
   ].map((d) => ({ ang: 0, ...d }));
   selection = null; groupe = null; majSelbar(); fermerRegime(); $('titre').textContent = scene.titre;
-  toutRefaire(mode === 'indonesien' ? 'À l\'indonésienne : les deux voitures tournent en passant devant l\'autre' : 'Classique : les deux voitures tournent en se contournant (chacune passe derrière l\'autre)');
+  toutRefaire(mode === 'indonesien' ? 'À l\'indonésienne : les deux voitures tournent en passant devant l\'autre' : 'Classique : les deux voitures tournent en se contournant (chacune passe derrière l\'autre)'); marquerModele();
   if (test) basculerTest();
   basculerTest();
 }
@@ -2072,7 +2279,7 @@ function chargerDemoIndo() {
     { type: 'arbre', x: 110, y: 330 }, { type: 'buisson', x: 1180, y: 330 }, { type: 'arbre', x: 1180, y: 840 }, { type: 'buisson', x: 110, y: 840 },
   ].map((d) => ({ ang: 0, ...d }));
   selection = null; groupe = null; majSelbar(); fermerRegime(); $('titre').textContent = scene.titre;
-  toutRefaire('Voies de tourne-à-gauche face à face : les deux voitures passent l\'une devant l\'autre');
+  toutRefaire('Voies de tourne-à-gauche face à face : les deux voitures passent l\'une devant l\'autre'); marquerModele();
   const c = geo.carrefours[0]; if (c) for (const p of scene.panneaux) p.cle = c.cle;
   dessinerCouche();
   if (test) basculerTest();
@@ -2107,12 +2314,12 @@ function versFormatSimu() {
     if (m.type === 'passage_pieton') passage(m);
     else if (m.type === 'velo') velo(m);
     else if (m.type.startsWith('fleche_')) { const hx = Math.cos(m.ang), hy = Math.sin(m.ang); ligne2(m.type, m.x - hx * 44, m.y - hy * 44, m.x + hx * 44, m.y + hy * 44); }
-    else if (LIGNES.has(m.type)) ligne2({ ligne_stop: 'stop', ligne_cedez: 'cedez', ligne_feux: 'ligne_effet', ligne_bus: 'voie_bus' }[m.type] || m.type, m.x1, m.y1, m.x2, m.y2);
+    else if (LIGNES.has(m.type)) { ligne2({ ligne_stop: 'stop', ligne_cedez: 'cedez', ligne_feux: 'ligne_effet', ligne_bus: 'voie_bus', ligne_zigzag: 'zigzag_bus', ligne_jaune: 'ligne_continue', ligne_jaune_disc: 'ligne_discontinue' }[m.type] || m.type, m.x1, m.y1, m.x2, m.y2); if (m.type.startsWith('ligne_jaune')) marquages[marquages.length - 1].jaune = true; }
     else if (m.type === 'zone_zebra') { const c = Math.cos(m.ang || 0), sn = Math.sin(m.ang || 0); marquages.push({ type: 'zebra', pts: m.pts.map(([x, y]) => nrm(m.x + x * c - y * sn, m.y + x * sn + y * c)), arrondi: false, jaune: false }); }
     else if (m.type === 'texte') { const hx = Math.cos(m.ang), hy = Math.sin(m.ang); marquages.push({ type: 'texte_sol', texte: m.texte, pts: [nrm(m.x - hx * 10, m.y - hy * 10), nrm(m.x + hx * 10, m.y + hy * 10)], arrondi: false, jaune: false }); }
     else ignores++;
   }
-  for (const p of [...geo.autoPanneaux, ...scene.panneaux]) panneaux.push({ type: p.type, ...nrm(p.x, p.y), taille: T_PAN, etatFeu: 'rouge', angle: +(p.ang || 0).toFixed(4) });
+  for (const p of [...geo.autoPanneaux, ...scene.panneaux]) panneaux.push({ type: p.type, ...nrm(p.x, p.y), taille: Math.round(T_PAN * (p.ech || 1)), etatFeu: 'rouge', angle: +(p.ang || 0).toFixed(4) });
   for (const d of scene.decor) {
     if (d.type === 'terreplein') { batiments.push({ type: 'terreplein', ...nrm(d.x, d.y), w: +((d.w || 110) / MONDE.W).toFixed(5), h: +((d.h || 28) / MONDE.H).toFixed(5), ...(d.ang ? { angle: d.ang } : {}) }); continue; }
     const arbre = d.type === 'arbre' || d.type === 'buisson', t = d.type === 'arbre' ? 68 : 40;
@@ -2146,8 +2353,10 @@ function depuisFormatSimu(s, nom) {
     if (m.type === 'stop') seg('ligne_stop');
     else if (m.type === 'cedez') seg('ligne_cedez');
     else if (m.type === 'ligne_effet') seg('ligne_feux');
+    else if (m.jaune && (m.type === 'ligne_continue' || m.type === 'ligne_discontinue')) seg(m.type === 'ligne_continue' ? 'ligne_jaune' : 'ligne_jaune_disc');
     else if (m.type === 'ligne_continue' || m.type === 'ligne_discontinue' || m.type === 'ligne_guidage') seg(m.type);
     else if (m.type === 'voie_bus') seg('ligne_bus');
+    else if (m.type === 'zigzag_bus') seg('ligne_zigzag');
     else if (m.type === 'bande_cyclable') seg('ligne_discontinue');
     else if (m.type === 'zebra') {
       const pp = []; for (const q of m.pts.map(P)) if (!pp.length || dist(pp[pp.length - 1], q) > 2) pp.push(q);
@@ -2219,8 +2428,8 @@ function demanderMdp(suite) {        // l'édition est protégée, la séance es
 
 /* ---------------- divers UI ---------------- */
 let toastT = 0;
-function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('vu'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('vu'), 2200); }
-function majAide() { $('aide').style.display = scene.routes.length ? 'none' : 'block'; }
+function toast(t, duree) { const el = $('toast'); el.textContent = t; el.classList.add('vu'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('vu'), duree || 2200); }
+function majAide() { $('aide').style.display = scene.routes.length || scene.marques.length || scene.decor.length || scene.fond ? 'none' : 'block'; }
 function fermerMenu() { $('menu').classList.remove('ouvert'); }
 $('b-menu').onclick = () => $('menu').classList.toggle('ouvert');
 $('m-exemple').onclick = () => { chargerExemple(); fermerMenu(); };
@@ -2265,7 +2474,7 @@ function chargerExemple() {
     { type: 'arbre', x: 70, y: 950 }, { type: 'arbre', x: 280, y: 955 }, { type: 'arbre', x: 845, y: 950 }, { type: 'buisson', x: 565, y: 955 }, { type: 'arbre', x: 1250, y: 960 },
   ].map((d) => ({ ang: 0, ...d }));
   selection = null; groupe = null; majSelbar(); fermerRegime(); $('titre').textContent = scene.titre;
-  toutRefaire('Exemple chargé');
+  toutRefaire('Exemple chargé'); marquerModele();
 }
 
 /* =====================================================================
@@ -2535,6 +2744,9 @@ function majDockSeance() {
   $('so-num').classList.toggle('actif', seance.numeros);
 }
 function basculerMode(m) {
+  if (m === 'editeur' && scene.modele) {      // on entre dans la création par une page vide (↶ pour retrouver la scène)
+    mode = m; scene = sceneVide(); selection = null; groupe = null; $('titre').textContent = scene.titre; toutRefaire('Page vide — ☰ pour repartir d\'une scène du cours');
+  }
   mode = m;
   document.body.classList.toggle('mode-seance', m === 'seance');
   $('mode-ed').classList.toggle('on', m === 'editeur'); $('mode-se').classList.toggle('on', m === 'seance');
@@ -2623,6 +2835,460 @@ function boucle() {
 
 
 /* =====================================================================
+   AUTOROUTE — voie d'insertion (fond de scène + circulation dédiée)
+   Marquage (IISR, 7e partie) : entre les voies T1 (3 m / 10 m) · rive gauche continue ·
+   bande d'arrêt d'urgence T4 (39 m / 13 m) · voie d'insertion T2 large (3 m / 3,5 m) · zébra à la pointe.
+   Règle : celui qui s'insère cède le passage ; il prend de la vitesse, clignote, contrôle, s'insère dans un créneau.
+   ===================================================================== */
+const AR = (() => {
+  const DY = 60, yO1 = 212 + DY, yO2 = 287 + DY, yG = 412 + DY, yD = 487 + DY, yI = 562 + DY;              // centres des voies : sens opposé (droite, gauche), puis gauche, droite, insertion
+  const XN = 380, XB = 1040, XF = 1220;                                   // pointe du zébra · début du biseau · fin de la voie
+  const P = [[-260, 860 + DY], [60, 860 + DY], [60, yI], [XN, yI]];
+  const bez = (t) => { const u = 1 - t, c = [u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t]; return [0, 1].map((k) => c[0] * P[0][k] + c[1] * P[1][k] + c[2] * P[2][k] + c[3] * P[3][k]); };
+  const axe = [[-900, 860 + DY]]; for (let i = 0; i <= 48; i++) axe.push(bez(i / 48));
+  const decale = (pts, d) => pts.map((p, i) => { const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; return [p[0] - (b[1] - a[1]) / L * d, p[1] + (b[0] - a[0]) / L * d]; });
+  const gauche = decale(axe, -37.5), droite = decale(axe, 37.5), milieuCh = decale(axe, 12.5);
+  const yB = 580 + DY;
+  let iz = gauche.findIndex((p) => p[1] <= yB); if (iz < 1) iz = 1;       // là où la bretelle rejoint la bande d'arrêt d'urgence : début du zébra
+  const a = gauche[iz - 1], b = gauche[iz], k = (a[1] - yB) / ((a[1] - b[1]) || 1), XZ = a[0] + (b[0] - a[0]) * k;
+  const cum = [0]; for (let i = 1; i < axe.length; i++) cum.push(cum[i - 1] + Math.hypot(axe[i][0] - axe[i - 1][0], axe[i][1] - axe[i - 1][1]));
+  const sPts = axe.slice().reverse().map(([x, y]) => [1280 - x, y]), sCum = [0];
+  for (let i = 1; i < sPts.length; i++) sCum.push(sCum[i - 1] + Math.hypot(sPts[i][0] - sPts[i - 1][0], sPts[i][1] - sPts[i - 1][1]));
+  const sortie = { pts: sPts, cum: sCum, len: sCum[sCum.length - 1], X0: 1280 - XF, X1: 1280 - XB, X2: 1280 - XN };   // début du biseau · voie de décélération pleine · pointe du zébra
+  return { sortie, DY, yO1, yO2, yG, yD, yI, XN, XB, XF, XZ, axe, gauche, droite, milieuCh, iz, cum, len: cum[cum.length - 1], CYCLE: 1500 };
+})();
+function fondAutoroute(g, miroir) {
+  g.save(); if (miroir) { g.translate(MONDE.W, 0); g.scale(-1, 1); }       // la sortie est le miroir de l'entrée : biseau, voie de décélération, zébra, bretelle
+  const X0 = -900, X1 = MONDE.W + 900, { yI, XN, XB, XF, XZ, DY } = AR, Y = (y) => y + DY, yR = Y(525), yBI = yI + 37.5;   // yR = bord droit de la voie de droite
+  const chemin = (pts) => { g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); };
+  const tirets = (x0, x1, y, [t, v], ep, phase) => { for (let x = x0 - ((phase || 0) % (t + v)); x < x1; x += t + v) { const a = Math.max(x, x0), b = Math.min(x + t, x1); if (b > a) g.fillRect(a, y - ep / 2, b - a, ep); } };
+  // terre-plein central + glissières
+  g.fillStyle = '#6d9a66'; g.fillRect(X0, Y(325), X1 - X0, 50);
+  g.fillStyle = '#b9bec6'; g.fillRect(X0, Y(345), X1 - X0, 3); g.fillRect(X0, Y(352), X1 - X0, 3);
+  // chaussées
+  g.fillStyle = ASPH;
+  g.fillRect(X0, Y(120), X1 - X0, 205);                                    // sens opposé : bande d'arrêt d'urgence + 2 voies
+  g.fillRect(X0, Y(375), X1 - X0, 205);                                    // notre sens : 2 voies + bande d'arrêt d'urgence
+  g.lineJoin = 'round'; g.lineCap = 'butt'; g.strokeStyle = ASPH; g.lineWidth = 130; chemin(AR.milieuCh); g.stroke();     // bretelle (voie + accotements)
+  chemin([[XZ, yR], ...AR.gauche.slice(AR.iz), [XN, yR]]); g.closePath(); g.fill();                                     // pointe entre la bretelle et l'autoroute
+  chemin([[XN - 2, yR], [XF, yR], [XF, Y(580)], [XB + 30, yBI + 40], [XN - 2, yBI + 40]]); g.closePath(); g.fill();     // voie d'insertion + sa bande d'arrêt d'urgence + biseau
+  // lignes
+  g.fillStyle = PEINT; g.strokeStyle = PEINT;
+  tirets(X0, X1, Y(175), T4, 4.5);                                         // sens opposé : bande d'arrêt d'urgence
+  tirets(X0, X1, Y(250), T1, 3, 60);                                       //               entre les voies
+  g.fillRect(X0, Y(323), X1 - X0, 4);                                      //               rive gauche (continue)
+  g.fillRect(X0, Y(373), X1 - X0, 4);                                      // notre sens : rive gauche (continue)
+  tirets(X0, X1, Y(450), T1, 3);                                           //              entre les voies
+  tirets(X0, XZ, yR, T4, 4.5, 40);                                         //              bande d'arrêt d'urgence avant la bretelle
+  g.fillRect(XZ, yR - 2, XN - XZ, 4);                                      //              bord du zébra (continue)
+  tirets(XN, XF, yR, T2, 7.5);                                             //              VOIE D'INSERTION : tirets larges et rapprochés
+  tirets(XF, X1, yR, T4, 4.5);                                             //              bande d'arrêt d'urgence après la voie
+  g.lineWidth = 4; chemin(AR.gauche); g.stroke();                          // bretelle : rive gauche (continue jusqu'à la pointe)
+  chemin([...AR.droite, [XN, yBI]]); g.stroke();                           // bretelle : rive droite
+  tirets(XN, XB, yBI, T4, 4.5);                                            // voie d'insertion : sa bande d'arrêt d'urgence
+  g.lineWidth = 4.5; chemin([[XB, yBI], [XF, yR + 2]]); g.stroke();        // biseau : la voie se referme
+  // zébra de la pointe
+  g.save(); chemin([[XZ, yR], ...AR.gauche.slice(AR.iz), [XN, yR]]); g.closePath(); g.clip();
+  g.lineWidth = 6; g.beginPath(); for (let x = XZ - 120; x < XN + 40; x += 22) { g.moveTo(x, yR + 75); g.lineTo(x + 75, yR - 5); } g.stroke(); g.restore();
+  g.restore();
+}
+function dessinerFond(g) {
+  const t = scene.fond && scene.fond.type;
+  if (t === 'autoroute') fondAutoroute(g); else if (t === 'autoroute_sortie') fondAutoroute(g, true); else if (t === 'giratoire') fondGiratoire(g);
+}
+
+/* ---- circulation sur l'autoroute : chacun tient sa voie ; celui de la bretelle cède le passage ---- */
+const LONG_V = (v) => (v.type === 'camion' ? 150 : 74);
+function creerVA(o) {
+  const v = { ar: true, voie: o.voie, v: o.v, vmax: o.vmax || o.v, x: o.x, y: o.y, s: 0, cligno: null, chg: null, easy: !!o.easy, type: o.type || 'voiture', courtois: o.courtois !== false,
+              coul: o.coul || COULEURS[test.n % COULEURS.length], pos: { x: o.x, y: o.y, ang: o.voie[0] === 'O' ? Math.PI : 0, hx: 1, hy: 0 } };
+  if (o.voie === 'B') { v.x = AR.axe[0][0]; v.y = AR.axe[0][1]; v.s = o.s || 0; }
+  test.vehicules.push(v); test.n++; return v;
+}
+function scriptAutoroute() {
+  const f = (test.frame - 1) % AR.CYCLE, D = { voie: 'D', x: -170, y: AR.yD }, G = { voie: 'G', x: -170, y: AR.yG };
+  if (test.frame % 170 === 30) creerVA({ voie: 'O1', x: MONDE.W + 170, y: AR.yO1, v: 3.5 });
+  if (test.frame % 260 === 120) creerVA({ voie: 'O2', x: MONDE.W + 170, y: AR.yO2, v: 4.3 });
+  // 1) personne sur l'autoroute : la voiture école s'insère librement
+  if (f === 0) { creerVA({ voie: 'B', v: 2.5, vmax: 3.7, easy: true, s: 420 }); toast('1 · Personne sur la voie de droite : je prends de la vitesse, clignotant, contrôles, je m\'insère', 6500); }
+  // 2) une voiture arrive sur la voie de droite, la voie de gauche est libre : elle se déporte (courtoisie, pas une obligation)
+  if (f === 400) { creerVA({ voie: 'B', v: 2.5, vmax: 3.7, s: 420, coul: '#3b82c4' }); toast('2 · Une voiture arrive, sa voie de gauche est libre : elle se déporte pour faciliter (courtoisie, pas une obligation)', 7000); }
+  if (f === 640) creerVA({ ...D, v: 3.6, coul: '#e8e8e8' });
+  // 3) trafic sur les deux voies : personne ne peut se déporter, celui qui s'insère adapte sa vitesse et se glisse derrière
+  if (f === 900) { creerVA({ voie: 'B', v: 2.5, vmax: 3.7, s: 420, coul: '#e0b43a' }); toast('3 · Les deux voies sont occupées : je cède le passage — je lève le pied et je me glisse derrière le camion, sans m\'arrêter', 8000); }
+  if (f === 1066) creerVA({ ...D, v: 3.2, type: 'camion', coul: '#5b6270', courtois: false });
+  if (f === 1103) creerVA({ ...G, v: 4.0, coul: '#d64545' });
+  if (f === 1215) creerVA({ ...D, v: 3.4, coul: '#2f9e6b', courtois: false });
+}
+function scriptSortie() {
+  const f = (test.frame - 1) % 1150, D = { voie: 'D', x: -170, y: AR.yD }, G = { voie: 'G', x: -170, y: AR.yG };
+  if (test.frame % 170 === 30) creerVA({ voie: 'O1', x: MONDE.W + 170, y: AR.yO1, v: 3.5 });
+  if (test.frame % 260 === 120) creerVA({ voie: 'O2', x: MONDE.W + 170, y: AR.yO2, v: 4.3 });
+  if (f === 0) { creerVA({ ...D, v: 3.6, easy: true }).sort = true; toast('1 · Clignotant à droite, je reste sur la voie de droite et je garde ma vitesse : on ne freine pas sur l\'autoroute', 6500); }
+  if (f === 62) creerVA({ ...D, v: 3.6, coul: '#5b6270' });                 // celui qui suit continue tout droit : il n'a pas été gêné
+  if (f === 150) creerVA({ ...G, v: 4.2, coul: '#d64545' });
+  if (f === 560) creerVA({ ...D, v: 3.2, type: 'camion', coul: '#e0b43a' });
+  if (f === 640) creerVA({ ...D, v: 3.6, coul: '#3b82c4' }).sort = true;     // une deuxième sortie, derrière un camion qui continue
+  if (f === 700) creerVA({ ...G, v: 4.2, coul: '#e8e8e8' });
+  if (f === 880) creerVA({ ...D, v: 3.5, coul: '#2f9e6b' });
+}
+function feuxStop(g, P, L, l) {
+  g.save(); g.translate(P.x, P.y); g.rotate(P.ang);
+  for (const c of [-1, 1]) { g.fillStyle = 'rgba(255,40,40,.4)'; g.beginPath(); g.arc(-L / 2 + 2, c * l * 0.3, 10, 0, 7); g.fill(); g.fillStyle = '#ff2b2b'; g.beginPath(); g.arc(-L / 2 + 2, c * l * 0.3, 4.5, 0, 7); g.fill(); }
+  g.restore();
+}
+function dansVoie(w, voie) { return w.voie === voie || (w.chg && (w.chg.vers === voie || (w.chg.de === voie && w.chg.t < 0.55))); }
+function creneauLibre(r, voie, margeAv, margeAr) {            // y a-t-il la place de se glisser dans « voie » ?
+  let bloque = null;
+  for (const w of test.vehicules) {
+    if (w === r || !w.ar || !dansVoie(w, voie)) continue;
+    const dx = w.x - r.x, demi = (LONG_V(w) + LONG_V(r)) / 2;
+    const ok = dx >= 0 ? dx - demi > margeAv + Math.max(0, r.v - w.v) * 45 : -dx - demi > margeAr + Math.max(0, w.v - r.v) * 75;
+    if (!ok && (!bloque || Math.abs(dx) < Math.abs(bloque.x - r.x))) bloque = w;
+  }
+  return bloque;
+}
+function avancerAutoroute() {
+  const sortie = scene.fond.type === 'autoroute_sortie', SO = AR.sortie;
+  test.frame++; if (sortie) scriptSortie(); else scriptAutoroute();
+  const V = test.vehicules, { XN, XB, XF, yI, yD, yG } = AR;
+  for (const v of V) {
+    if (!v.ar) continue;
+    const sens = v.voie[0] === 'O' ? -1 : 1;
+    let cible = v.vmax;
+    // véhicule devant, dans la même voie : on garde ses distances
+    for (const w of V) {
+      if (w === v || !w.ar) continue;
+      let meme, av;
+      if ((v.voie === 'S' && !v.chg) || v.voie === 'R') {       // voie de décélération puis bretelle de sortie
+        meme = w.voie === 'S' || w.voie === 'R';
+        av = v.voie === 'R' ? (w.voie === 'R' ? w.s - v.s : -1) : (w.voie === 'R' ? SO.X2 - v.x + w.s : w.x - v.x);
+      } else {
+        meme = v.voie === 'B' || v.voie === 'I' ? (w.voie === 'B' || w.voie === 'I') : dansVoie(w, v.voie) || (v.chg && dansVoie(w, v.chg.vers));
+        av = v.voie === 'B' && w.voie === 'B' ? w.s - v.s : v.voie === 'B' ? (w.voie === 'I' ? 1e3 : -1) : (w.x - v.x) * sens;
+      }
+      if (!meme) continue;
+      if (av <= 0) continue;
+      const ecart = av - (LONG_V(w) + LONG_V(v)) / 2, voulu = 60 + v.v * 30;            // distance de sécurité
+      if (ecart < voulu) cible = Math.min(cible, Math.max(0, w.v - (voulu - ecart) * 0.02));
+    }
+    if (v.voie === 'B') {                                    // bretelle : on suit la courbe, vitesse modérée
+      cible = Math.min(cible, 2.7);
+      v.s += v.v;
+      if (v.s >= AR.len) { v.voie = 'I'; v.x = XN + (v.s - AR.len); v.y = yI; }
+      else { let i = 1; while (AR.cum[i] < v.s) i++; const a = AR.axe[i - 1], b = AR.axe[i], k = (v.s - AR.cum[i - 1]) / (AR.cum[i] - AR.cum[i - 1]); v.x = a[0] + (b[0] - a[0]) * k; v.y = a[1] + (b[1] - a[1]) * k; v.pos.ang = Math.atan2(b[1] - a[1], b[0] - a[0]); }
+      if (v.s > AR.len - 170) v.cligno = 'gauche';           // clignotant AVANT d'arriver sur la voie d'insertion
+    } else if (v.voie === 'I' && !v.chg) {                   // voie d'insertion : accélérer, contrôler, s'insérer… en cédant le passage
+      v.cligno = 'gauche';
+      const arrete = v.v < 0.6, bloque = creneauLibre(v, 'D', 60, arrete ? 420 : 58);
+      if (!bloque && v.x > XN + 110 && (v.v > 3.2 || arrete) && v.x < XB - 60) v.chg = { de: 'I', vers: 'D', x0: v.x, L: 270, t: 0 };
+      else if (bloque) {
+        const dx = bloque.x - v.x, demi = (LONG_V(bloque) + LONG_V(v)) / 2;
+        cible = dx > demi + 60 ? Math.min(cible, bloque.v - 0.15)                            // il est devant, presque à bonne distance : on se cale derrière lui
+                               : Math.min(cible, Math.max(1.7, bloque.v - 1.1));             // il est à notre hauteur ou arrive : on lève le pied pour le laisser passer
+      }
+      cible = Math.min(cible, Math.max(0, (XB - 40 - v.x) / 30));                            // jamais plus loin que le bout de la voie (arrêt en dernier recours)
+    } else if (sortie && v.sort && v.voie === 'D' && !v.chg) {     // SORTIE : clignotant, vitesse maintenue sur l'autoroute, on entre dès le début de la voie
+      if (v.x > -140) v.cligno = 'droite';
+      if (v.x >= SO.X0 + 20) { v.chg = { de: 'D', vers: 'S', x0: v.x, L: 250, t: 0 }; if (v.easy) toast('2 · J\'entre dans la voie de décélération dès son début, toujours à la même vitesse', 5000); }
+    } else if (v.voie === 'S' && !v.chg) {                         // dans la voie de décélération : c'est ICI qu'on freine
+      cible = Math.min(cible, 2.0);
+      if (v.x >= SO.X2) { v.voie = 'R'; v.s = v.x - SO.X2; }
+    } else if (v.voie === 'R') {                                   // bretelle de sortie : allure réduite dans la courbe
+      cible = Math.min(cible, 1.9);
+      v.s += v.v;
+      if (v.s >= SO.len - 4) v.fini = true;
+      else { const q = surTrajet(SO, v.s); v.x = q.x; v.y = q.y; v.pos.ang = Math.atan2(q.hy, q.hx); }
+    } else if (!sortie && v.voie === 'D' && !v.chg && v.courtois && v.x > 60 && v.x < XB - 250) {       // sur l'autoroute : faciliter l'insertion si la voie de gauche est libre
+      const gene = V.some((r) => r.ar && (r.voie === 'I' || (r.voie === 'B' && r.s > AR.len - 260)) && !r.chg && r.x > v.x - 60 && r.x < v.x + 430);
+      if (gene && !creneauLibre(v, 'G', 60, 150)) { v.cligno = 'gauche'; v.prep = (v.prep || 0) + 1; if (v.prep > 22) v.chg = { de: 'D', vers: 'G', x0: v.x, L: 330, t: 0 }; }
+    }
+    if ((v.voie === 'S' && !v.chg) || v.voie === 'R') { v.frein = v.v > cible + 0.12; v.v += v.frein ? -0.013 : (cible - v.v) * 0.05; }      // freinage franc mais progressif
+    else { v.frein = false; v.v += (cible - v.v) * (cible < v.v ? 0.07 : 0.022); } if (cible === 0 && v.v < 0.05) v.v = 0;
+    if (v.voie !== 'B' && v.voie !== 'R') {
+      v.x += v.v * sens;
+      if (v.chg) {
+        const c = v.chg, yA = { I: yI, D: yD, G: yG, S: yI }[c.de], yB = { I: yI, D: yD, G: yG, S: yI }[c.vers];
+        c.t = Math.min(1, (v.x - c.x0) / c.L); const e = c.t * c.t * (3 - 2 * c.t), y0 = v.y;
+        v.y = yA + (yB - yA) * e; v.pos.ang = Math.atan2(v.y - y0, v.v || 1);
+        if (c.t >= 1) { v.voie = c.vers; v.chg = null; v.fin = 28; v.pos.ang = 0; if (v.easy && c.vers === 'S') toast('3 · Maintenant je freine : c\'est à ça que sert la voie de décélération', 6000); }
+      } else if (v.fin) { if (--v.fin === 0) v.cligno = null; }
+    }
+    v.pos.x = v.x; v.pos.y = v.y;
+    if (v.x > MONDE.W + 260 || v.x < -260 && sens < 0) v.fini = true;
+  }
+  test.vehicules = V.filter((v) => !v.fini);
+  sale = true;
+}
+
+/* =====================================================================
+   GIRATOIRE — rond ou en haricot, avec ou sans bande cyclable (fond de scène + circulation dédiée)
+   Règles : cédez-le-passage à chaque entrée, priorité à ceux qui sont dans l'anneau (voitures ET vélos) ;
+   clignotant à droite avant de sortir ; à gauche en entrant si on va à gauche ou si on fait demi-tour ;
+   en sortant, on laisse passer le vélo qui continue sur la bande cyclable.
+   ===================================================================== */
+const GIRA = {};
+function gira(fond) {
+  const deux = fond.voies === 2, cle = (fond.forme || 'rond') + (fond.velo ? '+v' : '') + (deux ? '+2' : '');
+  if (GIRA[cle]) return GIRA[cle];
+  const rond = fond.forme !== 'haricot', velo = !!fond.velo && !deux, C = [640, 590], LANE = deux ? 64 : 52, BAND = velo ? 30 : 0, DV = 32;   // DV : demi-écart entre les deux voies de l'anneau
+  const r0 = deux ? 200 : rond ? (velo ? 172 : 186) : 142, Rs = 520, a = rond ? 0 : 0.36, cS = [C[0], C[1] - Rs];
+  const E = [cS[0] + Rs * Math.sin(a), cS[1] + Rs * Math.cos(a)], W = [cS[0] - Rs * Math.sin(a), cS[1] + Rs * Math.cos(a)];
+  // axe de la chaussée de l'anneau, dans le sens de circulation (sens inverse des aiguilles d'une montre)
+  const ctr = [], PAS = 6, pousse = (p) => { const l = ctr[ctr.length - 1]; if (!l || Math.hypot(l[0] - p[0], l[1] - p[1]) > 2) ctr.push(p); };
+  const arc = (c, R, t0, t1) => { const n = Math.max(2, Math.ceil(Math.abs(t1 - t0) * R / PAS)); for (let i = 0; i <= n; i++) { const t = t0 + (t1 - t0) * i / n; pousse([c[0] + R * Math.sin(t), c[1] + R * Math.cos(t)]); } };
+  if (a > 0) arc(cS, Rs + r0, -a, a);            // côté bombé (bas), vers la droite
+  arc(E, r0, a, a + Math.PI);                    // bout droit
+  if (a > 0) arc(cS, Rs - r0, a, -a);            // côté creux (haut), vers la gauche
+  arc(W, r0, -a + Math.PI, -a + 2 * Math.PI);    // bout gauche
+  if (Math.hypot(ctr[0][0] - ctr[ctr.length - 1][0], ctr[0][1] - ctr[ctr.length - 1][1]) < 3) ctr.pop();
+  const N = ctr.length, tan = (i) => { i = ((i % N) + N) % N; const p = ctr[(i - 1 + N) % N], q = ctr[(i + 1) % N], L = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1; return [(q[0] - p[0]) / L, (q[1] - p[1]) / L]; };
+  const pt = (i, d) => { i = ((i % N) + N) % N; const [tx, ty] = tan(i); return [ctr[i][0] - ty * d, ctr[i][1] + tx * d]; };     // d > 0 : vers l'extérieur
+  const decale = (d) => ctr.map((p, i) => pt(i, d));
+  const arcs = [0]; for (let i = 1; i <= N; i++) arcs.push(arcs[i - 1] + Math.hypot(ctr[i % N][0] - ctr[i - 1][0], ctr[i % N][1] - ctr[i - 1][1]));
+  const G = { rond, velo, deux, C, LANE, BAND, DV, r0, ctr, N, tan, pt, arcs, long: arcs[N], ROUT: r0 + LANE + BAND,
+              bord: decale(LANE), ext: decale(LANE + BAND), ilot: decale(-LANE), milieu: decale(BAND / 2) };
+  // branches, dans l'ordre où on les rencontre en tournant : sud, est, nord, ouest
+  const ca = Math.cos(a), sa = Math.sin(a);
+  G.branches = [{ A: C, n: [0, 1] }, { A: E, n: [ca, -sa] }, { A: C, n: [0, -1] }, { A: W, n: [-ca, -sa] }].map((b) => {
+    const cible = [b.A[0] + b.n[0] * r0, b.A[1] + b.n[1] * r0]; let i0 = 0, best = 1e9;
+    ctr.forEach((p, i) => { const d = Math.hypot(p[0] - cible[0], p[1] - cible[1]); if (d < best) { best = d; i0 = i; } });
+    return { ...b, i0, pt: (d, lat) => [b.A[0] + b.n[0] * d + b.n[1] * (lat || 0), b.A[1] + b.n[1] * d - b.n[0] * (lat || 0)] };
+  });
+  const bez = (P, n) => { const o = []; for (let i = 1; i <= n; i++) { const t = i / n, u = 1 - t, c = [u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t]; o.push([0, 1].map((k) => c[0] * P[0][k] + c[1] * P[1][k] + c[2] * P[2][k] + c[3] * P[3][k])); } return o; };
+  const D0 = G.ROUT + 78;
+  G.D0 = D0;
+  /* trajet complet d'une branche à une autre.
+     Une voie : voiture sur l'axe, vélo sur la bande. Deux voies : à droite ou tout droit → voie de droite puis voie extérieure ;
+     à gauche ou demi-tour → voie de gauche puis voie intérieure, et on se rabat après la sortie d'avant. */
+  G.trajet = (de, vers, estVelo) => {
+    const A = G.branches[de], B = G.branches[vers], rang = ((vers - de + 4) % 4) || 4, interieur = deux && rang >= 3;
+    const latE = deux ? (interieur ? 32 : 96) : estVelo ? 61 : 37.5, latS = deux ? 96 : estVelo ? 61 : 37.5;      // deux voies : 64 de large chacune, d'un bout à l'autre de la route
+    const offE = deux ? (interieur ? -DV : DV) : estVelo && velo ? LANE + BAND / 2 : 0, offS = deux ? DV : offE;
+    const di = Math.round((deux ? 150 : estVelo && velo ? 118 : 96) / PAS), dS = di;
+    const iIn = (A.i0 + di) % N, iOut = (B.i0 - dS + N) % N;
+    const pts = [A.pt(D0 + 900, latE)], off = [0];
+    const P0 = A.pt(D0, latE); pts.push(P0); off.push(0);
+    const iP0 = pts.length - 1, Qi = pt(iIn, offE), Ti = tan(iIn), Qo = pt(iOut, offS), To = tan(iOut), X0 = B.pt(D0, -latS);
+    for (const p of bez([P0, [P0[0] - A.n[0] * 46, P0[1] - A.n[1] * 46], [Qi[0] - Ti[0] * 62, Qi[1] - Ti[1] * 62], Qi], 12)) { pts.push(p); off.push(offE); }
+    const iQi = pts.length - 1, tours = (iOut - iIn + N) % N, marques = [];
+    const prec = G.branches[(vers + 3) % 4].i0, kChg = interieur ? ((prec + 3 - iIn + N) % N) : -1, nChg = 20;    // on se rabat juste après la sortie d'avant
+    let iChg = -1;
+    for (let k = 1; k <= tours; k++) {
+      const i = (iIn + k) % N; let o = offE;
+      if (interieur) { const t = Math.max(0, Math.min(1, (k - kChg) / nChg)); o = -DV + 2 * DV * (t * t * (3 - 2 * t)); if (k === kChg) iChg = pts.length; }
+      pts.push(pt(i, o)); off.push(o);
+      G.branches.forEach((b, nb) => { if (i === b.i0) marques.push({ nb, ip: pts.length - 1 }); });
+    }
+    const iQo = pts.length - 1;
+    for (const p of bez([Qo, [Qo[0] + To[0] * 62, Qo[1] + To[1] * 62], [X0[0] - B.n[0] * 46, X0[1] - B.n[1] * 46], X0], 12)) { pts.push(p); off.push(offS); }
+    pts.push(B.pt(D0 + 900, -latS)); off.push(offS);
+    const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    const avant = marques.filter((m) => m.nb !== vers).pop();                         // dernière branche dépassée avant la sortie
+    return { pts, cum, off, len: cum[cum.length - 1], sLigne: cum[iP0] + 62, sIn: cum[iQi], sOut: cum[iQo], arcIn: arcs[iIn], arcOut: arcs[iOut],
+             echelle: ((arcs[iOut] - arcs[iIn] + G.long) % G.long) / Math.max(1, cum[iQo] - cum[iQi]) || 1, rang, interieur, sChg: iChg > 0 ? cum[iChg] : null, sChgFin: iChg > 0 ? cum[Math.min(iQo, iChg + nChg)] : null,
+             sAvant: avant ? cum[avant.ip] : null, de, vers };
+  };
+  // pour le dessin : les courbes d'entrée et de sortie de chaque branche, et l'ouverture de l'entrée sur le bord de l'anneau (là où va la ligne du cédez-le-passage)
+  const dSeg = (p, a2, b2) => { const dx = b2[0] - a2[0], dy = b2[1] - a2[1], t = Math.max(0, Math.min(1, ((p[0] - a2[0]) * dx + (p[1] - a2[1]) * dy) / (dx * dx + dy * dy || 1))); return Math.hypot(p[0] - a2[0] - dx * t, p[1] - a2[1] - dy * t); };
+  G.dessin = G.branches.map((b, k) => {
+    const entrees = (deux ? [(k + 1) % 4, (k + 3) % 4] : [(k + 1) % 4]).map((v) => { const T = G.trajet(k, v, false); return T.pts.filter((p, i) => T.cum[i] >= T.sLigne - 70 && T.cum[i] <= T.sIn + 1); });
+    const Ts = G.trajet((k + 3) % 4, k, false), sortie = Ts.pts.filter((p, i) => Ts.cum[i] >= Ts.sOut - 1 && Ts.cum[i] <= Ts.sOut + 190);
+    const demi = deux ? 33 : 42, bouche = [];
+    for (let j = 3; j < 70; j++) { const p = G.ext[(b.i0 + j) % N]; if (entrees.some((c) => c.some((q, i) => i && dSeg(p, c[i - 1], q) < demi - 3))) bouche.push(p); else if (bouche.length) break; }
+    let extra = {};
+    if (deux) {
+      const TD = G.trajet(k, (k + 1) % 4, false), TG = G.trajet(k, (k + 3) % 4, false), TS = G.trajet((k + 3) % 4, k, false);
+      const coupe = (T, s0, s1) => { const o = []; for (let i = 0; i <= 16; i++) { const q = surTrajet(T, s0 + (s1 - s0) * i / 16); o.push([q.x, q.y]); } return o; };
+      const iS = (b.i0 - Math.round(84 / PAS) + N) % N, Q = pt(iS, DV), Tq = tan(iS), X1 = b.pt(D0, -32);            // voie de sortie de gauche (tracé seulement, pour le marquage)
+      const sG = [Q, ...bez([Q, [Q[0] + Tq[0] * 40, Q[1] + Tq[1] * 40], [X1[0] - b.n[0] * 40, X1[1] - b.n[1] * 40], X1], 16)];
+      extra = { entreeD: coupe(TD, TD.sLigne - 62, TD.sIn), entreeG: coupe(TG, TG.sLigne - 62, TG.sIn), sortieD: coupe(TS, TS.sOut, TS.sOut + (TS.cum[TS.cum.length - 2] - TS.sOut)), sortieG: sG };
+    }
+    return { entrees, sortie, bouche, demi, ...extra };
+  });
+  return (GIRA[cle] = G);
+}
+function fondGiratoire(g) {
+  const G = gira(scene.fond), ferme = (pts) => { g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); };
+  const ligne = (pts) => { g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); };
+  g.lineJoin = 'round'; g.lineCap = 'round';
+  if (G.deux) {
+    // deux voies : chaussée lissée — chaque angle entre deux routes est un grand arc tangent aux deux bords et à l'anneau (pas de cassure dans la bordure)
+    const HW = 128, RF = (G.ROUT - Math.SQRT2 * HW) / (Math.SQRT2 - 1), C = G.C;
+    for (const [coul, p] of [[TROT, TR], [ASPH, 0]]) {
+      g.fillStyle = coul; g.strokeStyle = coul; g.lineCap = 'butt';
+      for (const b of G.branches) { ligne([C, b.pt(1500)]); g.lineWidth = 2 * (HW + p); g.stroke(); }
+      g.beginPath(); g.arc(C[0], C[1], G.ROUT + p, 0, 7); g.fill();
+      G.branches.forEach((b, k) => {
+        const u = b.n, w = G.branches[(k + 1) % 4].n, F = [C[0] + (HW + RF) * (u[0] + w[0]), C[1] + (HW + RF) * (u[1] + w[1])], r = RF - p, pts = [];
+        for (let i = 0; i <= 24; i++) { const t = (i / 24) * Math.PI / 2; pts.push([F[0] - r * (w[0] * Math.cos(t) + u[0] * Math.sin(t)), F[1] - r * (w[1] * Math.cos(t) + u[1] * Math.sin(t))]); }
+        pts.push([C[0] + (HW + p) * (u[0] + w[0]) * 0.5, C[1] + (HW + p) * (u[1] + w[1]) * 0.5]);
+        ferme(pts); g.fill();
+      });
+    }
+    g.lineCap = 'round';
+  } else for (const [coul, plus] of [[TROT, 2 * TR], [ASPH, 0]]) {
+    g.strokeStyle = coul;
+    for (const b of G.branches) { ligne([b.pt(G.ROUT + 60), b.pt(G.ROUT + 1400)]); g.lineWidth = LR + plus; g.stroke(); }
+    for (const d of G.dessin) { for (const c of d.entrees) { ligne(c); g.lineWidth = 2 * d.demi + plus; g.stroke(); } ligne(d.sortie); g.lineWidth = 84 + plus; g.stroke(); }
+    ferme(G.milieu); g.lineWidth = 2 * G.LANE + G.BAND + plus; g.stroke();
+  }
+  // îlot central : bordure, pelouse, massif
+  ferme(G.ilot); g.fillStyle = TROT; g.fill();
+  ferme(G.ctr.map((p, i) => G.pt(i, -(G.LANE + 14)))); g.fillStyle = '#7aa870'; g.fill();
+  if (G.rond) { arbre(G.C[0], G.C[1], G.deux ? 24 : 30); arbre(G.C[0] - 46, G.C[1] + 30, 18); arbre(G.C[0] + 44, G.C[1] + 26, 16); }
+  else for (const dx of [-150, -75, 0, 75, 150]) arbre(G.C[0] + dx, G.C[1] - 22 * (dx / 150) ** 2 * 1.2 - 2, dx % 150 === 0 ? 22 : 17);
+  // îlots séparateurs : entre l'entrée et la sortie de chaque branche
+  g.fillStyle = TROT; g.strokeStyle = TROT; g.lineWidth = 7; g.lineJoin = 'round';
+  const LI = G.deux ? 104 : 84, WI = G.deux ? 20 : 15;
+  for (const b of G.branches) { ferme([b.pt(G.ROUT + LI, 0), b.pt(G.ROUT + 16, WI), b.pt(G.ROUT + 16, -WI)]); g.fill(); g.stroke(); }
+  g.fillStyle = '#7aa870'; for (const b of G.branches) { ferme([b.pt(G.ROUT + LI - 22, 0), b.pt(G.ROUT + 22, WI - 7), b.pt(G.ROUT + 22, 7 - WI)]); g.fill(); }
+  // marquage
+  g.fillStyle = PEINT; g.strokeStyle = PEINT; g.lineCap = 'butt';
+  G.branches.forEach((b, k) => {
+    const ang = Math.atan2(b.n[1], b.n[0]), d0 = G.ROUT + (G.deux ? 172 : 150), cap = Math.atan2(-b.n[1], -b.n[0]);
+    const pp = b.pt(G.ROUT + (G.deux ? 138 : 112), 0);
+    dessinerMarque(g, { type: 'passage_pieton', x: pp[0], y: pp[1], ang, ...(G.deux ? { larg: 256 } : {}) });
+    g.save(); g.translate(...b.pt(d0)); g.rotate(ang);                       // axe de la branche
+    if (G.deux) g.fillRect(0, -2, 1300, 4);                                  // deux fois deux voies : ligne continue entre les deux sens
+    else { g.fillRect(0, -1.5, 90, 3); for (let x = 90 + VIDE; x < 1300; x += TIRET + VIDE) g.fillRect(x, -1.5, TIRET, 3); }
+    g.restore();
+    if (G.deux) {                                                            // deux voies par sens, d'un bout à l'autre : séparations + flèches de présélection
+      for (const lat of [64, -64]) {
+        g.save(); g.translate(...b.pt(d0, lat)); g.rotate(ang);
+        const plein = lat > 0 ? 70 : 0; if (plein) g.fillRect(0, -1.5, plein, 3);
+        for (let x = plein + VIDE; x < 1300; x += TIRET + VIDE) g.fillRect(x, -1.5, TIRET, 3);
+        g.restore();
+      }
+      const dehors = (p) => Math.hypot(p[0] - G.C[0], p[1] - G.C[1]) > G.ROUT + 4, D = G.dessin[k];
+      const mi = (c1, c2) => c1.map((p, i) => [(p[0] + c2[i][0]) / 2, (p[1] + c2[i][1]) / 2]).filter(dehors);
+      g.lineCap = 'butt'; g.lineWidth = 3; g.strokeStyle = PEINT;
+      ligne([b.pt(d0 + 2, 64), b.pt(G.ROUT + 168, 64)]); g.stroke();                                   // entre les deux voies d'entrée : continue du passage piéton…
+      ligne([b.pt(G.ROUT + 108, 64), ...mi(D.entreeD, D.entreeG)]); g.stroke();                        // …jusqu'à la ligne du cédez-le-passage
+      g.setLineDash([TIRET, VIDE]); ligne([...mi(D.sortieD, D.sortieG), b.pt(G.ROUT + 108, -64)]); g.stroke(); g.setLineDash([]);   // entre les deux voies de sortie
+      g.lineWidth = 3; for (const [c, cote] of [[D.entreeD, 1], [D.sortieD, -1]]) {                    // rive : le bord droit de la chaussée, à l'entrée et à la sortie
+        const bordD = c.map((p, i) => { const a = c[Math.max(0, i - 1)], q = c[Math.min(c.length - 1, i + 1)], L = Math.hypot(q[0] - a[0], q[1] - a[1]) || 1; return [p[0] - (q[1] - a[1]) / L * 30, p[1] + (q[0] - a[0]) / L * 30]; }).filter(dehors);
+        ligne(cote > 0 ? [b.pt(G.ROUT + 108, 126), ...bordD] : [...bordD, b.pt(G.ROUT + 108, -126)]); g.stroke();
+      }
+      const f1 = b.pt(G.D0 + 215, 96), f2 = b.pt(G.D0 + 215, 32);
+      g.save(); g.translate(f1[0], f1[1]); g.rotate(cap + Math.PI / 2); g.fillStyle = PEINT; flecheSol(g, 'fleche_td_droite', 70); g.restore();
+      g.save(); g.translate(f2[0], f2[1]); g.rotate(cap + Math.PI / 2); g.fillStyle = PEINT; flecheSol(g, 'fleche_gauche', 70); g.restore();
+    }
+    // ligne du cédez-le-passage : au bout de la route, le long du bord de l'anneau, sur toute la largeur de l'entrée
+    g.strokeStyle = PEINT; g.lineWidth = 10.5; g.setLineDash([10.5, 10.5]); ligne(G.dessin[k].bouche); g.stroke(); g.setLineDash([]);
+  });
+  if (G.deux) { g.lineWidth = 3; g.setLineDash([TIRET, VIDE]); ferme(G.ctr); g.stroke(); g.setLineDash([]); }     // séparation des deux voies de l'anneau
+  if (G.velo) {                                                              // bande cyclable : marquage de voie réservée (ligne large, 3 m / 1,33 m) + vélos peints
+    g.lineWidth = 6.4; g.setLineDash([3 * M1, 1.33 * M1]); ferme(G.bord); g.stroke(); g.setLineDash([]);
+    const bande = G.ctr.map((p, i) => G.pt(i, G.LANE + G.BAND / 2));
+    G.branches.forEach((b, k) => {                                            // des vélos peints entre les branches et juste après chaque entrée
+      const suiv = G.branches[(k + 1) % 4], n = (suiv.i0 - b.i0 + G.N) % G.N;
+      for (const f of n > 60 ? [0.34, 0.5, 0.66] : [0.36, 0.64]) { const i = (b.i0 + Math.round(n * f)) % G.N, p = bande[i], [tx, ty] = G.tan(i); g.save(); g.translate(p[0], p[1]); g.rotate(Math.atan2(ty, tx)); veloSol(g, 28); g.restore(); }
+    });
+  }
+}
+
+/* ---- circulation dans le giratoire ---- */
+function lancerGira(de, vers, opt) {
+  const G = gira(scene.fond), o = opt || {}, estVelo = o.type === 'velo', T = G.trajet(de, vers, estVelo);
+  const p0 = surTrajet(T, o.s || 0);
+  if (test.vehicules.some((w) => { const q = posVehicule(w); return Math.hypot(q.x - p0.x, q.y - p0.y) < 130; })) { if (o.easy) (test.pend = test.pend || []).push([de, vers, o]); return null; }
+  const v = { gi: true, T, s: o.s || 0, v: estVelo ? 1.1 : 2.3, vmax: estVelo ? 1.1 : 2.3, type: o.type || 'voiture', easy: !!o.easy, coul: o.coul || COULEURS[test.n % COULEURS.length], cligno: null, entre: false, attente: 0 };
+  test.vehicules.push(v); test.n++; return v;
+}
+function scriptGiratoire() {
+  const G = gira(scene.fond), f = (test.frame - 1) % 1500, alea = (n) => Math.floor(Math.random() * n);
+  if (test.pend && test.pend.length) { const [de, vers, o] = test.pend.shift(); lancerGira(de, vers, o); }      // la voiture école attend que la place soit libre
+  // la voiture école arrive toujours par le bas : à droite, puis tout droit, puis à gauche
+  const D = G.deux, e0 = D ? 3 : 0;
+  if (f === 0) { lancerGira(e0, (e0 + 1) % 4, { easy: true, s: 600 }); toast(D ? 'À droite : voie de droite, clignotant à droite, je reste sur la voie extérieure' : 'À droite (1re sortie) : clignotant à droite avant d\'entrer, je cède le passage à l\'anneau', 6500); }
+  if (f === 500) { lancerGira(e0, (e0 + 2) % 4, { easy: true, s: 600 }); toast(D ? 'Tout droit : voie de droite, pas de clignotant en entrant ; clignotant à droite après la sortie d\'avant' : 'Tout droit : pas de clignotant en entrant ; clignotant à droite dès que j\'ai passé la sortie d\'avant', 7000); }
+  if (f === 1000) { lancerGira(e0, (e0 + 3) % 4, { easy: true, s: 600 }); toast(D ? 'À gauche : voie de gauche, clignotant à gauche, voie intérieure ; après la sortie d\'avant je contrôle, clignotant à droite, je me rabats et je sors' : 'À gauche : clignotant à gauche en entrant, puis à droite après la sortie d\'avant', 8500); }
+  if (test.frame % 105 === 40 && test.vehicules.length < 9) { const de = (e0 + 1 + alea(3)) % 4; lancerGira(de, (de + 1 + alea(3)) % 4, { s: 380 }); }      // les autres arrivent par les trois autres branches
+  if (G.velo && test.frame % 330 === 90) { const de = [3, 2, 1][alea(3)]; lancerGira(de, (de + 2 + alea(2)) % 4, { type: 'velo', s: 560 }); }     // des vélos qui traversent l'anneau
+}
+function avancerGiratoire() {
+  test.frame++; scriptGiratoire();
+  const G = gira(scene.fond), V = test.vehicules, P = V.map(posVehicule), L = G.long;
+  const arcDe = (w) => (((w.T.arcIn + (w.s - w.T.sIn) * w.T.echelle) % L) + L) % L;            // position le long de l'anneau
+  const dansAnneau = (w) => w.gi && w.entre && w.s < w.T.sOut + 20;
+  const voieDe = (w) => { const T = w.T; let i = 1; while (i < T.cum.length - 1 && T.cum[i] < w.s) i++; return T.off[i]; };   // décalage dans l'anneau : < 0 voie intérieure, > 0 voie extérieure
+  V.forEach((v, iv) => {
+    if (!v.gi) return;
+    const T = v.T, p = P[iv], velo = v.type === 'velo', demi = velo ? 18 : 37;
+    let cible = !velo && v.s > T.sLigne - 150 && v.s < T.sOut + 60 ? 1.75 : v.vmax;                // on ralentit à l'approche et dans l'anneau
+    // celui qui est devant
+    V.forEach((w, iw) => {
+      if (w === v) return;
+      const q = P[iw], dx = q.x - p.x, dy = q.y - p.y, av = dx * p.hx + dy * p.hy, lat = Math.abs(dx * p.hy - dy * p.hx);
+      if (av <= 0 || lat > (velo || w.type === 'velo' ? 31 : 27) || p.hx * q.hx + p.hy * q.hy < 0.2) return;      // voiture et vélo ne se doublent pas dans une même voie
+      const ecart = av - demi - (w.type === 'velo' ? 18 : 37);
+      if (ecart < 22) cible = 0; else if (ecart < 85) cible = Math.min(cible, w.v + (ecart - 22) * 0.025);
+    });
+    // 1) à l'entrée : cédez-le-passage à ceux qui sont dans l'anneau, voitures comme vélos, quelle que soit leur voie
+    if (!v.entre) {
+      const reste = T.sLigne - demi - v.s;
+      if (reste < 130) {
+        let gene = V.some((w) => {
+          if (w === v || !dansAnneau(w)) return false;
+          const d = (T.arcIn - arcDe(w) + L) % L, restant = (w.T.sOut - w.s) * w.T.echelle;       // d : ce qu'il lui reste à parcourir pour arriver devant moi
+          if (restant < d - 25) return false;                                                    // il sort avant
+          return d < 90 + w.v * (T.sIn - T.sLigne + 60) / 1.7 || d > L - 50;                     // il sera là avant que j'aie fini d'entrer
+        });
+        if (gene) { cible = reste <= 1 ? 0 : Math.min(cible, Math.max(0.3, reste / 25)); if (v.easy && !v.dit && reste < 30) { v.dit = true; toast('Je cède le passage : il y a quelqu\'un dans l\'anneau', 4500); } }
+        else if (reste < 8) v.entre = true;
+      }
+    }
+    // 2) à la sortie : le vélo qui continue sur la bande cyclable passe d'abord
+    else if (!velo && G.velo && v.s < T.sOut + 30 && T.sOut - v.s < 150) {
+      const moi = arcDe(v), sortie = (T.sOut - v.s) * T.echelle + 30;
+      for (const b of V) {
+        if (b.type !== 'velo' || !dansAnneau(b)) continue;
+        let d = (arcDe(b) - moi + L) % L; if (d > L / 2) d -= L;                                  // > 0 : le vélo est devant moi
+        if (d < -48 || d > sortie) continue;
+        if ((b.T.sOut - b.s) * b.T.echelle < sortie - d - 12) continue;                           // il sort avant ma sortie
+        cible = Math.min(cible, d > 58 ? b.v : Math.max(0.15, b.v - 0.75));
+        if (v.easy && !v.ditV) { v.ditV = true; toast('Avant de sortir, je laisse passer le vélo qui continue sur la bande cyclable', 5000); }
+      }
+    }
+    // 3) deux voies : avant de se rabattre sur la voie extérieure, on contrôle qu'elle est libre — sinon on attend sur sa voie
+    if (T.sChg !== null && v.entre && v.s > T.sChg - 90 && v.s <= T.sChg + 4) {
+      const moi = arcDe(v);
+      for (const w of V) {
+        if (w === v || !w.gi || !w.entre || w.s > w.T.sOut + 20 || voieDe(w) < G.DV - 6) continue;   // seulement ceux qui roulent (ou entrent) sur la voie extérieure
+        let d = (arcDe(w) - moi + L) % L; if (d > L / 2) d -= L;
+        if (d > -125 && d < 95) { cible = Math.min(cible, Math.max(0, (T.sChg - 2 - v.s) / 18)); if (v.easy && !v.ditR) { v.ditR = true; toast('La voie extérieure est occupée : je le laisse passer avant de me rabattre', 5000); } }
+      }
+    }
+    // clignotants
+    if (!velo) {
+      const approche = v.s > T.sLigne - 230, sorti = v.s > T.sOut + 70, passe = T.sAvant === null || v.s > T.sAvant;
+      v.cligno = !approche || sorti ? null : T.rang === 1 ? 'droite' : passe ? 'droite' : T.rang >= 3 ? 'gauche' : null;
+    }
+    v.v += (cible - v.v) * (cible < v.v ? 0.3 : 0.05); if (cible === 0 && v.v < 0.05) v.v = 0;
+    v.s += v.v; if (v.s >= T.len - 2) v.fini = true;
+  });
+  test.vehicules = V.filter((v) => !v.fini);
+  test.gel = test.vehicules.length >= 3 && test.vehicules.every((v) => v.v < 0.05) ? (test.gel || 0) + 1 : 0;
+  if (test.gel > 420) { test.vehicules = []; test.gel = 0; }
+  sale = true;
+}
+function sceneGiratoire(forme, velo, voies) {
+  const sc = sceneVide(), fond = { type: 'giratoire', forme, velo, ...(voies === 2 ? { voies: 2 } : {}) }, G = gira(fond);
+  sc.fond = fond;
+  G.branches.forEach((b) => {
+    const ang = Math.atan2(-b.n[1], -b.n[0]) + Math.PI / 2, l1 = G.deux ? 170 : 118, l2 = G.deux ? 170 : 105;
+    sc.panneaux.push({ type: 'cedez', x: b.pt(G.ROUT + 38, l1)[0], y: b.pt(G.ROUT + 38, l1)[1], ang }, { type: 'giratoire', x: b.pt(G.ROUT + 215, l2)[0], y: b.pt(G.ROUT + 215, l2)[1], ang });
+  });
+  const e0 = G.deux ? 3 : 0, T = G.trajet(e0, (e0 + 3) % 4, false), q = surTrajet(T, T.sLigne - 170), T2 = G.trajet((e0 + 1) % 4, (e0 + 3) % 4, false), q2 = surTrajet(T2, (T2.sIn + T2.sOut) / 2);
+  sc.usagers = [usager(1, 'ecole', q.x, q.y, Math.atan2(q.hy, q.hx), '#3b82c4'), usager(2, 'voiture', q2.x, q2.y, Math.atan2(q2.hy, q2.hx), '#e0b43a')];
+  if (velo) { const T3 = G.trajet(3, 1, true), q3 = surTrajet(T3, T3.sIn + 120); sc.usagers.push(usager(3, 'velo', q3.x, q3.y, Math.atan2(q3.hy, q3.hx), '#2f9e6b')); }
+  sc.decor = deco(forme === 'haricot' ? [['maison', 180, 250, 150, 110], ['maison_grise', 1090, 240, 160, 110], ['arbre', 250, 880], ['arbre', 1040, 890], ['buisson', 420, 950]]
+                                      : [['maison', 250, 280, 150, 110], ['maison_grise', 1030, 280, 160, 110], ['arbre', 230, 870], ['arbre', 1050, 880], ['buisson', 380, 960], ['buisson', 930, 250]]);
+  return sc;
+}
+
+/* =====================================================================
    SCÈNES DU COURS — reprises de l'ancien simulateur, refaites pour le nouveau
    (régimes automatiques là où c'est possible : lignes, panneaux, feux, sas, passages)
    ===================================================================== */
@@ -2680,6 +3346,56 @@ const SCENES_COURS = [
     sc.usagers.unshift(usager(99, 'ecole', 900, 600, Math.PI, '#3b82c4'));
     return sc;
   }],
+  ['parking', 'Parking (bataille, épi, créneau)', () => {
+    const { G, D } = bornes(), sc = sceneVide(), YR = 840, XA = 1040, Y0 = 200;      // Y0 = haut du parking
+    sc.routes = [{ id: 1, pts: [[G, YR], [D, YR]] }, { id: 2, pts: [[XA, Y0 + 175], [XA, YR]], axe: 'aucune' }]; sc.id = 3;
+    sc.regimes = [{ x: XA, y: YR, type: 'cedez', prio: 1 }];
+    sc.decor = [{ type: 'aire', x: 640, y: Y0 + 175, w: 1020, h: 350, ang: 0 }, { type: 'aire', x: 540, y: YR - 100, w: 760, h: 50, ang: 0 },
+      ...deco([['arbre', 200, 632], ['arbre', 420, 628], ['arbre', 640, 632], ['arbre', 850, 628], ['buisson', 1200, 640], ['buisson', 1232, 700], ['maison', 300, 1050, 160, 110], ['maison_grise', 760, 1055, 180, 110]])];
+    const M = (type, x, y, ang, plus) => ({ type, x, y, ang, ...(plus || {}) });
+    // rangée du haut : 2 PMR, 12 places en bataille, 2 bornes de recharge
+    sc.marques.push(M('place_pmr', 176, Y0 + 50, 0), M('place_pmr', 248, Y0 + 50, 0));
+    for (let i = 0; i < 12; i++) sc.marques.push(M('place_bataille', 311 + 54 * i, Y0 + 50, 0));
+    sc.marques.push(M('place_elec', 959, Y0 + 50, 0), M('place_elec', 1013, Y0 + 50, 0));
+    // rangée du bas : 11 places en épi (on y entre en marche avant en venant de la gauche)
+    for (let i = 0; i < 11; i++) sc.marques.push(M('place_epi', 200 + 60 * i, Y0 + 300, Math.PI, { miroir: true }));
+    // le long de la rue : 5 places en créneau + une aire de livraison
+    for (let i = 0; i < 5; i++) sc.marques.push(M('place_creneau', 226 + 112 * i, YR - 100, 0));
+    sc.marques.push(M('place_livraison', 815, YR - 100, 0));
+    sc.marques.push({ type: 'texte', texte: 'BATAILLE', x: 600, y: Y0 + 132, ang: -Math.PI / 2, taille: 15 }, { type: 'texte', texte: 'ÉPI', x: 520, y: Y0 + 222, ang: -Math.PI / 2, taille: 15 });
+    const epi = Math.atan2(100, 56), yb = Y0 + 50, ye = Y0 + 298;
+    sc.usagers = [usager(1, 'ecole', 900, Y0 + 137, Math.PI, '#3b82c4'),
+      usager(2, 'voiture', 365, yb - 2, -Math.PI / 2, '#5b6270'), usager(3, 'voiture', 473, yb + 2, Math.PI / 2, '#e0b43a'), usager(4, 'voiture', 689, yb - 2, -Math.PI / 2, '#d64545'), usager(5, 'voiture', 851, yb, -Math.PI / 2, '#e8e8e8'),
+      usager(6, 'voiture', 248, yb, -Math.PI / 2, '#2f9e6b'), usager(7, 'voiture', 959, yb, -Math.PI / 2, '#3b82c4'),
+      usager(8, 'voiture', 260, ye, epi, '#e8e8e8'), usager(9, 'voiture', 440, ye, epi, '#5b6270'), usager(10, 'voiture', 680, ye, epi, '#e0b43a'),
+      usager(11, 'voiture', 226, YR - 100, 0, '#d64545'), usager(12, 'voiture', 450, YR - 100, 0, '#5b6270')];
+    return sc;
+  }],
+  ['autoroute', 'Autoroute – voie d\'insertion', () => {
+    const sc = sceneVide(), { yG, yD, yI, XN } = AR, i = 30, a = AR.axe[i], b = AR.axe[i + 1], cap = Math.atan2(b[1] - a[1], b[0] - a[0]);
+    sc.fond = { type: 'autoroute' };
+    sc.panneaux = [{ type: 'autoroute', x: AR.droite[20][0] + 30, y: AR.droite[20][1] + 62, ang: Math.atan2(AR.axe[21][1] - AR.axe[20][1], AR.axe[21][0] - AR.axe[20][0]) + Math.PI / 2 },
+                   { type: 'cedez', x: XN + 30, y: yI + 37.5 + 78, ang: Math.PI / 2 }];
+    sc.decor = deco([['arbre', 640, 850], ['arbre', 820, 905], ['buisson', 1000, 840], ['arbre', 1160, 890], ['buisson', 480, 900], ['buisson', 150, 1060], ['arbre', 330, 1040]]);
+    sc.usagers = [usager(1, 'ecole', a[0], a[1], cap, '#3b82c4'), usager(2, 'voiture', 170, yD, 0, '#5b6270'), usager(3, 'camion', 760, yD, 0, '#e0b43a'),
+                  usager(4, 'voiture', 520, yG, 0, '#d64545'), usager(5, 'voiture', 900, AR.yO1, Math.PI, '#e8e8e8')];
+    return sc;
+  }],
+  ['sortie', 'Autoroute – sortie (décélération)', () => {
+    const sc = sceneVide(), { yG, yD, yI } = AR, SO = AR.sortie, cap = (s) => { const q = surTrajet(SO, s); return Math.atan2(q.hy, q.hx); }, pt = (s, d) => { const q = surTrajet(SO, s); return [q.x - q.hy * d, q.y + q.hx * d]; };
+    sc.fond = { type: 'autoroute_sortie' };
+    const p70 = pt(150, 95), p50 = pt(430, 95);
+    sc.panneaux = [{ type: 'limite_70', x: p70[0], y: p70[1], ang: cap(150) + Math.PI / 2 }, { type: 'limite_50', x: p50[0], y: p50[1], ang: cap(430) + Math.PI / 2 }];
+    sc.decor = deco([['arbre', 200, 850], ['arbre', 420, 905], ['buisson', 640, 840], ['arbre', 760, 930], ['buisson', 80, 960], ['buisson', 1130, 1060], ['arbre', 560, 1040]]);
+    sc.usagers = [usager(1, 'ecole', 250, yD, 0, '#3b82c4'), usager(2, 'voiture', 70, yD, 0, '#5b6270'), usager(3, 'camion', 760, yD, 0, '#e0b43a'),
+                  usager(4, 'voiture', 460, yG, 0, '#d64545'), usager(5, 'voiture', 900, AR.yO1, Math.PI, '#e8e8e8')];
+    return sc;
+  }],
+  ['giratoire', 'Giratoire', () => sceneGiratoire('rond', false)],
+  ['giratoire_velo', 'Giratoire avec bande cyclable', () => sceneGiratoire('rond', true)],
+  ['giratoire2', 'Giratoire à deux voies', () => sceneGiratoire('rond', false, 2)],
+  ['haricot', 'Giratoire en haricot', () => sceneGiratoire('haricot', false)],
+  ['haricot_velo', 'Giratoire en haricot avec bande cyclable', () => sceneGiratoire('haricot', true)],
   ['etroit', 'Passage étroit (B15 / C18)', () => {
     const { sc } = depuisFormatSimu(ANCIENNES.priorite_b15c18, ''), { G, D, H } = bornes();
     sc.routes = [{ id: 1, pts: [[G, 580], [D, 580]] }, { id: 2, pts: [[1080, 580], [1080, H]] }]; sc.id = 3;
@@ -2695,7 +3411,7 @@ function chargerSceneCours(cle) {
   scene = def[2](); scene.titre = def[1];
   selection = null; groupe = null; majSelbar(); fermerRegime(); $('titre').textContent = scene.titre;
   seance.sel = null; seance.traits = []; if (typeof majSelSeance === 'function') majSelSeance();
-  toutRefaire('« ' + def[1] + ' » chargée');
+  toutRefaire('« ' + def[1] + ' » chargée'); marquerModele();
 }
 function ouvrirScenesCours() {
   const box = $('liste-scenes'), ul = $('ls-noms'); ul.innerHTML = '';
@@ -2719,11 +3435,13 @@ else reconstruire();
 dessinerCouche(); majAide();
 histo = [JSON.stringify(scene)]; histoIdx = 0; majBoutons();
 requestAnimationFrame(boucle);
+if (scene.titre === 'Carrefours en ville' && scene.routes.length === 3) scene.modele = true;      // l'exemple enregistré par une ancienne version
 if (SUR_SITE) {                      // sur le site : on arrive en Séance, prêt pour le cours
   if (!initial) chargerExemple();
   if (location.hash === '#editer') demanderMdp(() => basculerMode('editeur')); else basculerMode('seance');
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 }
+demarrage = false;
 
 </script>
 </body>
