@@ -117,7 +117,7 @@
   #selbar-seance .btn { height:40px; min-width:40px; padding:0 10px; }
   #selbar-seance .btn.on { background:#f59e0b; color:#111; }
   #selbar-seance #ss-frein.on { background:#ff3131; color:#fff; }
-  body.presentation .pill, body.presentation .chip, body.presentation #tiroir-usagers, body.presentation #toast { display:none !important; }
+  body.presentation .pill:not(#selbar-seance), body.presentation .chip, body.presentation #tiroir-usagers, body.presentation #toast { display:none !important; }
   #sortie-pres { display:none; position:fixed; border:0; z-index:30; cursor:pointer; }
   body.presentation #sortie-pres { display:block; }
   #toast { position:fixed; left:50%; bottom:92px; transform:translateX(-50%); background:rgba(17,20,24,.9); color:#fff; padding:10px 16px; border-radius:12px; font-size:14px;
@@ -1990,7 +1990,7 @@ function basculerTest() {
   else {
     test = { frame: 0, vehicules: [], prochain: 0, n: 0, pietons: [], prochainPieton: 60, np: 0 };
     $('t-tester').textContent = 'Arrêter'; $('ico-play').innerHTML = '<rect x="6" y="6" width="12" height="12" rx="2"/>';
-    fermerRegime(); selection = null; groupe = null; majSelbar();
+    fermerRegime(); selection = null; groupe = null; majSelbar(); seance.sel = null; majSelSeance();
   }
   majDockSeance();
 }
@@ -2700,9 +2700,9 @@ function etatFeuSeance(cle, route) {
 /* ---------- rendu ---------- */
 function rendreSeance(g) {
   ctx = g;
-  const L = usagers();
+  const L = test ? [] : usagers();      // pendant la circulation, les véhicules posés à la main s'effacent (ils reviennent à l'arrêt)
   for (const u of L) dessinerUsager(g, u);
-  if (!seance.presentation && !seance.lecture) for (const u of L) dessinerLaisse(g, u, u === seance.sel);
+  if (!seance.lecture) for (const u of L) dessinerLaisse(g, u, u === seance.sel);      // la poignée reste visible en plein écran : c'est elle qui fait rouler le véhicule
   if (seance.numeros) L.forEach((u, i) => {
     g.save(); g.fillStyle = '#1c2430'; g.beginPath(); g.arc(u.x, u.y - 30, 14, 0, 7); g.fill();
     g.fillStyle = '#fff'; g.font = '800 16px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(i + 1), u.x, u.y - 29.5); g.restore();
@@ -2750,9 +2750,9 @@ function seanceDown(e) {
   if (seance.lecture) { seance.lecture = false; majDockSeance(); }
   if (seance.outil === 'crayon') { G.type = 'crayon'; seance.traits.push([p]); return; }
   if (seance.outil === 'usager' && seance.poser) { G.type = 'poser'; return; }
-  const ul = laisseSous(p);
+  const ul = test ? null : laisseSous(p);
   if (ul) { G.type = 'laisse'; G.u = ul; seance.sel = ul; versLeHaut(ul); majSelSeance(); return; }
-  const u = usagerSous(p);
+  const u = test ? null : usagerSous(p);
   if (u) { G.type = 'deplacer'; G.u = u; G.dx = u.x - p[0]; G.dy = u.y - p[1]; seance.sel = u; versLeHaut(u); majSelSeance(); sale = true; return; }
   const c = geo.carrefours.find((k) => k.type === 'feux' && Math.hypot(p[0] - k.x, p[1] - k.y) < 90) ||
             geo.carrefours.find((k) => geo.autoPanneaux.some((a) => a.cle === k.cle && a.type === 'feu' && Math.hypot(p[0] - a.x, p[1] - a.y) < 30));
@@ -2799,7 +2799,7 @@ function seanceUp(e) {
 /* ---------- interface ---------- */
 function majSelSeance() {
   const b = $('selbar-seance'), u = seance.sel;
-  if (!u || seance.lecture || mode !== 'seance' || seance.presentation) { b.classList.remove('ouvert'); return; }
+  if (!u || seance.lecture || mode !== 'seance') { b.classList.remove('ouvert'); return; }
   // la barre ne doit JAMAIS couvrir la poignée ni le véhicule : on essaie derrière, puis sur les côtés, sinon en haut
   b.classList.add('ouvert'); const w = b.offsetWidth || 220, h = b.offsetHeight || 52;
   const L = DIM[u.type][0], [hx, hy] = versEcran(...poignee(u)), [cx, cy] = versEcran(u.x, u.y), r = (L / 2) * S + 24;
@@ -2868,7 +2868,7 @@ function basculerMode(m) {
   }
   $('mode-ed').onclick = () => demanderMdp(() => basculerMode('editeur'));
   $('mode-se').onclick = () => basculerMode('seance');
-  document.querySelectorAll('#dock-seance [data-so]').forEach((b) => (b.onclick = () => { const o = b.dataset.so; choisirOutilSeance(seance.outil === o ? null : o); }));
+  document.querySelectorAll('#dock-seance [data-so]').forEach((b) => (b.onclick = () => { const o = b.dataset.so; if (o === 'usager' && test) basculerTest(); choisirOutilSeance(seance.outil === o ? null : o); }));      // poser un véhicule à la main arrête la circulation
   $('so-rec').onclick = () => { fermerMenu(); demarrerEnreg(); };
   $('so-stop').onclick = arreterEnreg;
   $('so-lecture').onclick = () => {
