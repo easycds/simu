@@ -1248,9 +1248,9 @@ function etatFeu(cle, route) {
   if (mode === 'seance' && seance.feux[cle]) return etatFeuSeance(cle, route);
   const c = geo.carrefours.find((k) => k.cle === cle);
   if (!test) return c && c.prio === route ? 'vert' : 'rouge';
-  const t = test.frame % 480, prio = !c || c.prio === route;
-  if (prio) return t < 200 ? 'vert' : t < 240 ? 'orange' : 'rouge';
-  return t < 240 ? 'rouge' : t < 440 ? 'vert' : 'orange';
+  const t = test.frame % CYCLE, prio = !c || c.prio === route;
+  if (prio) return t < FEU_VERT ? 'vert' : t < FEU_VERT + FEU_ORANGE ? 'orange' : 'rouge';
+  return t < FEU_DEMI ? 'rouge' : t < FEU_DEMI + FEU_VERT ? 'vert' : t < FEU_DEMI + FEU_VERT + FEU_ORANGE ? 'orange' : 'rouge';
 }
 function rendre() {
   const g = vctx;
@@ -1983,7 +1983,10 @@ document.querySelectorAll('.outil').forEach((b) => (b.onclick = () => choisirOut
 
 /* ---------------- mode Tester : véhicules sur trajets (tout droit, à droite, à gauche) ---------------- */
 const COULEURS = ['#3b82c4', '#e0b43a', '#d64545', '#e8e8e8', '#2f9e6b', '#8e5bd6', '#5b6270'];
-const CYCLE = 480;                       // cycle des feux (images)
+const FEU_VERT = 360, FEU_ORANGE = 180, FEU_ROUGE_INTEGRAL = 90; // durées des feux en images (60/s) : vert 6 s, orange 3 s, rouge des deux côtés 1,5 s
+const FEU_DEMI = FEU_VERT + FEU_ORANGE + FEU_ROUGE_INTEGRAL;   // une moitié de cycle : vert + orange + rouge intégral
+const CYCLE = 2 * FEU_DEMI;                // cycle des feux (images)
+const DUREE_TRAVERSEE = Math.ceil((LR + 22) / 1.05) + 30;   // temps qu'il faut à un piéton pour traverser, avec une marge
 function basculerTest() {
   if (test) { test = null; $('t-tester').textContent = 'Tester'; $('ico-play').innerHTML = '<path d="M7 4l13 8-13 8z"/>'; sale = true; }
   else if (!scene.routes.length && !scene.fond) toast('Trace d\'abord une route');
@@ -2105,9 +2108,25 @@ function coupePassages(T) {           // abscisses où le trajet d'une voiture t
   return res;
 }
 function resteRouge(cle, route) {
+  // nombre d'images avant que ce sens repasse au vert (0 s'il est déjà vert)
   const c = geo.carrefours.find((k) => k.cle === cle); if (!c) return 0;
-  const f = test.frame % CYCLE;
-  return c.prio === route ? (f >= 240 ? CYCLE - f : 0) : (f < 240 ? 240 - f : 0);
+  const prio = c.prio === route;
+  if (mode === 'seance' && seance.feux[cle]) {
+    const f = seance.feux[cle], vert = prio ? f.phase === 0 : f.phase === 1;
+    if (f.trans) return vert ? (seance.feuxAuto ? f.trans + FEU_DEMI : Infinity) : f.trans;
+    if (vert) return 0;
+    return seance.feuxAuto ? Math.max(0, FEU_VERT - f.t) + FEU_ORANGE + FEU_ROUGE_INTEGRAL : Infinity;   // à la main : rouge tant que le moniteur ne touche pas
+  }
+  const t = test.frame % CYCLE;
+  if (prio) return t >= FEU_VERT ? CYCLE - t : 0;
+  if (t < FEU_DEMI) return FEU_DEMI - t;
+  return t >= FEU_DEMI + FEU_VERT ? CYCLE - t + FEU_DEMI : 0;
+}
+function pietonsSurPassage(cle, phase) {
+  // un piéton est-il encore sur un passage dont les voitures auront le vert dans cette phase ?
+  if (!test || !test.pietons) return false;
+  const c = geo.carrefours.find((k) => k.cle === cle); if (!c) return false;
+  return test.pietons.some((p) => p.etat === 'traverse' && p.cw.cle === cle && (c.prio === p.cw.route ? phase === 0 : phase === 1));
 }
 function lancerPieton(cw, dir) {
   if (!cw || test.pietons.some((p) => p.k === cw.k && p.etat === 'attente')) return;
@@ -2126,7 +2145,7 @@ function avancerPietons() {
     if (p.etat === 'attente') {
       const voitureDessus = test.vehicules.some((v) => (v.cws || []).some((h) => h.k === p.k && h.s - v.s > -45 && h.s - v.s < (p.cw.cle ? 50 : 95)));
       let ok = !voitureDessus;
-      if (p.cw.cle) ok = ok && etatFeu(p.cw.cle, p.cw.route) === 'rouge' && resteRouge(p.cw.cle, p.cw.route) > 150;   // bonhomme vert
+      if (p.cw.cle) ok = ok && etatFeu(p.cw.cle, p.cw.route) === 'rouge' && resteRouge(p.cw.cle, p.cw.route) > DUREE_TRAVERSEE;   // bonhomme vert
       if (ok) p.etat = 'traverse';
     } else { p.t += 1.05 / (LR + 22); if (p.t >= 1) p.fini = true; }
   }
@@ -2236,10 +2255,10 @@ function avancerTest() {
 function scriptDemo() {
   if (scene.demo === 'indo-voies') return scriptIndo();
   const f = test.frame % CYCLE;
-  if (f === 300) { const cw = passagesTest().find((q) => q.route === 1 && q.x < 640); lancerPieton(cw, 1); }
+  if (f === FEU_DEMI + 60) { const cw = passagesTest().find((q) => q.route === 1 && q.x < 640); lancerPieton(cw, 1); }
   if (f === 5) { lancerVehicule(2, -1, ['gauche'], true, 0); lancerVehicule(2, 1, ['gauche'], false, 28); }       // en face l'un de l'autre, tous deux à gauche
-  if (f === 250) { lancerVehicule(1, 1, ['droit'], false); lancerVehicule(1, -1, ['droite'], false); }
-  if (f === 300) lancerVehicule(1, 1, ['gauche'], false);
+  if (f === FEU_DEMI + 10) { lancerVehicule(1, 1, ['droit'], false); lancerVehicule(1, -1, ['droite'], false); }
+  if (f === FEU_DEMI + 60) lancerVehicule(1, 1, ['gauche'], false);
 }
 function sceneDemo(mode) {
   const X = 640, Y = 575;
@@ -2319,8 +2338,8 @@ function scriptIndo() {
   if (f === 5) { lancerIndo('gaucheBas', true, 0); lancerIndo('gaucheHaut', false, 20); }
   if (f === 40) { lancerIndo('droitHaut'); }
   if (f === 70) { lancerIndo('droitBas'); }
-  if (f === 250) { lancerIndo('est'); lancerIndo('ouest'); }
-  if (f === 300) { const cw = passagesTest().find((q) => q.route === 1 && q.x < IX); lancerPieton(cw, 1); }
+  if (f === FEU_DEMI + 10) { lancerIndo('est'); lancerIndo('ouest'); }
+  if (f === FEU_DEMI + 60) { const cw = passagesTest().find((q) => q.route === 1 && q.x < IX); lancerPieton(cw, 1); }
 }
 function sceneDemoIndo() {
   const sc = sceneVide(); sc.titre = 'Feux · à l\'indonésienne'; sc.demo = 'indo-voies';
@@ -2680,9 +2699,12 @@ function avancerSeance() {
   seance.horloge++;
   if (seance.feuxAuto) for (const c of geo.carrefours) if (c.type === 'feux') {
     const f = seance.feux[c.cle] || (seance.feux[c.cle] = { phase: 0, trans: 0, t: 0 });
-    f.t++; if (f.t > 360 && !f.trans) f.trans = 60;
+    f.t++; if (f.t > FEU_VERT && !f.trans) f.trans = FEU_ORANGE + FEU_ROUGE_INTEGRAL;
   }
-  for (const f of Object.values(seance.feux)) if (f.trans) { f.trans--; if (!f.trans) { f.phase = 1 - f.phase; f.t = 0; } }
+  for (const [cle, f] of Object.entries(seance.feux)) if (f.trans) {
+    if (f.trans === 1 && pietonsSurPassage(cle, 1 - f.phase)) continue;   // rouge des deux côtés tant qu'un piéton finit de traverser
+    f.trans--; if (!f.trans) { f.phase = 1 - f.phase; f.t = 0; }
+  }
   if (seance.enreg) seance.t++;
   if (seance.lecture) {
     seance.t++; appliquerRelecture();
@@ -2693,7 +2715,7 @@ function avancerSeance() {
 function etatFeuSeance(cle, route) {
   const f = seance.feux[cle], c = geo.carrefours.find((k) => k.cle === cle);
   const vert = (c && c.prio === route) ? f.phase === 0 : f.phase === 1;
-  if (f.trans) return vert ? 'orange' : 'rouge';
+  if (f.trans) return vert && f.trans > FEU_ROUGE_INTEGRAL ? 'orange' : 'rouge';
   return vert ? 'vert' : 'rouge';
 }
 
@@ -2789,7 +2811,7 @@ function seanceUp(e) {
   } else if (G.type === 'vide' && !G.bouge) {
     if (G.feu) {
       const f = seance.feux[G.feu.cle] || (seance.feux[G.feu.cle] = { phase: 0, trans: 0, t: 0 });
-      if (!f.trans) f.trans = 60; seance.feuxAuto = false; majDockSeance(); toast('Feux à la main : ils passent à l\'orange puis au rouge');
+      if (!f.trans) f.trans = FEU_ORANGE + FEU_ROUGE_INTEGRAL; seance.feuxAuto = false; majDockSeance(); toast('Feux à la main : ils passent à l\'orange puis au rouge');
     }
     seance.sel = null; majSelSeance();
   }
