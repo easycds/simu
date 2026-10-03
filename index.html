@@ -140,6 +140,11 @@
   body.mode-seance #plus-seance.ouvert { display:flex; }
   #plus-seance .btn { justify-content:flex-start; white-space:nowrap; }
   #plus-seance .btn.actif { background:rgba(255,255,255,.16); color:#fff; }
+#menu-feu { position:fixed; display:none; flex-direction:column; align-items:stretch; padding:6px; z-index:7; max-width:calc(100vw - 16px); }
+body.mode-seance #menu-feu.ouvert { display:flex; }
+#menu-feu .btn { justify-content:flex-start; white-space:nowrap; }
+#menu-feu .btn.actif { background:rgba(255,255,255,.16); color:#fff; }
+#menu-feu [hidden] { display:none !important; }
   #dock-seance [hidden], #plus-seance [hidden] { display:none !important; }
   #dock-seance #so-circ.marche { background:#fff; color:#111; }
   #dock-seance #so-stop { background:#ff3131; color:#fff; }
@@ -292,6 +297,12 @@
   <button class="btn" id="so-pres"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span>Plein écran</span></button>
 </div>
 <button id="chip-dessins">Effacer les dessins</button>
+<div class="pill" id="menu-feu">
+  <button class="btn" id="mf-phase"><svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="20" rx="3"/><circle cx="12" cy="7" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="17" r="1.5"/></svg><span>Changer la phase</span></button>
+  <button class="btn" id="mf-cli"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" style="fill:#ffb000;stroke:none"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></svg><span></span></button>
+  <button class="btn" id="mf-bas"><svg viewBox="0 0 24 24"><rect x="8" y="1" width="8" height="14" rx="3"/><rect x="8.5" y="16.5" width="7" height="6.5" rx="2"/><circle cx="12" cy="19.7" r="1.7" style="fill:#ffb000;stroke:none"/></svg><span></span></button>
+  <button class="btn" id="mf-auto"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 11-3-6.3"/><path d="M20 4v5h-5"/></svg><span>Feux automatiques</span></button>
+</div>
 <div id="tiroir-usagers"></div>
 <div class="pill" id="selbar-seance">
   <button class="btn" id="ss-cligG" title="Clignotant gauche"><svg viewBox="0 0 24 24"><path d="M14 6l-6 6 6 6"/></svg></button>
@@ -551,12 +562,20 @@ function dessinerPictogrammeV2(ctx, type, t, etatFeu) {
       const w = t * 0.42, h = t * 1.0;
       ctx.fillStyle = '#0f1114'; ctx.beginPath(); ctx.roundRect(-w / 2 - 1.5, -h / 2 - 1.5, w + 3, h + 3, w * 0.36); ctx.fill();
       ctx.fillStyle = '#23272d'; ctx.beginPath(); ctx.roundRect(-w / 2, -h / 2, w, h, w * 0.32); ctx.fill();
-      const lampes = [['rouge', '#ff3b30', -h * 0.3], ['orange', '#ffb000', 0], ['vert', '#2ecc71', h * 0.3]];
+      const [allume, bas] = String(etatFeu || 'rouge').split('+');
+    const lampes = [['rouge', '#ff3b30', -h * 0.3], ['orange', '#ffb000', 0], ['vert', '#2ecc71', h * 0.3]];
       for (const [e, c, y] of lampes) {
-        const on = e === (etatFeu || 'rouge');
+        const on = e === allume;
         if (on) { const g = ctx.createRadialGradient(0, y, 0, 0, y, w * 0.75); g.addColorStop(0, c + 'aa'); g.addColorStop(1, c + '00'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, y, w * 0.75, 0, Math.PI * 2); ctx.fill(); }
         ctx.fillStyle = on ? c : '#3a3f47'; ctx.beginPath(); ctx.arc(0, y, w * 0.3, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = on ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.06)'; ctx.beginPath(); ctx.arc(-w * 0.08, y - w * 0.08, w * 0.1, 0, Math.PI * 2); ctx.fill();
+      }
+      if (bas) { // feu jaune clignotant placé sous le feu : on peut franchir le rouge en cédant le passage
+        const y0 = h / 2 + 3, hh = w * 0.82, on = bas === 'bas', yc = y0 + hh / 2;
+        ctx.fillStyle = '#0f1114'; ctx.beginPath(); ctx.roundRect(-w / 2 - 1.5, y0 - 1.5, w + 3, hh + 3, w * 0.3); ctx.fill();
+        ctx.fillStyle = '#23272d'; ctx.beginPath(); ctx.roundRect(-w / 2, y0, w, hh, w * 0.26); ctx.fill();
+        if (on) { const g = ctx.createRadialGradient(0, yc, 0, 0, yc, w * 0.7); g.addColorStop(0, '#ffb000aa'); g.addColorStop(1, '#ffb00000'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, yc, w * 0.7, 0, Math.PI * 2); ctx.fill(); }
+        ctx.fillStyle = on ? '#ffb000' : '#3a3f47'; ctx.beginPath(); ctx.arc(0, yc, w * 0.27, 0, Math.PI * 2); ctx.fill();
       }
       break;
     }
@@ -570,7 +589,7 @@ function panneauV2(ctx, type, t, etat) {
     ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.arc(t * 0.05, r * 1.02 + t * 0.07, Math.max(2, t * 0.07), 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#8f969d'; ctx.beginPath(); ctx.arc(0, r * 1.02, Math.max(2, t * 0.065), 0, Math.PI * 2); ctx.fill();
   }
-  const off = document.createElement('canvas'); const S = 4, c = t * 1.3;
+  const off = document.createElement('canvas'); const S = 4, c = t * (type === 'feu' ? 2 : 1.3);
   off.width = off.height = Math.ceil(c * S); const o = off.getContext('2d'); o.setTransform(S, 0, 0, S, c * S / 2, c * S / 2);
   dessinerPictogrammeV2(o, type, t, etat);
   ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.22)'; ctx.shadowOffsetX = t * 0.06 * 2; ctx.shadowOffsetY = t * 0.09 * 2; ctx.shadowBlur = 3;
@@ -1000,7 +1019,7 @@ function reconstruire() {
       };
       const panneau = (d, type) => {
         const P = pose(d, type); if (!P) return;
-        geo.autoPanneaux.push({ type, x: P.q.x + P.rx * (LR / 2 + 26), y: P.q.y + P.ry * (LR / 2 + 26), ang: Math.atan2(P.hy, P.hx) + Math.PI / 2, cle: c.cle, route: b.id });
+        geo.autoPanneaux.push({ type, x: P.q.x + P.rx * (LR / 2 + 26), y: P.q.y + P.ry * (LR / 2 + 26), ang: Math.atan2(P.hy, P.hx) + Math.PI / 2, cle: c.cle, route: b.id, bdir: b.dir });
       };
       const ligne = (style, d) => { const P = pose(d ?? distLigne(c), ''); if (P) geo.lignes.push({ ...P, style, cle: c.cle }); };
       if (c.type === 'pad') panneau(190, 'priorite_droite');
@@ -1052,7 +1071,7 @@ const sprites = new Map();
 function sprite(type, t, etat) {
   const k = type + '|' + t + '|' + (etat || '');
   let c = sprites.get(k); if (c) return c;
-  const Q = 3, T = t * 1.8;
+  const Q = 3, T = t * (type === 'feu' ? 2.3 : 1.8); // le feu a la place pour son jaune du bas
   c = document.createElement('canvas'); c.width = c.height = Math.ceil(T * Q);
   const o = c.getContext('2d'); o.setTransform(Q, 0, 0, Q, c.width / 2, c.height / 2);
   panneauV2(o, type, t, etat);
@@ -1252,13 +1271,76 @@ function etatFeu(cle, route) {
   if (prio) return t < FEU_VERT ? 'vert' : t < FEU_VERT + FEU_ORANGE ? 'orange' : 'rouge';
   return t < FEU_DEMI ? 'rouge' : t < FEU_DEMI + FEU_VERT ? 'vert' : t < FEU_DEMI + FEU_VERT + FEU_ORANGE ? 'orange' : 'rouge';
 }
+let menuFeu = null; // feu touché en Séance : { c, k }
+function afficheFeu(cle, route, bdir) { // ce que montre le feu (les clignotants s'allument une demi-seconde sur deux)
+  let e = etatFeu(cle, route);
+  const allume = (mode === 'seance' ? seance.horloge : test ? test.frame : 0) % 60 < 33;
+  if (e === 'clignotant') e = allume ? 'orange' : 'eteint';
+  if (jauneBas(cle, route, bdir)) e += allume ? '+bas' : '+bas0';
+  return e;
+}
+function jauneBas(cle, route, bdir) { const f = mode === 'seance' && seance.feux[cle]; return !!(f && f.bas && f.bas.includes(route + ':' + bdir)); }
+function typeEffectif(c, e) { return c.type === 'feux' && etatFeu(c.cle, e.route) === 'clignotant' ? 'pad' : c.type; } // orange clignotant : priorité à droite
+function vertEnTravers(v, c) { // jaune du bas : je ne passe au rouge que si personne n'arrive avec le vert
+  return test.vehicules.some((w) => {
+    if (w === v) return false; const ew = evtEnCours(w, c.cle); if (!ew) return false;
+    if (etatFeu(c.cle, ew.route) === 'rouge') return w.passes.has('L' + c.cle + ew.i) && w.s < ew.sFin;
+    return w.s < ew.sFin && ew.sArret - w.s < 260;
+  });
+}
+function sortirClignotant(f) { f.mode = null; f.phase = 1; f.trans = FEU_ROUGE_INTEGRAL; f.t = 0; } // rouge partout, puis l'axe prioritaire repart au vert
+function changerPhase(c) {
+  const f = seance.feux[c.cle] || (seance.feux[c.cle] = { phase: 0, trans: 0, t: 0 });
+  seance.feuxAuto = false;
+  if (f.mode === 'clignotant') { sortirClignotant(f); toast('Fin de l\'orange clignotant : rouge partout, puis reprise'); }
+  else { if (!f.trans) f.trans = FEU_ORANGE + FEU_ROUGE_INTEGRAL; toast('Feux à la main : ils passent à l\'orange puis au rouge'); }
+  majDockSeance(); sale = true;
+}
+function ouvrirMenuFeu(c, a, ev) {
+  const m = $('menu-feu'), f = seance.feux[c.cle] || (seance.feux[c.cle] = { phase: 0, trans: 0, t: 0 }), k = a.route + ':' + a.bdir, bas = !!(f.bas && f.bas.includes(k));
+  menuFeu = { c, k };
+  $('mf-cli').classList.toggle('actif', f.mode === 'clignotant'); $('mf-bas').classList.toggle('actif', bas);
+  $('mf-cli').lastElementChild.textContent = f.mode === 'clignotant' ? 'Arrêter l\'orange clignotant' : 'Orange clignotant (tout le carrefour)';
+  $('mf-bas').lastElementChild.textContent = bas ? 'Éteindre le jaune du bas (ce feu)' : 'Jaune clignotant en bas (ce feu)';
+  $('mf-auto').hidden = seance.feuxAuto && f.mode !== 'clignotant';
+  fermerMenu(); m.classList.add('ouvert');
+  const r = m.getBoundingClientRect();
+  m.style.left = Math.max(8, Math.min(innerWidth - r.width - 8, ev.clientX - r.width / 2)) + 'px';
+  m.style.top = Math.max(8, Math.min(innerHeight - r.height - 8, ev.clientY + 22)) + 'px';
+}
+/* passage étroit (écluse) : le sens qui a le B15 attend que la voie soit libre, puis se décale dans la voie restante */
+function vitesseEcluse(v, p, P) {
+  const E = scene.ecluse; if (!E || Math.abs(p.hx) < 0.7 || Math.abs(p.y - E.y) > 120) return 9;
+  const sens = Math.sign(p.hx), entree = sens > 0 ? E.x0 : E.x1;
+  const r = (entree - p.x) * sens - 38 - 70; // avant du véhicule → point d'attente, 70 avant l'étranglement (avant les zébras)
+  if (r < -2 || r > 160) return 9;
+  const dedans = (q) => q.x > E.x0 - 40 && q.x < E.x1 + 40 && Math.abs(q.y - E.y) < 120;
+  const gene = test.vehicules.some((w, iw) => {
+    if (w === v) return false; const q = P[iw]; if (Math.abs(q.hx) < 0.7 || Math.sign(q.hx) !== -sens) return false;
+    if (dedans(q)) return true; // quelqu'un d'en face est déjà dans le passage
+    if (sens !== E.cede) return false; // C18 : prioritaire
+    const ra = ((sens > 0 ? E.x1 : E.x0) - q.x) * -sens; // B15 : l'autre arrive-t-il ?
+    return ra > 0 && ra < 320;
+  });
+  if (!gene) return 9;
+  return r <= 1 ? 0 : Math.max(0.3, r / 25);
+}
+function ajusterEcluse(T, route, dir) {
+  const E = scene.ecluse; if (!E || route !== E.route || dir !== E.cede) return T;
+  for (const q of T.pts) { const d = q[0] < E.x0 ? E.x0 - q[0] : q[0] > E.x1 ? q[0] - E.x1 : 0, w = d >= 90 ? 0 : 0.5 * (1 + Math.cos(Math.PI * d / 90)); q[1] += (E.yPassage - q[1]) * w; }
+  T.cum = [0]; for (let i = 1; i < T.pts.length; i++) T.cum.push(T.cum[i - 1] + Math.hypot(T.pts[i][0] - T.pts[i - 1][0], T.pts[i][1] - T.pts[i - 1][1]));
+  T.len = T.cum[T.cum.length - 1];
+  for (const e of T.evts) { e.sArret = T.cum[e.i]; e.sFin = T.cum[e.iFin]; e.sLigne = e.sArret - (distArret(e.c) - DEGAGE); e.sAttente = e.sArret + (e.sFin - e.sArret) * (croisementDe(e.c) === 'indonesien' ? 0.18 : 0.42); }
+  return T;
+}
+function auFeuRouge(v) { return v.T.evts.some((e) => e.c.type === 'feux' && !v.passes.has('L' + e.c.cle + e.i) && e.sLigne - v.s < 400 && ['rouge', 'orange'].includes(etatFeu(e.c.cle, e.route))); }
 function rendre() {
   const g = vctx;
   g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(couche, 0, 0);
   g.setTransform(S * DPR, 0, 0, S * DPR, OX * DPR, OY * DPR);
   ctx = g;
   // feux (animés)
-  for (const p of geo.autoPanneaux) if (p.type === 'feu') dessinerPanneau(g, 'feu', p.x, p.y, p.ang, etatFeu(p.cle, p.route));
+  for (const p of geo.autoPanneaux) if (p.type === 'feu') dessinerPanneau(g, 'feu', p.x, p.y, p.ang, afficheFeu(p.cle, p.route, p.bdir));
   for (const p of scene.panneaux) if (p.type === 'feu') dessinerPanneau(g, 'feu', p.x, p.y, p.ang, p.cle ? etatFeu(p.cle, p.route) : test ? (test.frame % 400 < 200 ? 'vert' : 'rouge') : 'rouge', null, p.ech);
   // tracé en cours
   if (geste && geste.type === 'trace' && geste.pts.length > 1) {
@@ -2051,7 +2133,7 @@ function construireTrajet(id, s, dir, choix) {
     const voulu = choix && choix[n];
     let o = voulu && sorties.find((q) => q.tv === voulu);
     if (!o) { const r = Math.random(), pref = r < 0.5 ? 'droit' : r < 0.75 ? 'droite' : 'gauche'; o = sorties.find((q) => q.tv === pref) || sorties[Math.floor(Math.random() * sorties.length)]; }
-    evts.push({ i: pts.length - 1, iFin: pts.length - 1 + o.pts.length - 1, c, route: id, tv: o.tv, hi: o.hi, secondaire: c.prio !== id });
+    evts.push({ i: pts.length - 1, iFin: pts.length - 1 + o.pts.length - 1, c, route: id, tv: o.tv, hi: o.hi, secondaire: c.prio !== id, bdir: -dir });
     for (let i = 1; i < o.pts.length; i++) pts.push(o.pts[i]);
     id = o.b.id; s = o.sx; dir = o.b.dir; n++;
   }
@@ -2082,7 +2164,7 @@ function entrees() {
 function lancerVehicule(route, dir, choix, easy, reaction) {
   const g = geo.routes.get(route); if (!g) return null;
   const s0 = dir > 0 ? 0 : g.len;
-  const T = construireTrajet(route, s0, dir, choix);
+  const T = ajusterEcluse(construireTrajet(route, s0, dir, choix), route, dir);
   if (T.len < 20) return null;
   const libre = !test.vehicules.some((w) => { const p = posVehicule(w); return Math.hypot(p.x - T.pts[0][0], p.y - T.pts[0][1]) < 130; });
   if (!libre) return null;
@@ -2113,6 +2195,7 @@ function resteRouge(cle, route) {
   const prio = c.prio === route;
   if (mode === 'seance' && seance.feux[cle]) {
     const f = seance.feux[cle], vert = prio ? f.phase === 0 : f.phase === 1;
+    if (f.mode === 'clignotant') return 0;
     if (f.trans) return vert ? (seance.feuxAuto ? f.trans + FEU_DEMI : Infinity) : f.trans;
     if (vert) return 0;
     return seance.feuxAuto ? Math.max(0, FEU_VERT - f.t) + FEU_ORANGE + FEU_ROUGE_INTEGRAL : Infinity;   // à la main : rouge tant que le moniteur ne touche pas
@@ -2145,7 +2228,7 @@ function avancerPietons() {
     if (p.etat === 'attente') {
       const voitureDessus = test.vehicules.some((v) => (v.cws || []).some((h) => h.k === p.k && h.s - v.s > -45 && h.s - v.s < (p.cw.cle ? 50 : 95)));
       let ok = !voitureDessus;
-      if (p.cw.cle) ok = ok && etatFeu(p.cw.cle, p.cw.route) === 'rouge' && resteRouge(p.cw.cle, p.cw.route) > DUREE_TRAVERSEE;   // bonhomme vert
+      if (p.cw.cle) { const ef = etatFeu(p.cw.cle, p.cw.route); ok = ok && (ef === 'clignotant' || (ef === 'rouge' && resteRouge(p.cw.cle, p.cw.route) > DUREE_TRAVERSEE)); }   // bonhomme vert
       if (ok) p.etat = 'traverse';
     } else { p.t += 1.05 / (LR + 22); if (p.t >= 1) p.fini = true; }
   }
@@ -2183,6 +2266,7 @@ function avancerTest() {
       }
       if (av > 0 && lat < 26) { if (av < 90) cible = 0; else if (av < 140) cible = Math.min(cible, 1.1); }
     });
+    if (scene.ecluse) cible = Math.min(cible, vitesseEcluse(v, p, P));
     v.cligno = null;
     for (const e of v.T.evts) {
       if (e.tv !== 'droit' && v.s > e.sArret - 260 && v.s < e.sFin) v.cligno = e.tv;
@@ -2194,7 +2278,9 @@ function avancerTest() {
         if (reste < -2) { v.passes.add('L' + c.cle + e.i); }
         else if (reste < 130) {
           let ok = true;
-          if (c.type === 'feux') { const et = etatFeu(c.cle, e.route); ok = et === 'vert' || (et === 'orange' && reste < 8); }
+          const type = typeEffectif(c, e);
+          if (type === 'feux') { const et = etatFeu(c.cle, e.route); ok = et === 'vert' || (et === 'orange' && reste < 8);
+            if (!ok && et === 'rouge' && e.tv === 'droite' && jauneBas(c.cle, e.route, e.bdir)) { if (reste <= 1) v.attente++; ok = v.attente > 40 && !vertEnTravers(v, c); } }
           else if ((c.type === 'stop' || c.type === 'cedez') && e.secondaire) {
             const libre = !test.vehicules.some((w) => {
               if (w === v) return false; const ew = evtEnCours(w, c.cle); if (!ew) return false;
@@ -2204,7 +2290,7 @@ function avancerTest() {
             });
             if (c.type === 'stop') { if (reste <= 1) v.attente++; ok = v.attente > 55 && libre; } else ok = libre;
           }
-          else if (c.type === 'pad' || c.type === 'aucun') {        // sans panneau = priorité à droite
+          else if (type === 'pad' || type === 'aucun') {        // sans panneau = priorité à droite
             const [dx, dy] = droiteDe(e.hi[0], e.hi[1]);
             const gene = test.vehicules.some((w) => {
               if (w === v) return false; const ew = evtEnCours(w, c.cle); if (!ew) return false;
@@ -2247,7 +2333,7 @@ function avancerTest() {
   });
   test.vehicules = test.vehicules.filter((v) => !v.fini);
   // carrefour totalement bloqué (très rare) : au bout de 7 s sans que personne ne bouge, on repart d'une circulation neuve
-  test.gel = test.vehicules.length >= 4 && test.vehicules.every((v) => v.v < 0.05) ? (test.gel || 0) + 1 : 0;
+  test.gel = test.vehicules.length >= 4 && test.vehicules.every((v) => v.v < 0.05) && !test.vehicules.some(auFeuRouge) ? (test.gel || 0) + 1 : 0; // attendre à un feu rouge n'est pas un blocage
   if (test.gel > 420) { test.vehicules = []; test.gel = 0; }
   sale = true;
 }
@@ -2533,7 +2619,7 @@ function demanderMdp(suite) {        // l'édition est protégée, la séance es
 let toastT = 0;
 function toast(t, duree) { const el = $('toast'); el.textContent = t; el.classList.add('vu'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('vu'), duree || 2200); }
 function majAide() { $('aide').style.display = scene.routes.length || scene.marques.length || scene.decor.length || scene.fond ? 'none' : 'block'; }
-function fermerMenu() { $('menu').classList.remove('ouvert'); $('plus-seance').classList.remove('ouvert'); }
+function fermerMenu() { $('menu').classList.remove('ouvert'); $('plus-seance').classList.remove('ouvert'); $('menu-feu').classList.remove('ouvert'); }
 $('b-menu').onclick = () => { $('plus-seance').classList.remove('ouvert'); $('menu').classList.toggle('ouvert'); };
 $('m-accueil').onclick = () => ouvrirAccueil();
 $('m-aide').onclick = $('b-aide').onclick = () => ouvrirGestes();
@@ -2699,9 +2785,10 @@ function avancerSeance() {
   seance.horloge++;
   if (seance.feuxAuto) for (const c of geo.carrefours) if (c.type === 'feux') {
     const f = seance.feux[c.cle] || (seance.feux[c.cle] = { phase: 0, trans: 0, t: 0 });
-    f.t++; if (f.t > FEU_VERT && !f.trans) f.trans = FEU_ORANGE + FEU_ROUGE_INTEGRAL;
+    if (f.mode === 'clignotant') continue; f.t++; if (f.t > FEU_VERT && !f.trans) f.trans = FEU_ORANGE + FEU_ROUGE_INTEGRAL;
   }
   for (const [cle, f] of Object.entries(seance.feux)) if (f.trans) {
+    if (f.mode === 'clignotant') continue;
     if (f.trans === 1 && pietonsSurPassage(cle, 1 - f.phase)) continue;   // rouge des deux côtés tant qu'un piéton finit de traverser
     f.trans--; if (!f.trans) { f.phase = 1 - f.phase; f.t = 0; }
   }
@@ -2715,6 +2802,7 @@ function avancerSeance() {
 function etatFeuSeance(cle, route) {
   const f = seance.feux[cle], c = geo.carrefours.find((k) => k.cle === cle);
   const vert = (c && c.prio === route) ? f.phase === 0 : f.phase === 1;
+  if (f.mode === 'clignotant') return 'clignotant';
   if (f.trans) return vert && f.trans > FEU_ROUGE_INTEGRAL ? 'orange' : 'rouge';
   return vert ? 'vert' : 'rouge';
 }
@@ -2778,7 +2866,7 @@ function seanceDown(e) {
   if (u) { G.type = 'deplacer'; G.u = u; G.dx = u.x - p[0]; G.dy = u.y - p[1]; seance.sel = u; versLeHaut(u); majSelSeance(); sale = true; return; }
   const c = geo.carrefours.find((k) => k.type === 'feux' && Math.hypot(p[0] - k.x, p[1] - k.y) < 90) ||
             geo.carrefours.find((k) => geo.autoPanneaux.some((a) => a.cle === k.cle && a.type === 'feu' && Math.hypot(p[0] - a.x, p[1] - a.y) < 30));
-  G.type = 'vide'; G.feu = c;
+  G.type = 'vide'; G.feu = c; G.panneauFeu = c && geo.autoPanneaux.find((a) => a.type === 'feu' && a.cle === c.cle && Math.hypot(p[0] - a.x, p[1] - a.y) < 34);
 }
 function versLeHaut(u) { const L = usagers(), i = L.indexOf(u); if (i >= 0 && i !== L.length - 1 && !seance.numeros) { L.splice(i, 1); L.push(u); } }
 function seanceMove(e) {
@@ -2809,10 +2897,7 @@ function seanceUp(e) {
     caleSurVoie(u); usagers().push(u); if (seance.enreg) { u.depart = null; u.rec = [{ t: seance.t, ...etatDe(u) }]; }
     seance.sel = u; choisirOutilSeance(null); majSelSeance(); valider();
   } else if (G.type === 'vide' && !G.bouge) {
-    if (G.feu) {
-      const f = seance.feux[G.feu.cle] || (seance.feux[G.feu.cle] = { phase: 0, trans: 0, t: 0 });
-      if (!f.trans) f.trans = FEU_ORANGE + FEU_ROUGE_INTEGRAL; seance.feuxAuto = false; majDockSeance(); toast('Feux à la main : ils passent à l\'orange puis au rouge');
-    }
+    if (G.feu) { if (G.panneauFeu) ouvrirMenuFeu(G.feu, G.panneauFeu, e); else changerPhase(G.feu); } // carrefour : phase suivante ; un feu : son menu
     seance.sel = null; majSelSeance();
   }
   sale = true;
@@ -2920,6 +3005,25 @@ function basculerMode(m) {
   cv.addEventListener('pointermove', (e) => { if (mode === 'seance' && !pinch) seanceMove(e); });
   cv.addEventListener('pointerup', (e) => { if (mode === 'seance' && !pinch) seanceUp(e); });
   majDockSeance();
+})();
+
+/* ---------------- menu d'un feu (Séance) : phase, orange clignotant, jaune du bas ---------------- */
+(function initMenuFeu() {
+  const F = () => menuFeu && (seance.feux[menuFeu.c.cle] || (seance.feux[menuFeu.c.cle] = { phase: 0, trans: 0, t: 0 }));
+  $('mf-phase').onclick = () => { if (menuFeu) changerPhase(menuFeu.c); fermerMenu(); };
+  $('mf-cli').onclick = () => {
+    const f = F(); if (!f) return; seance.feuxAuto = false;
+    if (f.mode === 'clignotant') { sortirClignotant(f); toast('Rouge partout, puis reprise du cycle'); }
+    else { f.mode = 'clignotant'; f.trans = 0; toast('Orange clignotant : c\'est la priorité à droite qui s\'applique (sauf panneaux)'); }
+    majDockSeance(); fermerMenu(); sale = true;
+  };
+  $('mf-bas').onclick = () => {
+    const f = F(); if (!f) return; f.bas = f.bas || []; const i = f.bas.indexOf(menuFeu.k);
+    if (i >= 0) { f.bas.splice(i, 1); toast('Jaune du bas éteint'); }
+    else { f.bas.push(menuFeu.k); toast('Jaune clignotant en bas : au rouge, on peut tourner à droite en cédant le passage'); }
+    fermerMenu(); sale = true;
+  };
+  $('mf-auto').onclick = () => { const f = F(); if (f && f.mode === 'clignotant') sortirClignotant(f); seance.feuxAuto = true; majDockSeance(); fermerMenu(); toast('Feux automatiques'); sale = true; };
 })();
 
 /* ---------------- deux doigts : zoom + déplacement ; molette : zoom ---------------- */
@@ -3444,11 +3548,23 @@ const SCENES_COURS = [
     return sc;
   }],
   ['stop', 'STOP (4 branches)', () => {
-    const { G, D, H, B } = bornes(), X = 640, Y = 560, sc = sceneVide();
+    const { G, D, H, B } = bornes(), X = 640, Y = 560, v = LR / 4, sc = sceneVide();
     sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }, { id: 2, pts: [[X, H], [X, B]] }]; sc.id = 3;
-    sc.regimes = [{ x: X, y: Y, type: 'stop', prio: 0 }];
-    sc.decor = deco([['arbre', 480, 700], ['arbre', 800, 820], ['arbre', 980, 720], ['arbre', 470, 360], ['arbre', 1180, 360], ['arbre', 80, 800], ['arbre', 140, 300], ['maison', 870, 330, 150, 110], ['maison_grise', 300, 820, 150, 110]]);
-    sc.usagers = [usager(1, 'ecole', X + 37, 760, -Math.PI / 2, '#3b82c4'), usager(2, 'voiture', 170, Y + 37, 0, '#5b6270'), usager(3, 'voiture', X - 37, 260, Math.PI / 2, '#e0b43a')];
+    sc.regimes = [{ x: X, y: Y, type: 'stop', prio: 0 }]; // STOP sur les 4 branches
+    const d = DEGAGE + 62; // « STOP » écrit au sol sur chaque arrivée, lisible par le conducteur
+    sc.marques = [[X + v, Y + d, -Math.PI / 2], [X - v, Y - d, Math.PI / 2], [X + d, Y - v, Math.PI], [X - d, Y + v, 0]].map(([x, y, ang]) => ({ type: 'texte', texte: 'STOP', x, y, ang, taille: 20 }));
+    sc.decor = deco([['maison', 330, 330, 160, 115], ['maison_grise', 960, 320, 170, 120], ['maison_grise', 320, 805, 170, 120], ['maison', 955, 805, 160, 115],
+      ['arbre', 120, 330], ['arbre', 1170, 300], ['arbre', 130, 840], ['arbre', 1165, 845]]);
+    sc.usagers = [usager(1, 'ecole', X + v, 790, -Math.PI / 2, '#3b82c4'), usager(2, 'voiture', 1000, Y - v, Math.PI, '#e0b43a'), usager(3, 'voiture', X - v, 300, Math.PI / 2, '#d64545')];
+    return sc;
+  }],
+  ['priorite_droite', 'Priorité à droite', () => {
+    const { G, D, H, B } = bornes(), X = 640, Y = 560, v = LR / 4, sc = sceneVide();
+    sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }, { id: 2, pts: [[X, H], [X, B]] }]; sc.id = 3;
+    sc.regimes = []; // ni panneau ni feu : c'est la règle par défaut, la priorité à droite
+    sc.decor = deco([['maison', 320, 320, 150, 110], ['maison', 965, 330, 160, 115], ['maison', 330, 810, 160, 115], ['maison_grise', 960, 805, 170, 120],
+      ['arbre', 110, 310], ['arbre', 1180, 320], ['buisson', 120, 830], ['arbre', 1180, 850]]);
+    sc.usagers = [usager(1, 'ecole', X + v, 800, -Math.PI / 2, '#3b82c4'), usager(2, 'voiture', 1010, Y - v, Math.PI, '#e0b43a'), usager(3, 'voiture', 270, Y + v, 0, '#2f9e6b')];
     return sc;
   }],
   ['briollay1', 'Briollay – feux 1', () => {
@@ -3461,14 +3577,6 @@ const SCENES_COURS = [
     ];
     sc.decor = deco([['maison', 300, 300, 150, 110], ['maison_grise', 930, 300, 160, 120], ['maison_grise', 300, 820, 160, 120], ['maison', 930, 820, 150, 110], ['arbre', 110, 330], ['arbre', 1180, 330], ['arbre', 1180, 820], ['buisson', 110, 820]]);
     sc.usagers = [usager(1, 'ecole', X + 37, 760, -Math.PI / 2, '#3b82c4'), usager(2, 'voiture', 120, Y + 37, 0, '#5b6270')];
-    return sc;
-  }],
-  ['briollay2', 'Briollay – feux 2', () => {
-    const { G, D, H, B } = bornes(), Y = 600, X1 = 260, X2 = 780, sc = sceneVide();
-    sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }, { id: 2, pts: [[X1, Y], [X1, H]] }, { id: 3, pts: [[X2, Y], [X2, B]] }]; sc.id = 4;
-    sc.regimes = [{ x: X1, y: Y, type: 'feux', prio: 1, sas: true }, { x: X2, y: Y, type: 'feux', prio: 1, sas: true }];
-    sc.decor = deco([['maison', 470, 330, 150, 110], ['maison_grise', 760, 330, 150, 110], ['maison', 1080, 330, 160, 120], ['maison_grise', 260, 880, 170, 120], ['maison', 960, 880, 150, 110], ['arbre', 1200, 860], ['arbre', 450, 900], ['buisson', 60, 300]]);
-    sc.usagers = [usager(1, 'ecole', X2 + 37, 860, -Math.PI / 2, '#3b82c4'), usager(2, 'voiture', 1150, Y - 37, Math.PI, '#5b6270')];
     return sc;
   }],
   ['sonnettes', 'Les 7 Sonnettes – feux', () => {
@@ -3535,11 +3643,19 @@ const SCENES_COURS = [
   ['haricot', 'Giratoire en haricot', () => sceneGiratoire('haricot', false)],
   ['haricot_velo', 'Giratoire en haricot avec bande cyclable', () => sceneGiratoire('haricot', true)],
   ['etroit', 'Passage étroit (B15 / C18)', () => {
-    const { sc } = depuisFormatSimu(ANCIENNES.priorite_b15c18, ''), { G, D, H } = bornes();
-    sc.routes = [{ id: 1, pts: [[G, 580], [D, 580]] }, { id: 2, pts: [[1080, 580], [1080, H]] }]; sc.id = 3;
-    sc.marques = sc.marques.filter((m) => !(m.x1 !== undefined && Math.abs(m.y1 - 580) < 2 && Math.abs(m.y2 - 580) < 2));   // l'axe est automatique
-    sc.decor = sc.decor.filter((d, i, l) => l.findIndex((e) => e.x === d.x && e.y === d.y) === i);
-    sc.usagers.push(usager(9, 'ecole', 120, 543, 0, '#3b82c4'), usager(10, 'voiture', 1180, 543, Math.PI, '#e0b43a'));
+    const { G, D } = bornes(), Y = 580, X0 = 540, X1 = 740, v = LR / 4, sc = sceneVide();
+    sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]], axe: 'aucune' }]; sc.id = 2;
+    // écluse : avancée de trottoir côté nord → une seule voie. Vers la gauche : B15 (je cède) ; vers la droite : C18 (prioritaire)
+    sc.ecluse = { route: 1, x0: X0, x1: X1, y: Y, cede: -1, yPassage: Y + 22 };
+    const axe = (x1, x2) => ({ type: 'ligne_discontinue', x1, y1: Y, x2, y2: Y, x: (x1 + x2) / 2, y: Y });
+    sc.marques = [axe(G, X0 - 110), axe(X1 + 110, D),
+      { type: 'zone_zebra', x: X1 + 30, y: Y - 50, ang: 0, pts: [[-30, -25], [-30, 47], [70, -25]] },
+      { type: 'zone_zebra', x: X0 - 30, y: Y - 50, ang: 0, pts: [[30, -25], [30, 47], [-70, -25]] }];
+    sc.panneaux = [{ type: 'b15', x: X1 + 170, y: Y - (LR / 2 + 26), ang: 3 * Math.PI / 2 }, { type: 'c18', x: X0 - 170, y: Y + LR / 2 + 26, ang: Math.PI / 2 }];
+    sc.decor = [{ type: 'terreplein', x: (X0 + X1) / 2, y: Y - LR / 2 + 26, w: X1 - X0, h: 92, ang: 0 }, // avancée de trottoir plantée
+      ...deco([['buisson', 600, Y - 50], ['buisson', 680, Y - 50], ['maison', 250, 330, 160, 115], ['maison_grise', 1010, 320, 170, 120], ['arbre', 640, 330],
+        ['maison_grise', 420, 840, 170, 120], ['maison', 900, 845, 160, 115], ['arbre', 90, 850], ['arbre', 1210, 850], ['buisson', 1200, 340]])];
+    sc.usagers = [usager(1, 'ecole', 1130, Y - v, Math.PI, '#3b82c4'), usager(2, 'voiture', 230, Y + v, 0, '#e0b43a')];
     return sc;
   }],
   ['exemple', 'Carrefours en ville', () => sceneExemple()],
@@ -3551,11 +3667,11 @@ const SCENES_COURS = [
    ===================================================================== */
 const NOTES = {
   cedez: 'Au cédez-le-passage, je ralentis et je regarde : je ne m\'arrête que si quelqu\'un arrive. Lance la circulation et fais dire qui passe en premier.',
-  stop: 'Arrêt complet à la ligne, même s\'il n\'y a personne. Entre deux voitures arrêtées au STOP, c\'est la priorité à droite qui départage.',
+  stop: 'Arrêt complet à la ligne, même s\'il n\'y a personne. Entre voitures arrêtées au STOP, c\'est la priorité à droite qui départage : fais dire l\'ordre (ici la rouge, puis la jaune, puis nous).',
+  priorite_droite: 'Sans panneau ni feu, je cède le passage à celui qui arrive de ma droite. Fais dire l\'ordre de passage : la jaune, puis nous, puis la verte.',
   exemple: 'Une rue prioritaire, un STOP et un cédez-le-passage : fais nommer le régime de chaque carrefour, puis dire qui passe.',
-  etroit: 'Passage étroit : le panneau rond (B15) cède le passage à celui d\'en face, le carré bleu (C18) est prioritaire.',
-  briollay1: 'Je m\'arrête à la ligne des feux, avant le sas vélo. Touche le carrefour pour faire passer le feu à l\'orange, puis au rouge.',
-  briollay2: 'Deux carrefours à feux qui se suivent : je ne m\'engage que si je peux dégager le carrefour.',
+  etroit: 'Passage étroit : de notre côté le panneau rond (B15), je cède le passage à celui d\'en face ; lui a le carré bleu (C18), il est prioritaire. Lance la circulation pour voir l\'alternance.',
+  briollay1: 'Je m\'arrête à la ligne des feux, avant le sas vélo. Touche le carrefour pour changer la phase, touche un feu pour l\'orange clignotant ou le jaune du bas.',
   sonnettes: 'Grand carrefour à feux : je choisis ma voie selon ma direction avant d\'arriver à la ligne.',
   feux_classique: 'Tourne-à-gauche classique : les deux voitures qui se font face se contournent, chacune passe derrière l\'autre.',
   feux_indo: 'Tourne-à-gauche à l\'indonésienne : les deux voitures tournent en passant l\'une devant l\'autre, sans se contourner.',
@@ -3570,8 +3686,8 @@ const NOTES = {
   parking: 'Tous les stationnements : bataille, épi, créneau, PMR, livraison, recharge. Fais dire où l\'on a le droit de se garer.',
 };
 const THEMES = [
-  ['Intersections', ['cedez', 'stop', 'exemple', 'etroit']],
-  ['Feux tricolores', ['briollay1', 'briollay2', 'sonnettes', 'feux_classique', 'feux_indo']],
+  ['Intersections', ['cedez', 'stop', 'priorite_droite', 'exemple', 'etroit']],
+  ['Feux tricolores', ['briollay1', 'sonnettes', 'feux_classique', 'feux_indo']],
   ['Giratoires', ['giratoire', 'giratoire_velo', 'giratoire2', 'haricot', 'haricot_velo']],
   ['Autoroute', ['autoroute', 'sortie']],
   ['Stationnement', ['manoeuvres', 'parking']],
@@ -3721,6 +3837,7 @@ const GESTES = {
     [AUTO(10, 34) + '<path d="M56 46h14" stroke="#1c2430" stroke-width="2.5"/><circle cx="78" cy="46" r="8" fill="#fff" stroke="#1c2430" stroke-width="2.5"/>' + DOIGT(78, 46) + '<path d="M84 30c3-11 11-16 22-16M98 8l8 6-7 7" ' + TRAIT + '/>', 'Rouler et tourner', 'Tire le rond devant le capot : la voiture avance et braque.'],
     ['<rect x="26" y="6" width="68" height="24" rx="8" fill="#1c2430"/><path d="M44 12l-6 6 6 6M76 12l6 6-6 6" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="60" cy="18" r="5" fill="#ff3131"/>' + AUTO(37, 42) + DOIGT(60, 54), 'Clignotants, frein', 'Touche le véhicule : sa barre apparaît. La corbeille le retire.'],
     ['<circle cx="44" cy="46" r="8" fill="rgba(255,49,49,.22)" stroke="#ff3131" stroke-width="2"/><circle cx="76" cy="28" r="8" fill="rgba(255,49,49,.22)" stroke="#ff3131" stroke-width="2"/><path d="M34 54l-14 9M20 54v9h9M86 20l14-9M91 11h9v9" ' + TRAIT + '/>', 'Zoomer', 'Écarte deux doigts, ou la molette. « Vue classe » pour revenir.'],
+    ['<rect x="48" y="2" width="24" height="44" rx="7" fill="#1c2430"/><circle cx="60" cy="13" r="5" fill="#3a3f47"/><circle cx="60" cy="24" r="5" fill="#f59e0b"/><circle cx="60" cy="35" r="5" fill="#3a3f47"/>' + DOIGT(60, 52), 'Feux', 'Touche le carrefour : phase suivante. Touche un feu : orange clignotant, jaune du bas.'],
   ],
   editeur: [
     [STOPV(34, 37) + DOIGT(34, 37) + '<path d="M66 37h34M92 29l8 8-8 8" ' + TRAIT + '/>', 'Déplacer', 'Touche l\'élément puis glisse-le.'],
