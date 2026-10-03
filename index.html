@@ -1397,6 +1397,7 @@ function rendre() {
   if (carrefourOuvert) { const c = geo.carrefours.find((k) => k.cle === carrefourOuvert); if (c) anneau(g, c.x, c.y, true); }
   if (test) for (const p of test.pietons) { const [x, y] = posPieton(p); g.save(); g.translate(x, y); g.scale(1.6, 1.6); pieton(0, 0, p.coul); g.restore(); }
   // véhicules
+  if (test && scene.depassement) for (const v of test.vehicules) if (v.type === 'velo') { const Q = posVehicule(v); haloVelo(g, Q.x, Q.y, Q.ang); }
   if (test) for (const v of test.vehicules) {
     const P = posVehicule(v); if (v.angAff !== undefined) P.ang = v.angAff;
     const cl = v.cligno && (test.frame % 40 < 22) ? v.cligno : null;
@@ -2150,7 +2151,7 @@ function surTrajet(T, s) {
   const a = T.pts[i - 1], b = T.pts[i], L = T.cum[i] - T.cum[i - 1] || 1, t = (s - T.cum[i - 1]) / L;
   return { x: a[0] + (b[0] - a[0]) * t, y: a[1] + (b[1] - a[1]) * t, hx: (b[0] - a[0]) / L, hy: (b[1] - a[1]) / L };
 }
-function posVehicule(v) { if (v.pos) return v.pos; const q = surTrajet(v.T, v.s); return { x: q.x, y: q.y, ang: Math.atan2(q.hy, q.hx), hx: q.hx, hy: q.hy }; }
+function posVehicule(v) { if (v.pos) return v.pos; const q = surTrajet(v.T, v.s), d = v.dec || 0; return { x: q.x + q.hy * d, y: q.y - q.hx * d, ang: Math.atan2(q.hy, q.hx) - Math.atan2(v.ddec || 0, Math.max(v.v, 0.3)), hx: q.hx, hy: q.hy }; } // dec : décalage vers la gauche
 function entrees() {
   const E = [];
   for (const g of geo.routes.values()) {
@@ -2241,13 +2242,13 @@ function avancerTest() {
   if (scene.demo) scriptDemo();
   else if (test.frame >= test.prochain && test.vehicules.length < 10) {
     const E = entrees();
-    if (E.length) { const e = E[Math.floor(Math.random() * E.length)]; lancerVehicule(e.route, e.dir); }
+    if (E.length) { const e = E[Math.floor(Math.random() * E.length)]; const nv = lancerVehicule(e.route, e.dir); if (nv && scene.depassement && !nv.easy && Math.random() < 0.3) { nv.type = 'velo'; nv.v = 0.9; nv.dec = -17.5; } } // vélo : roule près du bord droit
     test.prochain = test.frame + 70 + Math.random() * 90;
   }
   avancerPietons();
   const P = test.vehicules.map(posVehicule);
   test.vehicules.forEach((v, iv) => {
-    const p = P[iv]; let cible = 2.4;
+    const p = P[iv]; let cible = v.type === 'velo' ? 0.9 : 2.4;
     // piétons engagés : priorité absolue
     for (const h of v.cws) if (test.pietons.some((q) => q.k === h.k && q.etat === 'traverse')) {
       const r = h.s - v.s - 38 - 8;
@@ -2325,6 +2326,7 @@ function avancerTest() {
         }
       } else if (v.s > e.sFin) v.passes.add(e);
     }
+    if (scene.depassement) cible = depasserVelo(v, p, P, cible);
     { let d = p.ang - (v.angAff ?? p.ang); while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; v.angAff = (v.angAff ?? p.ang) + d * Math.min(1, 0.12 + v.v * 0.05); }
     v.v += (cible - v.v) * (cible < v.v ? 0.35 : 0.06);
     if (cible === 0 && v.v < 0.05) v.v = 0;
@@ -2811,6 +2813,7 @@ function etatFeuSeance(cle, route) {
 function rendreSeance(g) {
   ctx = g;
   const L = test ? [] : usagers();      // pendant la circulation, les véhicules posés à la main s'effacent (ils reviennent à l'arrêt)
+  if (scene.depassement) for (const u of L) if (u.type === 'velo') haloVelo(g, u.x, u.y, u.ang);
   for (const u of L) dessinerUsager(g, u);
   if (!seance.lecture) for (const u of L) dessinerLaisse(g, u, u === seance.sel);      // la poignée reste visible en plein écran : c'est elle qui fait rouler le véhicule
   if (seance.numeros) L.forEach((u, i) => {
@@ -3538,7 +3541,59 @@ const ANCIENNES = {"s_feux7sonnettes":{"routes":[{"pts":[{"x":0.42188,"y":0.0765
 function bornes(m) { return { G: Math.min(VIS.x0, 0) - (m || 420), D: Math.max(VIS.x1, MONDE.W) + (m || 420), H: Math.min(VIS.y0, 0) - (m || 420), B: Math.max(VIS.y1, MONDE.H) + (m || 420) }; }
 const deco = (l) => l.map(([type, x, y, w, h]) => ({ type, x, y, ang: 0, ...(w ? { w, h } : {}) }));
 const usager = (id, type, x, y, ang, coul) => ({ id, type, x, y, ang, coul });
+/* ---------------- dépassement d'un cycliste : 1 m en agglomération, 1,5 m hors agglomération (R414-4) ---------------- */
+function haloVelo(g, x, y, ang) { // zone à laisser libre sur la gauche du vélo
+  const m = scene.depassement.distance || 1.5, d = m * M1, L = 70;
+  g.save(); g.translate(x, y); g.rotate(ang);
+  g.fillStyle = 'rgba(255,49,49,0.16)'; g.fillRect(-L / 2, -7 - d, L, d);
+  g.strokeStyle = 'rgba(255,49,49,0.9)'; g.lineWidth = 2; g.setLineDash([6, 5]); g.beginPath(); g.moveTo(-L / 2, -7 - d); g.lineTo(L / 2, -7 - d); g.stroke(); g.setLineDash([]);
+  g.fillStyle = '#ff3131'; g.font = '800 11px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(String(m).replace('.', ',') + ' m', 0, -7 - d / 2);
+  g.restore();
+}
+function depasserVelo(v, p, P, cible) { // une voiture derrière un vélo : elle attend que la voie d'en face soit libre, se déporte, puis se rabat
+  if (v.type === 'velo') return cible;
+  const ecart = (scene.depassement.distance || 1.5) * M1 + 8.5; // décalage : vélo à 17,5 à droite du milieu de la voie, demi-largeurs vélo 7 et voiture 19
+  const avant = (q) => (q.x - p.x) * p.hx + (q.y - p.y) * p.hy;
+  let aCote = false, devantA = 1e9, veloPres = false, empiete = 1e9;
+  test.vehicules.forEach((w, iw) => {
+    if (w === v) return; const q = P[iw], a = avant(q), memeSens = p.hx * q.hx + p.hy * q.hy > 0.7;
+    if (w.type === 'velo') {
+      if (!memeSens || Math.abs((q.x - p.x) * p.hy - (q.y - p.y) * p.hx) > 80) return;
+      if (Math.abs(a) < 140) veloPres = true;
+      if (a >= -110 && a <= 60) aCote = true; else if (a > 60 && a < 300) devantA = Math.min(devantA, a);
+    } else if (!memeSens && (w.dec || 0) > 5 && a > 0) empiete = Math.min(empiete, a); // en face, quelqu'un déborde sur ma voie
+  });
+  const enFace = (d) => test.vehicules.some((w, iw) => { if (w === v || w.type === 'velo') return false; const q = P[iw]; if (p.hx * q.hx + p.hy * q.hy > -0.7) return false; const a = avant(q); return a > -60 && a < d; });
+  if (v.dep) {
+    if (!aCote && devantA > 230) v.dep = false; // plus de vélo à doubler : je me rabats
+    else if (!aCote && enFace(650)) v.dep = false; // pas encore à hauteur et quelqu'un arrive : j'abandonne, je reste derrière
+  } else if (devantA < 230 && empiete > 1e8 && !enFace(1250) && !test.vehicules.some((w, iw) => w !== v && w.dep && avant(P[iw]) > 0 && avant(P[iw]) < 320)) v.dep = true;
+  const serre = !v.dep && !aCote && empiete < 450 && !veloPres; // je laisse passer celui qui double : je ralentis et je serre à droite
+  const but = v.dep || aCote ? ecart : serre ? -14 : 0, pas = 0.25 + v.v * 0.35, avantDec = v.dec || 0; // jamais se rabattre à hauteur d'un vélo
+  v.dec = avantDec + Math.max(-pas, Math.min(pas, but - avantDec)); v.ddec = v.dec - avantDec;
+  if (but > 0 && v.dec < but - 2) v.cligno = 'gauche'; else if (but === 0 && v.dec > 2) v.cligno = 'droite';
+  if (!v.dep && devantA < 300) cible = Math.min(cible, devantA < 120 ? 0.7 : 0.9 + (devantA - 120) / 60); // je reste derrière, à distance
+  if (aCote && v.dec < ecart - 1) cible = Math.min(cible, 0.9); // pas encore assez déporté : je ne remonte pas le vélo
+  if (!v.dep && !aCote && empiete < 450) cible = Math.min(cible, empiete < 220 ? 0 : (empiete - 220) / 80);
+  return cible;
+}
+function sceneDepassement(m) {
+  const { G, D } = bornes(), Y = 580, v = LR / 4, ville = m < 1.5, sc = sceneVide();
+  sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }]; sc.id = 2;
+  sc.depassement = { distance: m };
+  if (ville) sc.panneaux = [{ type: 'limite_50', x: 120, y: Y + LR / 2 + 26, ang: Math.PI / 2 }];
+  sc.decor = deco(ville
+    ? [['maison', 200, 350, 160, 115], ['maison_grise', 470, 345, 170, 120], ['maison', 760, 350, 150, 110], ['maison_grise', 1060, 345, 170, 120],
+       ['maison_grise', 260, 815, 170, 120], ['maison', 560, 810, 160, 115], ['maison', 880, 815, 150, 110], ['arbre', 1180, 830]]
+    : [['arbre', 120, 400], ['arbre', 330, 380], ['arbre', 560, 405], ['arbre', 820, 385], ['arbre', 1080, 400], ['buisson', 1230, 420],
+       ['arbre', 200, 770], ['buisson', 430, 760], ['arbre', 690, 780], ['arbre', 960, 765], ['buisson', 1190, 770], ['maison', 640, 950, 160, 115]]);
+  sc.usagers = [usager(1, 'ecole', 230, Y + v, 0, '#3b82c4'), usager(2, 'velo', 560, Y + v + 17.5, 0, '#2f9e6b'), usager(3, 'voiture', 1150, Y - v, Math.PI, '#e0b43a')];
+  return sc;
+}
 const SCENES_COURS = [
+  ['depassement', 'Dépasser un cycliste – hors agglo (1,5 m)', () => sceneDepassement(1.5)],
+  ['depassement_ville', 'Dépasser un cycliste – en ville (1 m)', () => sceneDepassement(1)],
   ['cedez', 'Cédez-le-passage', () => {
     const { G, D, H, B } = bornes(), X = 640, Y = 560, sc = sceneVide();
     sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }, { id: 2, pts: [[X, H], [X, B]] }]; sc.id = 3;
@@ -3668,6 +3723,8 @@ const SCENES_COURS = [
 const NOTES = {
   cedez: 'Au cédez-le-passage, je ralentis et je regarde : je ne m\'arrête que si quelqu\'un arrive. Lance la circulation et fais dire qui passe en premier.',
   stop: 'Arrêt complet à la ligne, même s\'il n\'y a personne. Entre voitures arrêtées au STOP, c\'est la priorité à droite qui départage : fais dire l\'ordre (ici la rouge, puis la jaune, puis nous).',
+  depassement: 'Hors agglomération, je laisse au moins 1,5 m entre le vélo et ma voiture : je me déporte franchement, sur l\'autre voie. Contrôles, clignotant, et je ne dépasse que si personne n\'arrive en face. Lance la circulation pour voir.',
+  depassement_ville: 'En agglomération, au moins 1 m entre le vélo et ma voiture. Si je ne peux pas laisser cette distance sans gêner ceux d\'en face, je reste derrière le vélo.',
   priorite_droite: 'Sans panneau ni feu, je cède le passage à celui qui arrive de ma droite. Fais dire l\'ordre de passage : la jaune, puis nous, puis la verte.',
   exemple: 'Une rue prioritaire, un STOP et un cédez-le-passage : fais nommer le régime de chaque carrefour, puis dire qui passe.',
   etroit: 'Passage étroit : de notre côté le panneau rond (B15), je cède le passage à celui d\'en face ; lui a le carré bleu (C18), il est prioritaire. Lance la circulation pour voir l\'alternance.',
@@ -3687,6 +3744,7 @@ const NOTES = {
 };
 const THEMES = [
   ['Intersections', ['cedez', 'stop', 'priorite_droite', 'exemple', 'etroit']],
+  ['Partage de la route', ['depassement', 'depassement_ville']],
   ['Feux tricolores', ['briollay1', 'sonnettes', 'feux_classique', 'feux_indo']],
   ['Giratoires', ['giratoire', 'giratoire_velo', 'giratoire2', 'haricot', 'haricot_velo']],
   ['Autoroute', ['autoroute', 'sortie']],
