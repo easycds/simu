@@ -266,7 +266,8 @@ body.mode-seance #menu-feu.ouvert { display:flex; }
   <button class="btn" id="b-annuler" title="Annuler"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
   <button class="btn" id="b-retablir" title="Rétablir"><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 000 12h3"/></svg></button>
   <div class="sep"></div>
-  <button class="btn rouge" id="b-tester"><svg viewBox="0 0 24 24" style="fill:#fff;stroke:none" id="ico-play"><path d="M7 4l13 8-13 8z"/></svg><span id="t-tester">Tester</span></button>
+  <button class="btn rouge" id="b-publier" style="display:none" title="Enregistrer cette scène pour tous les moniteurs"><svg viewBox="0 0 24 24" style="fill:none;stroke:#fff"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg><span>Enregistrer pour tous</span></button>
+<button class="btn rouge" id="b-tester"><svg viewBox="0 0 24 24" style="fill:#fff;stroke:none" id="ico-play"><path d="M7 4l13 8-13 8z"/></svg><span id="t-tester">Tester</span></button>
 </div>
 
 <div class="pill" id="dock">
@@ -1397,14 +1398,39 @@ function anglesMorts(g, x, y, ang) {
   g.fillStyle = '#1f5f99'; g.fillText('RÉTRO INTÉRIEUR', -150, 0);
   g.restore();
 }
+function etatPieton(cle, route) { // bonhomme vert seulement si les voitures qui coupent le passage restent au rouge le temps de traverser
+  const e = etatFeu(cle, route); if (e === 'clignotant') return 'eteint';
+  if (e !== 'rouge') return 'rouge';
+  if (!test && !(mode === 'seance' && seance.feux[cle])) return 'vert';
+  return resteRouge(cle, route) > DUREE_TRAVERSEE ? 'vert' : 'rouge';
+}
+function feuPieton(g, x, y, ang, et) { // petit feu piéton : bonhomme rouge, bonhomme vert
+  g.save(); g.translate(x, y); g.rotate(ang);
+  g.fillStyle = '#16191d'; g.beginPath(); g.roundRect(-14, -8, 28, 16, 5); g.fill();
+  const lampe = (cx, coul, on) => {
+    g.fillStyle = on ? coul : '#2c3138'; g.beginPath(); g.arc(cx, 0, 5.8, 0, Math.PI * 2); g.fill();
+    if (on) { g.fillStyle = '#16191d'; g.beginPath(); g.arc(cx, -2.7, 1.35, 0, Math.PI * 2); g.fill(); g.fillRect(cx - 1.1, -1.2, 2.2, 4.4); }
+  };
+  lampe(-6.6, '#ff3b30', et === 'rouge'); lampe(6.6, '#2ecc71', et === 'vert');
+  g.restore();
+}
+let pubVue = null;
+function majPublier() { // en modifiant une scène toute faite, le bouton « Enregistrer pour tous » est toujours visible
+  const ok = mode === 'editeur' && !!scene.edition; if (ok === pubVue) return; pubVue = ok; const b = $('b-publier'); if (b) b.style.display = ok ? '' : 'none';
+}
 function rendre() {
-  majCirculation();
+  majCirculation(); majPublier();
   const g = vctx;
   g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(couche, 0, 0);
   g.setTransform(S * DPR, 0, 0, S * DPR, OX * DPR, OY * DPR);
   ctx = g;
   // feux (animés)
   for (const p of geo.autoPanneaux) if (p.type === 'feu') dessinerPanneau(g, 'feu', p.x, p.y, p.ang, afficheFeu(p.cle, p.route, p.bdir));
+  for (const cw of passagesTest()) { // feux piétons, de chaque côté des passages des carrefours à feux
+    const c = cw.cle && geo.carrefours.find((k) => k.cle === cw.cle); if (!c || c.type !== 'feux' || cw.route == null) continue;
+    const et = etatPieton(cw.cle, cw.route), demi = cw.larg / 2 + 16, a = Math.atan2(cw.u[1], cw.u[0]);
+    for (const sg of [-1, 1]) feuPieton(g, cw.x + cw.n[0] * demi * sg, cw.y + cw.n[1] * demi * sg, a, et);
+  }
   for (const p of scene.panneaux) if (p.type === 'feu') dessinerPanneau(g, 'feu', p.x, p.y, p.ang, p.cle ? afficheFeu(p.cle, p.route) : test ? (test.frame % 400 < 200 ? 'vert' : 'rouge') : 'rouge', null, p.ech);
   // tracé en cours
   if (geste && geste.type === 'trace' && geste.pts.length > 1) {
@@ -1443,7 +1469,12 @@ function rendre() {
       g.setLineDash([]); g.fillStyle = '#ff3131'; g.strokeStyle = '#fff'; g.lineWidth = Math.max(2, 2.5 / S); g.beginPath(); g.arc(hx, hy, R, 0, 7); g.fill(); g.stroke();
     } else {
       g.beginPath(); g.arc(o.x, o.y, r, 0, 7); g.stroke();
-      if (tailleLibre(selection)) { const [hx, hy] = coinTaille(selection), R = Math.max(8, 10 / S); g.setLineDash([]); g.fillStyle = '#ff3131'; g.strokeStyle = '#fff'; g.lineWidth = Math.max(2, 2.5 / S); g.beginPath(); g.arc(hx, hy, R, 0, 7); g.fill(); g.stroke(); }   // point rouge : tirer pour agrandir ou réduire
+      if (selection && selection.kind === 'marque' && selection.obj.type === 'zone_zebra') { const R = Math.max(7, 9 / S); g.setLineDash([]); g.fillStyle = '#ff3131'; g.strokeStyle = '#fff'; g.lineWidth = Math.max(2, 2.5 / S); for (const [x, y] of sommetsZebra(selection.obj)) { g.beginPath(); g.arc(x, y, R, 0, 7); g.fill(); g.stroke(); } } // coins à tirer
+  if (polyZebra.length && mode === 'editeur') { // zone en cours de dessin
+    const R = Math.max(6, 8 / S); g.setLineDash([]); g.strokeStyle = '#ff3131'; g.lineWidth = Math.max(2, 2.5 / S); g.beginPath(); polyZebra.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke();
+    polyZebra.forEach(([x, y], i) => { g.fillStyle = i ? '#ff3131' : '#fff'; g.strokeStyle = '#ff3131'; g.beginPath(); g.arc(x, y, i ? R : R * 1.5, 0, 7); g.fill(); g.stroke(); });
+  }
+  if (tailleLibre(selection)) { const [hx, hy] = coinTaille(selection), R = Math.max(8, 10 / S); g.setLineDash([]); g.fillStyle = '#ff3131'; g.strokeStyle = '#fff'; g.lineWidth = Math.max(2, 2.5 / S); g.beginPath(); g.arc(hx, hy, R, 0, 7); g.fill(); g.stroke(); }   // point rouge : tirer pour agrandir ou réduire
     }
     g.restore();
   }
@@ -1618,12 +1649,25 @@ function coinTaille(sel) { const r = rayonObjet(sel) * Math.SQRT1_2; return [sel
 function tousObjets() {
   return [...scene.panneaux.map((o) => ({ kind: 'panneau', obj: o })), ...scene.decor.map((o) => ({ kind: 'decor', obj: o })), ...scene.marques.map((o) => ({ kind: 'marque', obj: o }))];
 }
+let polyZebra = []; // coins de la zone zébrée en cours de dessin
+function sommetsZebra(m) { const c = Math.cos(m.ang || 0), sn = Math.sin(m.ang || 0); return (m.pts || []).map(([x, y]) => [m.x + x * c - y * sn, m.y + x * sn + y * c]); }
+function dansPolygone(p, P) { let dedans = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, yi] = P[i], [xj, yj] = P[j]; if ((yi > p[1]) !== (yj > p[1]) && p[0] < ((xj - xi) * (p[1] - yi)) / (yj - yi) + xi) dedans = !dedans; } return dedans; }
+function recentrerZebra(o, W) { const n = W.length, cx = W.reduce((t, q) => t + q[0], 0) / n, cy = W.reduce((t, q) => t + q[1], 0) / n; o.x = Math.round(cx); o.y = Math.round(cy); o.ang = 0; o.pts = W.map(([x, y]) => [Math.round(x - o.x), Math.round(y - o.y)]); }
+function ajouterCoinZebra(p) {
+  if (polyZebra.length >= 3 && Math.hypot(p[0] - polyZebra[0][0], p[1] - polyZebra[0][1]) < Math.max(24, 26 / S)) { // retour au premier point : la zone se ferme
+    const o = { type: 'zone_zebra', x: 0, y: 0, ang: 0, pts: [] }; recentrerZebra(o, polyZebra); polyZebra = [];
+    scene.marques.push(o); selection = { kind: 'marque', obj: o }; dessinerCouche(); valider('Zone zébrée posée : tire ses points rouges pour la retoucher'); majSelbar(); return;
+  }
+  polyZebra.push(p); sale = true;
+  if (polyZebra.length === 1) toast('Touche les autres coins, puis le premier point pour fermer la zone');
+}
 function objetSous(p) {
   const cands = tousObjets();
   let best = null, bd = Infinity;
   for (const c of cands) {
     let d = Math.hypot(p[0] - c.obj.x, p[1] - c.obj.y), r = rayonObjet(c);
     if (c.kind === 'marque' && LIGNES.has(c.obj.type)) { d = distSeg(p, [c.obj.x1, c.obj.y1], [c.obj.x2, c.obj.y2]); r = 18; }
+    if (c.kind === 'marque' && c.obj.type === 'zone_zebra') { if (!['selection', 'sol', 'gomme'].includes(outil)) continue; d = dansPolygone(p, sommetsZebra(c.obj)) ? 30 : Infinity; r = 31; } // une zone se prend en touchant dedans
     if (c.kind === 'decor' && estRect(c.obj)) {       // rectangle
       const a = -(c.obj.ang || 0), dx = p[0] - c.obj.x, dy = p[1] - c.obj.y;
       const lx = dx * Math.cos(a) - dy * Math.sin(a), ly = dx * Math.sin(a) + dy * Math.cos(a);
@@ -1670,6 +1714,11 @@ cv.addEventListener('pointerdown', (e) => {
   const p = versMonde(e);
   geste = { id: e.pointerId, x0: e.clientX, y0: e.clientY, bouge: false, p0: p };
   if (outil === 'gomme') { geste.type = 'gomme'; effacerSous(p); return; }
+  if (outil === 'sol' && choixTiroir.sol === 'zone_zebra') { geste.type = 'coinZebra'; return; } // dessin d'une zone zébrée : chaque toucher pose un coin
+  if (selection && selection.kind === 'marque' && selection.obj.type === 'zone_zebra') { // tirer un coin de la zone sélectionnée
+    const i = sommetsZebra(selection.obj).findIndex(([x, y]) => Math.hypot(p[0] - x, p[1] - y) < Math.max(20, 22 / S));
+    if (i >= 0) { geste.type = 'sommet'; geste.obj = selection.obj; geste.i = i; $('selbar').classList.remove('ouvert'); return; }
+  }
   if (selection && selection.kind === 'marque' && LIGNES.has(selection.obj.type)) {
     const o = selection.obj, tol = 26;
     for (const [k, x, y] of [[1, o.x1, o.y1], [2, o.x2, o.y2]]) if (Math.hypot(p[0] - x, p[1] - y) < tol) {
@@ -1748,6 +1797,8 @@ cv.addEventListener('pointermove', (e) => {
     const o = geste.obj, a = -(o.ang || 0), dx = p[0] - o.x, dy = p[1] - o.y;
     const lx = dx * Math.cos(a) - dy * Math.sin(a), ly = dx * Math.sin(a) + dy * Math.cos(a), mini = o.type === 'terreplein' ? 20 : 50;
     o.w = Math.round(Math.max(mini, 2 * Math.abs(lx))); o.h = Math.round(Math.max(mini, 2 * Math.abs(ly))); dessinerCouche();
+  } else if (geste.type === 'sommet') {
+    const o = geste.obj, W = sommetsZebra(o); W[geste.i] = [p[0], p[1]]; recentrerZebra(o, W); dessinerCouche();
   } else if (geste.type === 'bout') {
     const o = geste.obj, fixe = geste.bout === 1 ? [o.x2, o.y2] : [o.x1, o.y1], [x, y] = angleAimante(fixe, p);
     if (geste.bout === 1) { o.x1 = x; o.y1 = y; } else { o.x2 = x; o.y2 = y; }
@@ -1766,6 +1817,8 @@ function finGeste(e) {
   if (mode === 'seance' || pinch || !geste || e.pointerId !== geste.id) return;
   const g = geste; geste = null;
   const p = versMonde(e);
+  if (g.type === 'coinZebra') { if (!g.bouge) ajouterCoinZebra(p); return; }
+  if (g.type === 'sommet') { dessinerCouche(); valider(); majSelbar(); return; }
   if (g.type === 'trace' && g.bouge) {
     const t = construireTrace(g.pts);
     if (t) {
@@ -2036,7 +2089,7 @@ const TIROIRS = {
   sol: [['ligne_stop', 'Ligne STOP'], ['ligne_cedez', 'Ligne cédez'], ['ligne_feux', 'Ligne des feux'], ['ligne_continue', 'Ligne continue'], ['ligne_discontinue', 'Ligne discontinue'],
         ['ligne_guidage', 'Guidage'], ['axe', 'Axe de la route'],
         ['fleche_droit', 'Tout droit'], ['fleche_gauche', 'Gauche'], ['fleche_droite', 'Droite'], ['fleche_td_gauche', 'Droit + gauche'], ['fleche_td_droite', 'Droit + droite'],
-        ['passage_pieton', 'Passage piéton'], ['zebra', 'Zébras'], ['ralentisseur', 'Ralentisseur'], ['triangle_cedez', 'Triangle cédez'],
+        ['passage_pieton', 'Passage piéton'], ['zebra', 'Zébras'], ['zone_zebra', 'Zébras (forme libre)'], ['ralentisseur', 'Ralentisseur'], ['triangle_cedez', 'Triangle cédez'],
         ['ligne_bus', 'Voie réservée (bus, vélo)'], ['texte_bus', 'BUS'], ['ligne_zigzag', 'Zigzag arrêt bus'], ['damier_bus', 'Damier bus'], ['texte_taxi', 'TAXI'], ['texte_libre', 'Texte…'],
         ['velo', 'Vélo'], ['sas_velo', 'Sas vélo'],
         ['place_bataille', 'Place bataille'], ['place_epi', 'Place épi'], ['place_epi_inv', 'Épi inversé'], ['place_creneau', 'Place créneau'], ['place_pmr', 'Place PMR'], ['place_livraison', 'Livraison'], ['place_elec', 'Recharge'],
@@ -2048,7 +2101,7 @@ let catSol = '';
 const CATS_SOL = [
   ['lignes', 'Lignes', ['ligne_stop', 'ligne_cedez', 'ligne_feux', 'ligne_continue', 'ligne_discontinue', 'ligne_guidage', 'axe', 'ligne_jaune', 'ligne_jaune_disc']],
   ['fleches', 'Flèches', ['fleche_droit', 'fleche_gauche', 'fleche_droite', 'fleche_td_gauche', 'fleche_td_droite', 'triangle_cedez']],
-  ['passages', 'Passages & texte', ['passage_pieton', 'zebra', 'ralentisseur', 'texte_libre']],
+  ['passages', 'Passages & texte', ['passage_pieton', 'zebra', 'zone_zebra', 'ralentisseur', 'texte_libre']],
   ['bus', 'Bus & vélo', ['ligne_bus', 'texte_bus', 'ligne_zigzag', 'damier_bus', 'texte_taxi', 'velo', 'sas_velo']],
   ['autoroute', 'Autoroute', ['ligne_t1', 'ligne_t2', 'ligne_bau', 'ligne_continue', 'zebra']],
   ['parking', 'Stationnement', ['place_bataille', 'place_epi', 'place_epi_inv', 'place_creneau', 'place_pmr', 'place_livraison', 'place_elec', 'pmr']],
@@ -2062,7 +2115,8 @@ function vignette(fn, fond) {
 function vignetteTiroir(t, k) {
   if (t === 'panneau') return vignette((g) => dessinerPictogrammeV2(g, k, 30, 'vert'));
   if (t === 'sol') return vignette((g) => {
-    if (k === 'passage_pieton') { g.fillStyle = PEINT; for (let x = -13; x < 14; x += 7) g.fillRect(x, -11, 3.5, 22); }
+    if (k === 'zone_zebra') { const F = [[-14, -12], [13, -6], [9, 13], [-12, 9]], trace = () => { g.beginPath(); F.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); }; g.save(); trace(); g.clip(); g.strokeStyle = PEINT; g.lineWidth = 2.4; g.beginPath(); for (let q = -30; q < 30; q += 6) { g.moveTo(q - 15, -15); g.lineTo(q + 15, 15); } g.stroke(); g.restore(); g.strokeStyle = PEINT; g.lineWidth = 1.6; trace(); g.stroke(); }
+    else if (k === 'passage_pieton') { g.fillStyle = PEINT; for (let x = -13; x < 14; x += 7) g.fillRect(x, -11, 3.5, 22); }
     else if (k === 'velo') veloSol(g, 22);
     else if (k === 'axe') { g.fillStyle = PEINT; g.fillRect(-1.5, -16, 3, 9); g.fillRect(-1.5, 2, 3, 9); }
     else if (k === 'ligne_stop') { g.fillStyle = PEINT; g.fillRect(-14, -3, 28, 6); }
@@ -2093,7 +2147,7 @@ function vignetteTiroir(t, k) {
   }, HERBE);
 }
 function choisirOutil(o) {
-  outil = o;
+  outil = o; polyZebra = [];
   document.querySelectorAll('.outil').forEach((b) => b.classList.toggle('actif', b.dataset.outil === o));
   const t = $('tiroir'); t.innerHTML = '';
   const cats = $('cats'); cats.innerHTML = ''; cats.classList.toggle('ouvert', o === 'sol' || o === 'panneau');
@@ -2117,7 +2171,7 @@ function choisirOutil(o) {
       if (visibles && !visibles.includes(k)) continue;
       const d = document.createElement('div'); d.className = 'item' + (choixTiroir[o] === k ? ' on' : '');
       d.appendChild(vignetteTiroir(o, k)); d.append(nom);
-      d.onclick = () => { choixTiroir[o] = k; t.querySelectorAll('.item').forEach((x) => x.classList.toggle('on', x === d)); };
+      d.onclick = () => { choixTiroir[o] = k; polyZebra = []; sale = true; t.querySelectorAll('.item').forEach((x) => x.classList.toggle('on', x === d)); if (k === 'zone_zebra') toast('Touche chaque coin de la zone, puis le premier point pour la fermer'); };
       t.appendChild(d);
     }
     t.classList.add('ouvert');
@@ -2243,9 +2297,12 @@ function lancerVehicule(route, dir, choix, easy, reaction) {
 const COUL_PIETONS = ['#8e5bd6', '#2a9d8f', '#e76f51', '#264653', '#f4a261', '#3b82c4'];
 function passagesTest() {
   const L = [];
-  const ajoute = (x, y, ang, route, cle) => L.push({ k: Math.round(x) + ',' + Math.round(y), x, y, u: [Math.cos(ang), Math.sin(ang)], n: [-Math.sin(ang), Math.cos(ang)], route, cle });
-  for (const p of geo.passages) ajoute(p.x, p.y, p.ang, p.route, p.cle);
-  for (const m of scene.marques) if (m.type === 'passage_pieton') { const r = routeLaPlusProche([m.x, m.y]); ajoute(m.x, m.y, m.ang, r && r.d < 20 ? r.g.r.id : null, null); }
+  const ajoute = (x, y, ang, route, cle, larg) => L.push({ k: Math.round(x) + ',' + Math.round(y), x, y, u: [Math.cos(ang), Math.sin(ang)], n: [-Math.sin(ang), Math.cos(ang)], route, cle, larg: larg || LR });
+  for (const p of geo.passages) ajoute(p.x, p.y, p.ang, p.route, p.cle, p.larg);
+  for (const m of scene.marques) if (m.type === 'passage_pieton') { // passage posé à la main : il suit le carrefour à feux tout proche
+    const r = routeLaPlusProche([m.x, m.y]), c = geo.carrefours.find((k) => k.type === 'feux' && Math.hypot(k.x - m.x, k.y - m.y) < 450);
+    ajoute(m.x, m.y, m.ang, r && r.d < 20 ? r.g.r.id : null, c ? c.cle : null, m.larg);
+  }
   return L;
 }
 function coupePassages(T) {           // abscisses où le trajet d'une voiture traverse chaque passage piéton
@@ -2690,6 +2747,7 @@ function fermerMenu() { $('menu').classList.remove('ouvert'); $('plus-seance').c
 $('b-menu').onclick = () => { $('plus-seance').classList.remove('ouvert'); $('menu').classList.toggle('ouvert'); };
 $('m-accueil').onclick = () => ouvrirAccueil();
 $('m-publier').onclick = () => { fermerMenu(); publierScene(); };
+$('b-publier').onclick = () => publierScene();
 $('m-aide').onclick = $('b-aide').onclick = () => ouvrirGestes();
 $('m-editer').onclick = () => { fermerMenu(); demanderMdp(() => basculerMode('editeur')); };
 $('m-note').onclick = () => { fermerMenu(); demanderTexte(scene.note, (t) => { if (t) scene.note = t; else delete scene.note; valider(t ? 'Consigne enregistrée : elle s\'affiche en Séance' : 'Consigne retirée'); majConsigne(true); },
@@ -3976,7 +4034,7 @@ function editerSceneCours(cle) { // depuis l'accueil : mot de passe, puis la sc�
   demanderMdp(() => {
     fermerAccueil(); basculerMode('editeur');
     const sc = construireScene(cle); sc.edition = cle;
-    poserScene(sc, '« ' + sc.titre + ' » : modifie-la, puis Menu › Publier cette scène pour tous');
+    poserScene(sc, '« ' + sc.titre + ' » : modifie-la, puis touche « Enregistrer pour tous » en haut à droite');
   });
 }
 function publierScene() { // prépare le fichier à mettre en ligne ; cet appareil voit déjà la nouvelle version
