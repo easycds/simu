@@ -1434,7 +1434,7 @@ function etatPieton(cle, route) { // bonhomme vert seulement si les voitures qui
   return resteRouge(cle, route) > DUREE_TRAVERSEE ? 'vert' : 'rouge';
 }
 function feuPieton(g, x, y, ang, et) { // feu piéton à la française : bonhomme rouge debout à gauche, bonhomme vert qui marche à droite
-  g.save(); g.translate(x, y); g.rotate(ang);
+  g.save(); g.translate(x, y); g.rotate(ang); g.scale(0.6, 0.6); // plus discret
   g.fillStyle = '#3a3f45'; g.beginPath(); g.roundRect(-15, -12, 30, 24, 4); g.fill();
   g.fillStyle = '#121417'; g.beginPath(); g.roundRect(-13, -10, 26, 20, 3); g.fill();
   const trait = (w, segs) => { g.lineWidth = w; g.beginPath(); for (const [a, b, c, d] of segs) { g.moveTo(a, b); g.lineTo(c, d); } g.stroke(); };
@@ -1464,7 +1464,7 @@ function rendre() {
   for (const p of geo.autoPanneaux) if (p.type === 'feu') dessinerPanneau(g, 'feu', p.x, p.y, p.ang, afficheFeu(p.cle, p.route, p.bdir));
   for (const cw of passagesTest()) { // feux piétons, de chaque côté des passages des carrefours à feux
     const c = cw.cle && geo.carrefours.find((k) => k.cle === cw.cle); if (!c || c.type !== 'feux' || cw.route == null) continue;
-    const et = etatPieton(cw.cle, cw.route), demi = cw.larg / 2 + 16, a = Math.atan2(cw.u[1], cw.u[0]);
+    const et = etatPieton(cw.cle, cw.route), demi = cw.larg / 2 + 12, a = Math.atan2(cw.u[1], cw.u[0]);
     for (const sg of [-1, 1]) feuPieton(g, cw.x + cw.n[0] * demi * sg, cw.y + cw.n[1] * demi * sg, 0, et); // toujours droit à l'écran, comme un vrai feu vu de face
   }
   for (const p of scene.panneaux) if (p.type === 'feu') dessinerPanneau(g, 'feu', p.x, p.y, p.ang, p.cle ? afficheFeu(p.cle, p.route) : test ? (test.frame % 400 < 200 ? 'vert' : 'rouge') : 'rouge', null, p.ech);
