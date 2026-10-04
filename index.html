@@ -96,7 +96,9 @@
   .ls-item:hover { border-color:var(--rouge); }
   .ls-vide { color:var(--gris); }
   #ls-fermer { margin-top:6px; height:38px; width:100%; border-radius:10px; border:0; background:#f1f2f4; font:inherit; font-weight:650; cursor:pointer; }
-  #verrou { position:fixed; inset:0; background:#8ab583; display:none; align-items:center; justify-content:center; z-index:20; padding:16px; }
+  .ac-edit { position:absolute; top:8px; right:8px; background:rgba(28,36,48,.85); color:#fff; font-size:12px; font-weight:700; padding:6px 10px; border-radius:999px; cursor:pointer; }
+.ac-edit:hover { background:#1c2430; }
+#verrou { position:fixed; inset:0; background:#8ab583; display:none; align-items:center; justify-content:center; z-index:20; padding:16px; }
   #verrou.ouvert { display:flex; }
   #verrou input { width:100%; height:44px; border-radius:10px; border:2px solid #e2e5ea; padding:0 12px; font:inherit; font-size:16px; user-select:text; -webkit-user-select:text; }
   #verrou-ok { margin-top:12px; height:44px; width:100%; border-radius:10px; border:0; background:var(--rouge); color:#fff; font:inherit; font-weight:700; font-size:15px; cursor:pointer; }
@@ -249,7 +251,8 @@ body.mode-seance #menu-feu.ouvert { display:flex; }
   <button class="btn" id="m-aide"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-.9.6-1.5 1.1-1.5 2.2M12 17v.5"/></svg>Aide : les gestes</button>
   <div class="sep-h"></div>
   <button class="btn se-seul" id="m-editer"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>Créer ou modifier une scène</button>
-  <button class="btn ed-seul" id="m-note"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H10l-5 4z"/></svg>Consigne pour le moniteur…</button>
+  <button class="btn ed-seul" id="m-publier"><svg viewBox="0 0 24 24"><path d="M12 15V4M7 9l5-5 5 5M5 15v4h14v-4"/></svg>Publier cette scène pour tous</button>
+<button class="btn ed-seul" id="m-note"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H10l-5 4z"/></svg>Consigne pour le moniteur…</button>
   <button class="btn ed-seul" id="m-ouvrir-simu"><svg viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"/></svg>Ouvrir une scène du simulateur</button>
   <button class="btn ed-seul" id="m-envoyer"><svg viewBox="0 0 24 24"><path d="M5 12h12M13 6l6 6-6 6"/></svg>Ouvrir dans l'ancienne version</button>
   <button class="btn ed-seul" id="m-vider"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Tout effacer</button>
@@ -1112,13 +1115,49 @@ function segmentsAxe(gr) {           // tronçons de la ligne du milieu : 1 = di
   }
   return res;
 }
+/* angles arrondis : entre deux branches voisines d'un carrefour, le trottoir suit un arc au lieu d'un angle vif */
+const R_COIN = 80; // rayon de l'angle de trottoir (≈ 4 m)
+function coinsCarrefours() {
+  const res = []; if (scene.fond) return res;
+  for (const c of geo.carrefours) {
+    const B = c.branches.map((b) => {
+      const g = geo.routes.get(b.id); if (!g) return null;
+      const q = surRoute(g, b.s + b.dir * Math.min(120, Math.max(30, (b.dispo || 120) * 0.9)));
+      let ux = q.x - c.x, uy = q.y - c.y; const n = Math.hypot(ux, uy); if (n < 1) return null; ux /= n; uy /= n;
+      return { ux, uy, hw: (g.r.larg || LR) / 2, ang: Math.atan2(uy, ux), dispo: b.dispo || 0, trot: !g.r.sansTrottoir };
+    }).filter(Boolean).sort((a, b) => a.ang - b.ang);
+    if (B.length < 2) continue;
+    for (let i = 0; i < B.length; i++) {
+      const A = B[i], N = B[(i + 1) % B.length];
+      let th = N.ang - A.ang; if (th <= 0) th += 2 * Math.PI;
+      if (th > Math.PI * 0.94 || th < 0.25) continue; // presque dans le prolongement : pas d'angle
+      const nA = [-A.uy, A.ux], nN = [N.uy, -N.ux]; // bord de A tourné vers N, bord de N tourné vers A
+      const p1 = [c.x + nA[0] * A.hw, c.y + nA[1] * A.hw], p2 = [c.x + nN[0] * N.hw, c.y + nN[1] * N.hw];
+      const den = A.ux * N.uy - A.uy * N.ux; if (Math.abs(den) < 1e-3) continue;
+      const t = ((p2[0] - p1[0]) * N.uy - (p2[1] - p1[1]) * N.ux) / den;
+      const Q = [p1[0] + A.ux * t, p1[1] + A.uy * t]; // coin vif du trottoir
+      let r = R_COIN, L = r / Math.tan(th / 2);
+      const Lmax = Math.max(0, Math.min(150, Math.min(A.dispo, N.dispo) * 0.5)); if (L > Lmax) { L = Lmax; r = L * Math.tan(th / 2); }
+      if (r < 6) continue;
+      const bx = A.ux + N.ux, by = A.uy + N.uy, bn = Math.hypot(bx, by), dO = r / Math.sin(th / 2);
+      const O = [Q[0] + (bx / bn) * dO, Q[1] + (by / bn) * dO], T1 = [Q[0] + A.ux * L, Q[1] + A.uy * L], T2 = [Q[0] + N.ux * L, Q[1] + N.uy * L];
+      const a1 = Math.atan2(T1[1] - O[1], T1[0] - O[0]), a2 = Math.atan2(T2[1] - O[1], T2[0] - O[0]), aq = Math.atan2(Q[1] - O[1], Q[0] - O[0]);
+      const tour = (x) => ((x % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI), sens = tour(aq - a1) < tour(a2 - a1) ? false : true; // l'arc passe du côté du coin
+      res.push({ Q, T1, T2, O, r, a1, a2, sens, trot: A.trot && N.trot });
+    }
+  }
+  return res;
+}
 function dessinerRoutes(g) {
   g.lineCap = 'round'; g.lineJoin = 'round';
   const aires = scene.decor.filter((d) => d.type === 'aire' && !(geste && geste.type === 'deplacer' && geste.obj === d && geste.bouge));
   for (const d of aires) aire(g, d, 'bord');
   for (const gr of geo.routes.values()) { tracerChemin(g, gr.r.pts); if (gr.r.sansTrottoir) continue; g.strokeStyle = TROT; g.lineWidth = (gr.r.larg || LR) + 2 * TR; g.stroke(); } // route de campagne : l'herbe touche le goudron
+  const coins = coinsCarrefours();
+  g.fillStyle = TROT; for (const k of coins) if (k.trot) { g.beginPath(); g.arc(k.O[0], k.O[1], k.r, k.a1, k.a2, k.sens); g.arc(k.O[0], k.O[1], Math.max(0, k.r - TR), k.a2, k.a1, !k.sens); g.closePath(); g.fill(); } // trottoir le long de l'arc
   for (const d of aires) aire(g, d, 'goudron');
   for (const gr of geo.routes.values()) { tracerChemin(g, gr.r.pts); g.strokeStyle = ASPH; g.lineWidth = gr.r.larg || LR; g.stroke(); }
+  g.fillStyle = ASPH; for (const k of coins) { g.beginPath(); g.moveTo(k.Q[0], k.Q[1]); g.lineTo(k.T1[0], k.T1[1]); g.arc(k.O[0], k.O[1], k.r, k.a1, k.a2, k.sens); g.closePath(); g.fill(); } // goudron jusqu'à l'arc
   // ligne axiale : discontinue / continue près des carrefours réglés / coupée dans les carrefours
   g.lineCap = 'butt'; g.strokeStyle = PEINT; g.lineWidth = 3;          // 2u ≈ 12 cm
   for (const gr of geo.routes.values()) for (const sg of segmentsAxe(gr)) {
@@ -1362,7 +1401,7 @@ function rendre() {
   ctx = g;
   // feux (animés)
   for (const p of geo.autoPanneaux) if (p.type === 'feu') dessinerPanneau(g, 'feu', p.x, p.y, p.ang, afficheFeu(p.cle, p.route, p.bdir));
-  for (const p of scene.panneaux) if (p.type === 'feu') dessinerPanneau(g, 'feu', p.x, p.y, p.ang, p.cle ? etatFeu(p.cle, p.route) : test ? (test.frame % 400 < 200 ? 'vert' : 'rouge') : 'rouge', null, p.ech);
+  for (const p of scene.panneaux) if (p.type === 'feu') dessinerPanneau(g, 'feu', p.x, p.y, p.ang, p.cle ? afficheFeu(p.cle, p.route) : test ? (test.frame % 400 < 200 ? 'vert' : 'rouge') : 'rouge', null, p.ech);
   // tracé en cours
   if (geste && geste.type === 'trace' && geste.pts.length > 1) {
     const ap = geste.apercu || { pts: geste.pts };
@@ -2646,6 +2685,7 @@ function majAide() { $('aide').style.display = scene.routes.length || scene.marq
 function fermerMenu() { $('menu').classList.remove('ouvert'); $('plus-seance').classList.remove('ouvert'); $('menu-feu').classList.remove('ouvert'); }
 $('b-menu').onclick = () => { $('plus-seance').classList.remove('ouvert'); $('menu').classList.toggle('ouvert'); };
 $('m-accueil').onclick = () => ouvrirAccueil();
+$('m-publier').onclick = () => { fermerMenu(); publierScene(); };
 $('m-aide').onclick = $('b-aide').onclick = () => ouvrirGestes();
 $('m-editer').onclick = () => { fermerMenu(); demanderMdp(() => basculerMode('editeur')); };
 $('m-note').onclick = () => { fermerMenu(); demanderTexte(scene.note, (t) => { if (t) scene.note = t; else delete scene.note; valider(t ? 'Consigne enregistrée : elle s\'affiche en Séance' : 'Consigne retirée'); majConsigne(true); },
@@ -2891,8 +2931,8 @@ function seanceDown(e) {
   const u = test ? null : usagerSous(p);
   if (u) { G.type = 'deplacer'; G.u = u; G.dx = u.x - p[0]; G.dy = u.y - p[1]; seance.sel = u; versLeHaut(u); majSelSeance(); sale = true; return; }
   const c = geo.carrefours.find((k) => k.type === 'feux' && Math.hypot(p[0] - k.x, p[1] - k.y) < 90) ||
-            geo.carrefours.find((k) => geo.autoPanneaux.some((a) => a.cle === k.cle && a.type === 'feu' && Math.hypot(p[0] - a.x, p[1] - a.y) < 30));
-  G.type = 'vide'; G.feu = c; G.panneauFeu = c && geo.autoPanneaux.find((a) => a.type === 'feu' && a.cle === c.cle && Math.hypot(p[0] - a.x, p[1] - a.y) < 34);
+            geo.carrefours.find((k) => [...geo.autoPanneaux, ...scene.panneaux].some((a) => a.cle === k.cle && a.type === 'feu' && Math.hypot(p[0] - a.x, p[1] - a.y) < 30));
+  G.type = 'vide'; G.feu = c; G.panneauFeu = c && [...geo.autoPanneaux, ...scene.panneaux].find((a) => a.type === 'feu' && a.cle === c.cle && Math.hypot(p[0] - a.x, p[1] - a.y) < 34);
 }
 function versLeHaut(u) { const L = usagers(), i = L.indexOf(u); if (i >= 0 && i !== L.length - 1 && !seance.numeros) { L.splice(i, 1); L.push(u); } }
 function seanceMove(e) {
@@ -3614,7 +3654,6 @@ function sceneDepassement(m) {
 }
 /* ---------------- scènes tirées des planches : route hors agglomération, manœuvres, feux ---------------- */
 function courbeBezier(p0, p1, p2, p3, n) { const r = []; for (let i = 0; i <= n; i++) { const t = i / n, u = 1 - t; r.push([u * u * u * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t * t * t * p3[0], u * u * u * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t * t * t * p3[1]]); } return r; }
-function repereSol(texte, x, y, ang, taille) { return { type: 'texte', texte, x, y, ang, taille: taille || 22 }; } // texte écrit au sol (étapes du demi-tour)
 function sceneRdTourner(cote) { // route départementale, intersection en T ; cote -1 : la route part à gauche, 1 : à droite
   const { G, D, H, B } = bornes(), X = 640, Y = 380, v = LR / 4, sc = sceneVide();
   sc.routes = [{ id: 1, pts: [[X, H], [X, B]] }, { id: 2, pts: cote < 0 ? [[G, Y], [X, Y]] : [[X, Y], [D, Y]] }]; sc.id = 3; sc.horsAgglo = true;
@@ -3625,7 +3664,91 @@ function sceneRdTourner(cote) { // route départementale, intersection en T ; co
     cote < 0 ? usager(3, 'voiture', X - 230, Y + v, 0, '#2f9e6b') : usager(3, 'voiture', X - v, 100, Math.PI / 2, '#2f9e6b')];
   return sc;
 }
+/* ---------------- les 7 Sonnettes, d'après la vue aérienne (1 px de la photo ≈ 1,2 unité) ---------------- */
+function sceneSonnettesVue() {
+  const K = 1.2, IM = (x, y) => [640 + (x - 592) * K, 560 + (y - 362) * K], C = IM(592, 362), cle = C.map(Math.round).join(','), sc = sceneVide();
+  const u = (x, y) => { const n = Math.hypot(x, y); return [x / n, y / n]; };
+  const BR = [ // chaque branche : axe au passage piéton, direction vers l'extérieur, largeur, terre-plein central, route (même route = même phase de feux)
+    { nom: 'sw', P: IM(360, 570), d: u(-0.849, 0.529), larg: 258, med: 0, route: 1 },  // av. Victor Châtenay (D323), voie bus
+    { nom: 'ne', P: IM(855, 168), d: u(0.814, -0.581), larg: 258, med: 36, route: 1 }, // av. Victor Châtenay
+    { nom: 'nw', P: IM(418, 265), d: u(-0.571, -0.821), larg: 300, med: 36, route: 2 }, // bd de Monplaisir
+    { nom: 'se', P: IM(797, 492), d: u(0.864, 0.503), larg: 300, med: 64, route: 2 },  // bd de la Romanerie
+  ];
+  const loin = (b) => [b.P[0] + b.d[0] * 900, b.P[1] + b.d[1] * 900];
+  sc.routes = [{ id: 1, pts: [loin(BR[0]), BR[0].P, C, BR[1].P, loin(BR[1])], larg: 258, axe: 'aucune' }, { id: 2, pts: [loin(BR[2]), BR[2].P, C, BR[3].P, loin(BR[3])], larg: 300, axe: 'aucune' }]; sc.id = 3;
+  sc.regimes = [{ x: C[0], y: C[1], type: 'feux', prio: 1, manuel: true, sas: false }];
+  const M = [], DEC = [], PAN = [], US = [];
+  for (const b of BR) {
+    const [dx, dy] = b.d, nin = [dy, -dx], hw = b.larg / 2, a = Math.atan2(dy, dx), ain = a + Math.PI, m2 = b.med / 2, voie = (hw - m2) / 2;
+    const pt = (s, o) => [b.P[0] + dx * s + nin[0] * o, b.P[1] + dy * s + nin[1] * o]; // s : vers l'extérieur ; o > 0 : côté voies entrantes
+    const ligne = (type, s1, s2, o1, o2) => { const [x1, y1] = pt(s1, o1), [x2, y2] = pt(s2, o2 ?? o1); return { type, x1, y1, x2, y2, x: (x1 + x2) / 2, y: (y1 + y2) / 2 }; };
+    M.push({ type: 'passage_pieton', x: b.P[0], y: b.P[1], ang: a, larg: b.larg - 12 });
+    M.push(ligne('ligne_feux', 48, 48, m2 + 4, hw - 4));
+    M.push(ligne('ligne_discontinue', 70, 900, m2 + voie));
+    if (b.nom === 'sw') { // sortie vers le sud-ouest : 2 voies + voie bus le long du trottoir
+      M.push(ligne('ligne_discontinue', 70, 900, -43), ligne('ligne_bus', 120, 900, -86), ligne('ligne_zigzag', 380, 540, -(hw - 6)));
+      const [bx, by] = pt(260, -(hw - 22)); M.push({ type: 'texte', texte: 'BUS', x: bx, y: by, ang: a, taille: 18 });
+    } else M.push(ligne('ligne_discontinue', 70, 900, -(m2 + voie)));
+    if (b.med) { const [tx, ty] = pt(450, 0); DEC.push({ type: 'terreplein', x: tx, y: ty, w: 940, h: b.med, ang: a }); }
+    else M.push(ligne('ligne_continue', 40, 900, 0));
+    if (b.nom === 'se') for (let k = 90; k < 860; k += 70) { const [hx, hy] = pt(k, 0); DEC.push({ type: 'buisson', x: hx, y: hy, ang: 0 }); }
+    for (const [k, t] of [[0.5, 'fleche_td_gauche'], [1.5, 'fleche_td_droite']]) { const [x, y] = pt(160, m2 + voie * k); M.push({ type: t, x, y, ang: ain }); }
+    const [fx, fy] = pt(40, hw + 20); PAN.push({ type: 'feu', x: fx, y: fy, ang: ain + Math.PI / 2, route: b.route, cle });
+    const coul = { sw: ['ecole', '#3b82c4', 0.5, 300], ne: ['voiture', '#e0b43a', 0.5, 330], nw: ['voiture', '#d64545', 1.5, 330], se: ['voiture', '#2f9e6b', 0.5, 360] }[b.nom];
+    const [ux, uy] = pt(coul[3], m2 + voie * coul[2]); US.push(usager(US.length + 1, coul[0], ux, uy, ain, coul[1]));
+  }
+  // petit rond peint au centre, et la ligne de guidage courbe des tourne-à-gauche
+  M.push({ type: 'zone_zebra', x: C[0], y: C[1], ang: 0, pts: Array.from({ length: 14 }, (_, i) => [22 * Math.cos(i * Math.PI / 7), 22 * Math.sin(i * Math.PI / 7)]) });
+  const AC = IM(560, 480), RA = 165 * K;
+  for (let g = 200; g < 330; g += 10) { const p1 = [AC[0] + RA * Math.cos(g * Math.PI / 180), AC[1] + RA * Math.sin(g * Math.PI / 180)], p2 = [AC[0] + RA * Math.cos((g + 6) * Math.PI / 180), AC[1] + RA * Math.sin((g + 6) * Math.PI / 180)]; M.push({ type: 'ligne_guidage', x1: p1[0], y1: p1[1], x2: p2[0], y2: p2[1], x: (p1[0] + p2[0]) / 2, y: (p1[1] + p2[1]) / 2 }); }
+  const ilot = IM(765, 465); DEC.push({ type: 'terreplein', x: ilot[0], y: ilot[1], w: 92, h: 92, ang: 0 }, { type: 'arbre', x: ilot[0], y: ilot[1], ang: 0 });
+  const bat = (t, x, y, w, h, ang) => { const [X, Y] = IM(x, y); return { type: t, x: X, y: Y, w, h, ang }; };
+  DEC.push(bat('maison_grise', 85, 200, 200, 155, -0.5), bat('maison_grise', 120, 430, 230, 170, -0.5), bat('maison', 470, 790, 190, 120, 0.35), bat('maison_grise', 650, 790, 180, 120, 0.35), bat('maison_grise', 1030, 250, 200, 170, 0.6), bat('maison', 1050, 470, 150, 120, 0.5));
+  for (const [x, y, t] of [[500, 70, 'arbre'], [565, 120, 'arbre'], [460, 130, 'arbre'], [190, 60, 'arbre'], [245, 380, 'buisson'], [235, 455, 'buisson'], [955, 385, 'buisson'], [700, 660, 'arbre'], [880, 720, 'arbre'], [330, 760, 'arbre']]) { const [X, Y] = IM(x, y); DEC.push({ type: t, x: X, y: Y, ang: 0 }); }
+  sc.marques = M; sc.decor = DEC; sc.panneaux = PAN; sc.usagers = US;
+  return sc;
+}
+/* ---------------- bd Henri Dunant × bd Copernic, d'après la vue aérienne (1 px ≈ 1,2 unité) ---------------- */
+function sceneDunantVue() {
+  const K = 1.2, IM = (x, y) => [640 + (x - 560) * K, 560 + (y - 300) * K], C = IM(560, 300), cle = C.map(Math.round).join(','), sc = sceneVide();
+  const u = (x, y) => { const n = Math.hypot(x, y); return [x / n, y / n]; };
+  const BR = [ // axe au passage piéton, direction vers l'extérieur, largeur, terre-plein, voies entrantes / sortantes, flèches, route, feu (paire de phase)
+    { nom: 'w', P: IM(455, 258), d: u(-0.937, -0.35), larg: 170, med: 0, nin: 2, nout: 2, fl: ['fleche_td_gauche', 'fleche_td_droite'], route: 1, feu: 1 }, // bd Henri Dunant (pont)
+    { nom: 'e', P: IM(750, 378), d: u(0.772, 0.636), larg: 150, med: 0, nin: 1, nout: 1, fl: [], route: 1, feu: 1 },                                     // bd Henri Dunant
+    { nom: 'n', P: IM(540, 170), d: u(0, -1), larg: 146, med: 0, nin: 1, nout: 1, fl: [], route: 2, feu: 2 },                                             // bd Copernic
+    { nom: 's', P: IM(565, 440), d: u(0.02, 1), larg: 246, med: 12, nin: 3, nout: 2, fl: ['fleche_gauche', 'fleche_droit', 'fleche_droite'], route: 3, feu: 2 }, // bd Copernic, voie bus
+  ];
+  const loin = (b) => [b.P[0] + b.d[0] * 900, b.P[1] + b.d[1] * 900];
+  sc.routes = [{ id: 1, pts: [loin(BR[0]), BR[0].P, C, BR[1].P, loin(BR[1])], larg: 165, axe: 'aucune' },
+    { id: 2, pts: [loin(BR[2]), BR[2].P, C], larg: 146, axe: 'aucune' }, { id: 3, pts: [C, BR[3].P, loin(BR[3])], larg: 246, axe: 'aucune' }]; sc.id = 4;
+  sc.regimes = [{ x: C[0], y: C[1], type: 'feux', prio: 1, manuel: true, sas: false }];
+  const M = [], DEC = [], PAN = [], US = [];
+  for (const b of BR) {
+    const [dx, dy] = b.d, nv = [dy, -dx], hw = b.larg / 2, a = Math.atan2(dy, dx), ain = a + Math.PI, m2 = b.med / 2, vi = (hw - m2) / b.nin, vo = (hw - m2) / b.nout;
+    const pt = (s, o) => [b.P[0] + dx * s + nv[0] * o, b.P[1] + dy * s + nv[1] * o]; // o > 0 : côté voies entrantes
+    const ligne = (type, s1, s2, o1, o2) => { const [x1, y1] = pt(s1, o1), [x2, y2] = pt(s2, o2 ?? o1); return { type, x1, y1, x2, y2, x: (x1 + x2) / 2, y: (y1 + y2) / 2 }; };
+    M.push({ type: 'passage_pieton', x: b.P[0], y: b.P[1], ang: a, larg: b.larg - 12 });
+    M.push(ligne('ligne_feux', 46, 46, m2 + 4, hw - 4));
+    for (let k = 1; k < b.nin; k++) M.push(ligne('ligne_discontinue', 70, 900, m2 + vi * k));
+    for (let k = 1; k < b.nout; k++) M.push(ligne(b.nom === 's' ? 'ligne_bus' : 'ligne_discontinue', 70, 900, -(m2 + vo * k)));
+    if (b.med) { const [tx, ty] = pt(450, 0); DEC.push({ type: 'terreplein', x: tx, y: ty, w: 930, h: b.med, ang: a }); }
+    else M.push(ligne('ligne_continue', 30, 900, 0));
+    b.fl.forEach((t, k) => { const [x, y] = pt(150, m2 + vi * (k + 0.5)); M.push({ type: t, x, y, ang: ain }); });
+    if (b.nom === 's') { const [bx, by] = pt(200, -(m2 + vo * 1.5)); M.push({ type: 'texte', texte: 'BUS', x: bx, y: by, ang: a, taille: 18 }); }
+    const [fx, fy] = pt(38, hw + 20); PAN.push({ type: 'feu', x: fx, y: fy, ang: ain + Math.PI / 2, route: b.feu, cle });
+    const us = { s: ['ecole', '#3b82c4', 1.5, 300], w: ['voiture', '#e0b43a', 0.5, 330], n: ['voiture', '#d64545', 0.5, 300], e: ['voiture', '#2f9e6b', 0.5, 300] }[b.nom];
+    const [ux, uy] = pt(us[3], m2 + vi * us[2]); US.push(usager(US.length + 1, us[0], ux, uy, ain, us[1]));
+  }
+  { const [x, y] = IM(688, 388); M.push({ type: 'damier_bus', x, y, ang: Math.atan2(0.636, 0.772) }); } // damier : début de la voie bus de Henri Dunant
+  const bat = (t, x, y, w, h, ang) => { const [X, Y] = IM(x, y); return { type: t, x: X, y: Y, w, h, ang }; };
+  DEC.push(bat('maison_grise', 890, 250, 300, 170, 0.6), bat('maison_grise', 800, 140, 140, 110, 0), bat('maison_grise', 755, 480, 110, 95, 0.1), bat('maison', 890, 665, 120, 105, 0.55), bat('maison_grise', 820, 740, 150, 110, 0.55), bat('maison_grise', 955, 590, 110, 90, 0.55));
+  for (const [x, y, t] of [[400, 60, 'arbre'], [470, 125, 'arbre'], [605, 40, 'arbre'], [680, 210, 'buisson'], [180, 420, 'arbre'], [190, 700, 'arbre'], [390, 430, 'buisson'], [395, 560, 'buisson'], [390, 700, 'buisson'], [400, 830, 'buisson'], [1000, 430, 'arbre'], [970, 80, 'arbre']]) { const [X, Y] = IM(x, y); DEC.push({ type: t, x: X, y: Y, ang: 0 }); }
+  sc.marques = M; sc.decor = DEC; sc.panneaux = PAN; sc.usagers = US;
+  return sc;
+}
 const SCENES_COURS = [
+  ['dunant_vue', 'Henri Dunant × Copernic – vue aérienne', () => sceneDunantVue()],
+  ['sonnettes_vue', 'Les 7 Sonnettes – vue aérienne', () => sceneSonnettesVue()],
   ['rd_croiser', 'Se croiser sur route étroite', () => {
     const { H, B } = bornes(), X = 640, sc = sceneVide();
     sc.routes = [{ id: 1, pts: [[X, H], [X, B]], larg: 104, axe: 'aucune', sansTrottoir: true }]; sc.id = 2;
@@ -3646,8 +3769,7 @@ const SCENES_COURS = [
   }],
   ['demi_tour', 'Demi-tour en 3 étapes', () => {
     const { G, D } = bornes(), Y = 560, v = LR / 4, sc = sceneVide();
-    sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }]; sc.id = 2;
-    sc.marques = [repereSol('1 AV', 560, Y - 40, -Math.PI / 2, 16), repereSol('2 AR', 470, Y + 44, -Math.PI / 2, 16), repereSol('3 AV', 300, Y - 38, -Math.PI / 2, 16)]; // fin de chaque étape
+    sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]], axe: 'aucune' }]; sc.id = 2; // rue sans ligne au milieu
     sc.decor = deco([['maison', 300, 330, 160, 115], ['maison_grise', 640, 325, 170, 120], ['maison', 980, 330, 150, 110], ['maison_grise', 300, 800, 170, 120], ['maison', 640, 805, 160, 115], ['maison', 980, 800, 150, 110]]);
     sc.usagers = [usager(1, 'ecole', 330, Y + 48, 0, '#3b82c4'), usager(2, 'voiture', 1150, Y - v, Math.PI, '#e0b43a')];
     return sc;
@@ -3670,7 +3792,7 @@ const SCENES_COURS = [
     sc.usagers = [usager(1, 'ecole', X + 37, 760, -Math.PI / 2, '#3b82c4'), usager(2, 'voiture', 170, Y + 37, 0, '#5b6270')];
     return sc;
   }],
-  ['stop', 'STOP (4 branches)', () => {
+  ['stop', '4 Stops', () => {
     const { G, D, H, B } = bornes(), X = 640, Y = 560, v = LR / 4, sc = sceneVide();
     sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }, { id: 2, pts: [[X, H], [X, B]] }]; sc.id = 3;
     sc.regimes = [{ x: X, y: Y, type: 'stop', prio: 0 }]; // STOP sur les 4 branches
@@ -3799,6 +3921,8 @@ const NOTES = {
   arret_precis: 'S\'arrêter le long du trottoir à un repère vertical (panneau, lampadaire, boîte aux lettres…) : Contrôler, Clignoter et décélérer, se Placer près du trottoir en dosant le frein, Arrêt : le milieu de la vitre avant au niveau du repère.',
   demi_tour: 'Je ne suis pas prioritaire et je ne cède pas à la pression des autres. Arrêt en sécurité, puis 3 étapes de trottoir à trottoir : 1 marche avant, 2 marche arrière, 3 marche avant. Tourner les roues à l\'arrêt n\'est pas interdit. Jamais sur le trottoir, sauf si on y est autorisé.',
   feux_camion: 'Le croisement à l\'indonésienne (face à face, par devant) ne marche pas avec un bus ou un camion, trop longs : on se croise à l\'équerre, par derrière, et je le laisse passer. En tournant à gauche on n\'est jamais prioritaire ; piétons, bus et vélos le sont.',
+  sonnettes_vue: 'Les Sept Sonnettes, d\'après la vue aérienne : grand carrefour à feux en biais, avec terre-pleins et îlots. Avant d\'arriver, je choisis ma voie selon ma direction et je repère par où je vais sortir.',
+  dunant_vue: 'Carrefour à feux à plusieurs voies, d\'après la vue aérienne. Je choisis ma voie tôt selon ma direction (flèches au sol), je ne roule pas dans la voie bus, et je repère par où je vais sortir.',
   priorite_droite: 'Sans panneau ni feu, je cède le passage à celui qui arrive de ma droite. Fais dire l\'ordre de passage : la jaune, puis nous, puis la verte.',
   exemple: 'Une rue prioritaire, un STOP et un cédez-le-passage : fais nommer le régime de chaque carrefour, puis dire qui passe.',
   etroit: 'Passage étroit : de notre côté le panneau rond (B15), je cède le passage à celui d\'en face ; lui a le carré bleu (C18), il est prioritaire.',
@@ -3820,17 +3944,47 @@ const THEMES = [
   ['Intersections', ['cedez', 'stop', 'priorite_droite', 'exemple', 'etroit']],
   ['Partage de la route', ['depassement', 'depassement_ville']],
   ['Route hors agglomération', ['rd_croiser', 'rd_droite', 'rd_gauche']],
-  ['Feux tricolores', ['briollay1', 'sonnettes', 'feux_classique', 'feux_indo', 'feux_camion']],
+  ['Feux tricolores', ['briollay1', 'sonnettes', 'sonnettes_vue', 'dunant_vue', 'feux_classique', 'feux_indo', 'feux_camion']],
   ['Giratoires', ['giratoire', 'giratoire_velo', 'giratoire2', 'haricot', 'haricot_velo']],
   ['Autoroute', ['autoroute', 'sortie']],
   ['Manœuvres', ['arret_precis', 'demi_tour']],
   ['Stationnement', ['manoeuvres', 'parking']],
 ];
 const sansPrive = (k, v) => (k[0] === '_' ? undefined : v);
+/* scènes modifiées par les moniteurs : publiées dans le dossier scenes/ du dépôt (une scène = un fichier <clé>.json),
+   ou en attente de publication sur cet appareil. Une scène modifiée remplace la scène d'origine. */
+const SURCHARGES = {}, CLE_A_PUBLIER = 'simu-scenes-a-publier';
+const lireAPublier = () => { try { return JSON.parse(localStorage.getItem(CLE_A_PUBLIER) || '{}'); } catch (e) { return {}; } };
+function surcharge(cle) { const p = SURCHARGES[cle], l = lireAPublier()[cle]; return l && (!p || (l.date || '') >= (p.date || '')) ? l : p || null; }
+(async function chargerSurcharges() {
+  await Promise.all(SCENES_COURS.map(async ([cle]) => {
+    try { const r = await fetch('scenes/' + cle + '.json', { cache: 'no-cache' }); if (!r.ok) return; const j = await r.json(); if (j && j.scene) { SURCHARGES[cle] = j; if (typeof vigCache !== 'undefined') vigCache.delete(cle); } } catch (e) {}
+  }));
+})();
 function construireScene(cle) {
   const def = SCENES_COURS.find((s) => s[0] === cle); if (!def) return null;
-  const sc = def[2](); sc.titre = def[1]; sc.origine = cle; if (NOTES[cle]) sc.note = NOTES[cle];
+  const o = surcharge(cle), sc = o ? JSON.parse(JSON.stringify(o.scene)) : def[2]();
+  sc.titre = (o && o.scene.titre) || def[1]; sc.origine = cle; delete sc.edition; delete sc.modele;
+  if (!(o && o.scene.note) && NOTES[cle]) sc.note = NOTES[cle];
   return sc;
+}
+function editerSceneCours(cle) { // depuis l'accueil : mot de passe, puis la scène s'ouvre dans l'éditeur
+  demanderMdp(() => {
+    fermerAccueil(); basculerMode('editeur');
+    const sc = construireScene(cle); sc.edition = cle;
+    poserScene(sc, '« ' + sc.titre + ' » : modifie-la, puis Menu › Publier cette scène pour tous');
+  });
+}
+function publierScene() { // prépare le fichier à mettre en ligne ; cet appareil voit déjà la nouvelle version
+  const cle = scene.edition;
+  if (!cle) { toast('Ouvre d\'abord une scène de l\'accueil avec son bouton « Éditer »'); return; }
+  const sc = JSON.parse(JSON.stringify(scene, (k, v) => (k[0] === '_' ? undefined : v))); delete sc.edition; delete sc.modele; sc.origine = cle;
+  const fiche = { format: 'easy-scene', cle, titre: sc.titre, date: new Date().toISOString(), scene: sc }, txt = JSON.stringify(fiche);
+  const m = lireAPublier(); m[cle] = fiche; try { localStorage.setItem(CLE_A_PUBLIER, JSON.stringify(m)); } catch (e) {}
+  if (typeof vigCache !== 'undefined') vigCache.delete(cle);
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'application/json' })); a.download = cle + '.json'; document.body.appendChild(a); a.click(); a.remove();
+  try { if (navigator.clipboard) navigator.clipboard.writeText(txt); } catch (e) {}
+  toast('« ' + cle + '.json » téléchargé : envoie-le pour qu\'il soit mis en ligne pour tous les moniteurs');
 }
 
 /* ---------- mes scènes : une scène personnelle n'est jamais perdue quand on en ouvre une autre ---------- */
@@ -3919,6 +4073,10 @@ function ouvrirAccueil() {
     const t = document.createElement('span'); t.className = 'ac-t'; t.textContent = titre; b.appendChild(t);
     if (note) { const n = document.createElement('span'); n.className = 'ac-n'; n.textContent = note; b.appendChild(n); }
     b.onclick = () => { fermerAccueil(); action(); };
+    if (cle && SCENES_COURS.some((d) => d[0] === cle)) { // modifier une scène toute faite, pour tous (mot de passe)
+      const x = document.createElement('span'); x.className = 'ac-edit'; x.textContent = '✎ Éditer'; x.setAttribute('role', 'button'); x.title = 'Modifier cette scène pour tous les moniteurs';
+      x.onclick = (e) => { e.stopPropagation(); editerSceneCours(cle); }; b.appendChild(x);
+    }
     gr.appendChild(b); return b;
   };
   // la scène ouverte, puis les scènes personnelles
