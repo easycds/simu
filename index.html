@@ -1148,7 +1148,7 @@ function segmentsAxe(gr) {           // tronçons de la ligne du milieu : 1 = di
 /* angles arrondis : entre deux branches voisines d'un carrefour, le trottoir suit un arc au lieu d'un angle vif */
 const R_COIN = 80; // rayon de l'angle de trottoir (≈ 4 m)
 function coinsCarrefours() {
-  const res = []; if (scene.fond) return res;
+  const res = []; if (scene.fond || !scene.anglesArrondis) return res; // seulement sur les scènes qui le demandent (vues aériennes des Banchais)
   for (const c of geo.carrefours) {
     const B = c.branches.map((b) => {
       const g = geo.routes.get(b.id); if (!g) return null;
@@ -3764,7 +3764,7 @@ function sceneRdTourner(cote) { // route départementale, intersection en T ; co
 }
 /* ---------------- les 7 Sonnettes, d'après la vue aérienne (1 px de la photo ≈ 1,2 unité) ---------------- */
 function sceneSonnettesVue() {
-  const K = 1.2, IM = (x, y) => [640 + (x - 592) * K, 560 + (y - 362) * K], C = IM(592, 362), cle = C.map(Math.round).join(','), sc = sceneVide();
+  const K = 1.2, IM = (x, y) => [640 + (x - 592) * K, 560 + (y - 362) * K], C = IM(592, 362), cle = C.map(Math.round).join(','), sc = sceneVide(); sc.anglesArrondis = true;
   const u = (x, y) => { const n = Math.hypot(x, y); return [x / n, y / n]; };
   const BR = [ // chaque branche : axe au passage piéton, direction vers l'extérieur, largeur, terre-plein central, route (même route = même phase de feux)
     { nom: 'sw', P: IM(360, 570), d: u(-0.849, 0.529), larg: 258, med: 0, route: 1 },  // av. Victor Châtenay (D323), voie bus
@@ -3808,7 +3808,7 @@ function sceneSonnettesVue() {
 }
 /* ---------------- bd Henri Dunant × bd Copernic, d'après la vue aérienne (1 px ≈ 1,2 unité) ---------------- */
 function sceneDunantVue() {
-  const K = 1.2, IM = (x, y) => [640 + (x - 560) * K, 560 + (y - 300) * K], C = IM(560, 300), cle = C.map(Math.round).join(','), sc = sceneVide();
+  const K = 1.2, IM = (x, y) => [640 + (x - 560) * K, 560 + (y - 300) * K], C = IM(560, 300), cle = C.map(Math.round).join(','), sc = sceneVide(); sc.anglesArrondis = true;
   const u = (x, y) => { const n = Math.hypot(x, y); return [x / n, y / n]; };
   const BR = [ // axe au passage piéton, direction vers l'extérieur, largeur, terre-plein, voies entrantes / sortantes, flèches, route, feu (paire de phase)
     { nom: 'w', P: IM(455, 258), d: u(-0.937, -0.35), larg: 170, med: 0, nin: 2, nout: 2, fl: ['fleche_td_gauche', 'fleche_td_droite'], route: 1, feu: 1 }, // bd Henri Dunant (pont)
