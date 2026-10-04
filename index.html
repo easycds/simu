@@ -1122,9 +1122,12 @@ function coinsCarrefours() {
   for (const c of geo.carrefours) {
     const B = c.branches.map((b) => {
       const g = geo.routes.get(b.id); if (!g) return null;
-      const q = surRoute(g, b.s + b.dir * Math.min(120, Math.max(30, (b.dispo || 120) * 0.9)));
+      // partie droite de la branche : l'arc doit rester avant le premier coude de la route
+      const t0 = surRoute(g, b.s + b.dir * 4); let droit = 400;
+      for (let k = 12; k <= 400; k += 8) { const q = surRoute(g, b.s + b.dir * k); if (q.tx * t0.tx + q.ty * t0.ty < 0.9995) { droit = k - 12; break; } }
+      const q = surRoute(g, b.s + b.dir * Math.max(8, Math.min(120, droit, (b.dispo || 120) * 0.9)));
       let ux = q.x - c.x, uy = q.y - c.y; const n = Math.hypot(ux, uy); if (n < 1) return null; ux /= n; uy /= n;
-      return { ux, uy, hw: (g.r.larg || LR) / 2, ang: Math.atan2(uy, ux), dispo: b.dispo || 0, trot: !g.r.sansTrottoir };
+      return { ux, uy, hw: (g.r.larg || LR) / 2, ang: Math.atan2(uy, ux), dispo: b.dispo || 0, droit, trot: !g.r.sansTrottoir };
     }).filter(Boolean).sort((a, b) => a.ang - b.ang);
     if (B.length < 2) continue;
     for (let i = 0; i < B.length; i++) {
@@ -1137,7 +1140,8 @@ function coinsCarrefours() {
       const t = ((p2[0] - p1[0]) * N.uy - (p2[1] - p1[1]) * N.ux) / den;
       const Q = [p1[0] + A.ux * t, p1[1] + A.uy * t]; // coin vif du trottoir
       let r = R_COIN, L = r / Math.tan(th / 2);
-      const Lmax = Math.max(0, Math.min(150, Math.min(A.dispo, N.dispo) * 0.5)); if (L > Lmax) { L = Lmax; r = L * Math.tan(th / 2); }
+      const tA = (Q[0] - c.x) * A.ux + (Q[1] - c.y) * A.uy, tN = (Q[0] - c.x) * N.ux + (Q[1] - c.y) * N.uy; // distance du coin le long de chaque branche
+      const Lmax = Math.max(0, Math.min(150, Math.min(A.dispo, N.dispo) * 0.5, A.droit - tA - 6, N.droit - tN - 6)); if (L > Lmax) { L = Lmax; r = L * Math.tan(th / 2); }
       if (r < 6) continue;
       const bx = A.ux + N.ux, by = A.uy + N.uy, bn = Math.hypot(bx, by), dO = r / Math.sin(th / 2);
       const O = [Q[0] + (bx / bn) * dO, Q[1] + (by / bn) * dO], T1 = [Q[0] + A.ux * L, Q[1] + A.uy * L], T2 = [Q[0] + N.ux * L, Q[1] + N.uy * L];
