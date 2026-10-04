@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+<script src="/acces.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Simulateur Easy</title>
@@ -841,18 +842,46 @@ function shade(hex, p) {
   const f = v => Math.max(0, Math.min(255, v + p));
   return '#' + [f(n >> 16), f((n >> 8) & 255), f(n & 255)].map(v => v.toString(16).padStart(2, '0')).join('');
 }
-function cycliste(x, y, ang) {
+/* piétons et cyclistes vus de dessus : chacun garde sa tenue, s'oriente dans son sens et anime ses pas ou son pédalage */
+const TENUES_PIETON = [
+  { haut: '#3b6fb6', cheveux: '#3d2b1f' }, { haut: '#b23a48', cheveux: '#c9a066', sac: '#2f9e6b' }, { haut: '#6b5b95', cheveux: '#1d1d1d' },
+  { haut: '#e8743b', cheveux: '#3d2b1f', gilet: true }, { haut: '#2f9e6b', cheveux: '#8a8a8a' }, { haut: '#d9c27a', cheveux: '#5a3b22', enfant: true },
+  { haut: '#1f2933', cheveux: '#c9a066', sac: '#b23a48' },
+];
+const TENUES_CYCLISTE = [
+  { haut: '#2a9d8f', casque: '#e63946', jambes: '#2c3138' }, { haut: '#e9a23b', casque: '#1d3557', jambes: '#3d405b' },
+  { haut: '#d6f23a', casque: '#ff6a00', jambes: '#2c3138', fluo: true },
+];
+function tenue(o, liste) { if (o._tenue == null) o._tenue = Math.floor(Math.random() * liste.length); return liste[o._tenue % liste.length]; }
+function cycliste(x, y, ang, ph, t) {
+  t = t || TENUES_CYCLISTE[0]; const s = Math.sin(ph || 0);
   ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
-  ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(3, 3, 20, 7, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = '#222'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-18, 0); ctx.lineTo(18, 0); ctx.stroke();
-  ctx.fillStyle = '#2a9d8f'; ctx.beginPath(); ctx.ellipse(-2, 0, 9, 11, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#f4d35e'; ctx.beginPath(); ctx.arc(3, 0, 5.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(3, 3, 20, 8, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.lineCap = 'round'; ctx.strokeStyle = '#15181c'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-21, 0); ctx.lineTo(-11, 0); ctx.moveTo(11, 0); ctx.lineTo(21, 0); ctx.stroke(); // roues
+  ctx.strokeStyle = '#8a939c'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-14, 0); ctx.lineTo(14, 0); ctx.stroke(); // cadre
+  ctx.strokeStyle = '#2c3138'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(13, -8); ctx.lineTo(13, 8); ctx.stroke(); // guidon
+  ctx.fillStyle = '#2c3138'; ctx.beginPath(); ctx.ellipse(-1 + 4 * s, -3, 3, 1.6, 0, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.ellipse(-1 - 4 * s, 3, 3, 1.6, 0, 0, Math.PI * 2); ctx.fill(); // pédales
+  ctx.fillStyle = t.jambes; ctx.beginPath(); ctx.ellipse(2 + 3 * s, -4, 4, 2.2, 0, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.ellipse(2 - 3 * s, 4, 4, 2.2, 0, 0, Math.PI * 2); ctx.fill(); // genoux
+  ctx.strokeStyle = t.haut; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(-3, -6); ctx.lineTo(12, -7); ctx.moveTo(-3, 6); ctx.lineTo(12, 7); ctx.stroke(); // bras
+  ctx.fillStyle = t.haut; ctx.beginPath(); ctx.ellipse(-4, 0, 6, 8, 0, 0, Math.PI * 2); ctx.fill();
+  if (t.fluo) { ctx.strokeStyle = '#cfcfcf'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(-8, -5); ctx.lineTo(-8, 5); ctx.stroke(); }
+  ctx.fillStyle = t.casque; ctx.beginPath(); ctx.ellipse(1, 0, 5, 4.3, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-2, -1.5); ctx.lineTo(4, -1.5); ctx.moveTo(-2, 1.5); ctx.lineTo(4, 1.5); ctx.stroke();
   ctx.restore();
 }
-function pieton(x, y, coul) {
-  ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.arc(x + 2, y + 3, 9, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = coul; ctx.beginPath(); ctx.ellipse(x, y, 10, 7, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#3d2b1f'; ctx.beginPath(); ctx.arc(x, y, 4.5, 0, Math.PI * 2); ctx.fill();
+function pieton(x, y, coul, ang, ph, t) {
+  t = t || { haut: coul || TENUES_PIETON[0].haut, cheveux: '#3d2b1f' }; const s = Math.sin(ph || 0), k = t.enfant ? 0.72 : 1;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang || 0); ctx.scale(0.62 * k, 0.62 * k);
+  ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.beginPath(); ctx.ellipse(3, 4, 9, 11, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#2c3138'; ctx.beginPath(); ctx.ellipse(4 + 6 * s, -4, 4, 2.6, 0, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.ellipse(4 - 6 * s, 4, 4, 2.6, 0, 0, Math.PI * 2); ctx.fill(); // pieds
+  const haut = t.gilet ? '#ffd23f' : t.haut;
+  ctx.fillStyle = haut; ctx.beginPath(); ctx.ellipse(-5.4 * s, -9, 3, 2.6, 0, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.ellipse(5.4 * s, 9, 3, 2.6, 0, 0, Math.PI * 2); ctx.fill(); // bras
+  ctx.beginPath(); ctx.ellipse(0, 0, 6, 9.5, 0, 0, Math.PI * 2); ctx.fill();
+  if (t.gilet) { ctx.strokeStyle = '#d8d8d8'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-5, -6); ctx.lineTo(-5, 6); ctx.moveTo(3, -8); ctx.lineTo(3, 8); ctx.stroke(); }
+  if (t.sac) { ctx.fillStyle = t.sac; ctx.beginPath(); ctx.roundRect(-8, -5, 4.5, 10, 2); ctx.fill(); }
+  ctx.fillStyle = '#e9c3a0'; ctx.beginPath(); ctx.arc(1.5, 0, 4.3, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = t.cheveux; ctx.beginPath(); ctx.arc(0.5, 0, 4.3, Math.PI * 0.55, Math.PI * 1.45); ctx.fill();
+  ctx.restore();
 }
 
 /* Panneaux vus de dessus : pastille lisible, orientée vers l'usager qui arrive */
@@ -1404,14 +1433,21 @@ function etatPieton(cle, route) { // bonhomme vert seulement si les voitures qui
   if (!test && !(mode === 'seance' && seance.feux[cle])) return 'vert';
   return resteRouge(cle, route) > DUREE_TRAVERSEE ? 'vert' : 'rouge';
 }
-function feuPieton(g, x, y, ang, et) { // petit feu piéton : bonhomme rouge, bonhomme vert
+function feuPieton(g, x, y, ang, et) { // feu piéton à la française : bonhomme rouge debout à gauche, bonhomme vert qui marche à droite
   g.save(); g.translate(x, y); g.rotate(ang);
-  g.fillStyle = '#16191d'; g.beginPath(); g.roundRect(-14, -8, 28, 16, 5); g.fill();
-  const lampe = (cx, coul, on) => {
-    g.fillStyle = on ? coul : '#2c3138'; g.beginPath(); g.arc(cx, 0, 5.8, 0, Math.PI * 2); g.fill();
-    if (on) { g.fillStyle = '#16191d'; g.beginPath(); g.arc(cx, -2.7, 1.35, 0, Math.PI * 2); g.fill(); g.fillRect(cx - 1.1, -1.2, 2.2, 4.4); }
+  g.fillStyle = '#3a3f45'; g.beginPath(); g.roundRect(-15, -12, 30, 24, 4); g.fill();
+  g.fillStyle = '#121417'; g.beginPath(); g.roundRect(-13, -10, 26, 20, 3); g.fill();
+  const trait = (w, segs) => { g.lineWidth = w; g.beginPath(); for (const [a, b, c, d] of segs) { g.moveTo(a, b); g.lineTo(c, d); } g.stroke(); };
+  const bonhomme = (cx, col, allume, marche) => {
+    g.save(); if (allume) { g.shadowColor = col; g.shadowBlur = 5; }
+    g.fillStyle = col; g.strokeStyle = col; g.lineCap = 'round';
+    g.beginPath(); g.arc(cx + (marche ? 0.6 : 0), -6.4, 1.8, 0, Math.PI * 2); g.fill();
+    if (marche) { trait(2.6, [[cx + 0.2, -4.1, cx - 0.4, 1.4]]); trait(1.3, [[cx, -3.4, cx + 3.1, 0.2], [cx, -3.4, cx - 2.9, -0.2]]); trait(1.6, [[cx - 0.4, 1.4, cx + 3.2, 7.6], [cx - 0.4, 1.4, cx - 2.9, 7.6]]); }
+    else { trait(2.6, [[cx, -4.1, cx, 1.6]]); trait(1.3, [[cx - 2.5, -3.6, cx - 2.7, 1.8], [cx + 2.5, -3.6, cx + 2.7, 1.8]]); trait(1.6, [[cx - 1, 1.6, cx - 1.1, 7.6], [cx + 1, 1.6, cx + 1.1, 7.6]]); }
+    g.restore();
   };
-  lampe(-6.6, '#ff3b30', et === 'rouge'); lampe(6.6, '#2ecc71', et === 'vert');
+  bonhomme(-6, et === 'rouge' ? '#ff4a3d' : '#3b2523', et === 'rouge', false);
+  bonhomme(6, et === 'vert' ? '#5df2b8' : '#1d332a', et === 'vert', true);
   g.restore();
 }
 let pubVue = null;
@@ -1490,14 +1526,14 @@ function rendre() {
   }
   // carrefour ouvert
   if (carrefourOuvert) { const c = geo.carrefours.find((k) => k.cle === carrefourOuvert); if (c) anneau(g, c.x, c.y, true); }
-  if (test) for (const p of test.pietons) { const [x, y] = posPieton(p); g.save(); g.translate(x, y); g.scale(1.6, 1.6); pieton(0, 0, p.coul); g.restore(); }
+  if (test) for (const p of test.pietons) { const [x, y] = posPieton(p), n = p.cw.n, a = Math.atan2(n[1] * p.dir, n[0] * p.dir); g.save(); g.translate(x, y); g.scale(1.6, 1.6); pieton(0, 0, p.coul, a, p.etat === 'traverse' ? p.t * 46 : 0, tenue(p, TENUES_PIETON)); g.restore(); }
   // véhicules
   if (test && mode === 'seance' && seance.anglesMorts) for (const v of test.vehicules) if (v.easy && !v.pos) { const Q = posVehicule(v); anglesMorts(g, Q.x, Q.y, Q.ang); }
   if (test && scene.depassement) for (const v of test.vehicules) if (v.type === 'velo') { const Q = posVehicule(v); haloVelo(g, Q.x, Q.y, Q.ang); }
   if (test) for (const v of test.vehicules) {
     const P = posVehicule(v); if (v.angAff !== undefined) P.ang = v.angAff;
     const cl = v.cligno && (test.frame % 40 < 22) ? v.cligno : null;
-    if (v.easy) { voitureEasy(P.x, P.y, P.ang); if (cl) clignoEasy(g, P, cl); } else if (v.type === 'camion') dessinerCamion(g, P.x, P.y, P.ang, v.coul); else if (v.type === 'velo') cycliste(P.x, P.y, P.ang); else voiture(P.x, P.y, P.ang, v.coul, cl);
+    if (v.easy) { voitureEasy(P.x, P.y, P.ang); if (cl) clignoEasy(g, P, cl); } else if (v.type === 'camion') dessinerCamion(g, P.x, P.y, P.ang, v.coul); else if (v.type === 'velo') cycliste(P.x, P.y, P.ang, v.s * 0.16, tenue(v, TENUES_CYCLISTE)); else voiture(P.x, P.y, P.ang, v.coul, cl);
     if (v.frein) feuxStop(g, P, v.type === 'camion' ? 150 : 74, v.type === 'camion' ? 46 : 38);
   }
   if (mode === 'seance') rendreSeance(g);
@@ -2849,8 +2885,8 @@ function dessinerUsager(g, u) {
   else if (u.type === 'voiture') voiture(x, y, ang, u.coul, null);
   else if (u.type === 'camion') dessinerCamion(g, x, y, ang, u.coul);
   else if (u.type === 'moto') dessinerMoto(g, x, y, ang, u.coul);
-  else if (u.type === 'velo') cycliste(x, y, ang);
-  else { g.save(); g.translate(x, y); g.scale(1.6, 1.6); pieton(0, 0, u.coul); g.restore(); }
+  else if (u.type === 'velo') cycliste(x, y, ang, 0, tenue(u, TENUES_CYCLISTE));
+  else { const t = tenue(u, TENUES_PIETON); g.save(); g.translate(x, y); g.scale(1.6, 1.6); pieton(0, 0, u.coul, ang, 0, { ...t, haut: u.coul || t.haut }); g.restore(); }
   if (!aPoignee(u)) return;
   const [L, l] = DIM[u.type];
   if (u.cligno && (seance.horloge % 40 < 22)) {
@@ -4023,6 +4059,11 @@ function surcharge(cle) { const p = SURCHARGES[cle], l = lireAPublier()[cle]; re
     try { const r = await fetch('scenes/' + cle + '.json', { cache: 'no-cache' }); if (!r.ok) return; const j = await r.json(); if (j && j.scene) { SURCHARGES[cle] = j; if (typeof vigCache !== 'undefined') vigCache.delete(cle); } } catch (e) {}
   }));
 })();
+function ouvrirDepuisLien() { // easycds.fr/simu/#feux_indo ouvre directement la scène en Séance (liens de la trame pédagogique)
+  const cle = decodeURIComponent((location.hash || '').slice(1));
+  if (!cle || !SCENES_COURS.some((d) => d[0] === cle)) return false;
+  fermerAccueil(); basculerMode('seance'); chargerSceneCours(cle); return true;
+}
 function construireScene(cle) {
   const def = SCENES_COURS.find((s) => s[0] === cle); if (!def) return null;
   const o = surcharge(cle), sc = o ? JSON.parse(JSON.stringify(o.scene)) : def[2]();
@@ -4232,7 +4273,8 @@ if (scene.modele && !scene.origine) {      // scène enregistrée par une versio
 if (scene.origine && !scene.note && NOTES[scene.origine]) scene.note = NOTES[scene.origine];
 if (SUR_SITE) {                      // sur le site : on arrive en Séance, sur le choix des scènes
   if (!initial) chargerExemple();
-  if (location.hash === '#editer') demanderMdp(() => basculerMode('editeur')); else { basculerMode('seance'); ouvrirAccueil(); }
+  if (location.hash === '#editer') demanderMdp(() => basculerMode('editeur')); else { basculerMode('seance'); if (!ouvrirDepuisLien()) ouvrirAccueil(); }
+    window.addEventListener('hashchange', ouvrirDepuisLien);
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 demarrage = false;
