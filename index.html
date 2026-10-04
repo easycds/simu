@@ -288,7 +288,8 @@ body.mode-seance #menu-feu.ouvert { display:flex; }
 </div>
 <div class="pill" id="plus-seance">
   <button class="btn" id="so-feux"><svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="20" rx="3"/><circle cx="12" cy="7" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="17" r="1.5"/></svg><span></span></button>
-  <button class="btn" id="so-num"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M11 9l2-1v8"/></svg><span></span></button>
+  <button class="btn" id="so-angles"><svg viewBox="0 0 24 24"><rect x="9" y="7" width="6" height="11" rx="2"/><path d="M9 10 3 20M15 10l6 10M3 20h18" style="stroke-dasharray:2 2"/></svg><span></span></button>
+<button class="btn" id="so-num"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M11 9l2-1v8"/></svg><span></span></button>
   <button class="btn" id="so-effacer"><svg viewBox="0 0 24 24"><path d="M20 20H8l-5-5 10-10 8 8-6 6"/></svg><span>Effacer les dessins</span></button>
   <div class="sep-h"></div>
   <button class="btn" id="so-rec"><svg viewBox="0 0 24 24" style="fill:#ff3131;stroke:none"><circle cx="12" cy="12" r="6"/></svg><span>Enregistrer un déplacement</span></button>
@@ -1334,7 +1335,32 @@ function ajusterEcluse(T, route, dir) {
   return T;
 }
 function auFeuRouge(v) { return v.T.evts.some((e) => e.c.type === 'feux' && !v.passes.has('L' + e.c.cle + e.i) && e.sLigne - v.s < 400 && ['rouge', 'orange'].includes(etatFeu(e.c.cle, e.route))); }
+const CIRCULATION_OK = ['giratoire', 'giratoire_velo', 'giratoire2', 'haricot', 'haricot_velo', 'feux_classique', 'feux_indo']; // les autres scènes ne sont pas encore prêtes
+function circulationPossible() { return CIRCULATION_OK.includes(scene.origine); }
+let circVue = null;
+function majCirculation() { // les boutons Circulation / Tester n'apparaissent que là où la circulation est au point
+  const ok = !!test || circulationPossible(); if (ok === circVue) return; circVue = ok;
+  for (const id of ['so-circ', 'b-tester']) { const b = $(id); if (b) b.style.display = ok ? '' : 'none'; }
+}
+/* angles morts : champ des rétros (bleu) et zones invisibles (rouge) autour de la voiture école */
+function anglesMorts(g, x, y, ang) {
+  const L = 37, l = 19, P = 200, bleu = 'rgba(59,130,196,0.20)', rouge = 'rgba(224,31,31,0.24)';
+  g.save(); g.translate(x, y); g.rotate(ang);
+  const poly = (pts, fill) => { g.beginPath(); pts.forEach(([a, b], i) => (i ? g.lineTo(a, b) : g.moveTo(a, b))); g.closePath(); g.fillStyle = fill; g.fill(); };
+  poly([[-L, -l * 0.55], [-L - P, -l * 0.55 - P * 0.17], [-L - P, l * 0.55 + P * 0.17], [-L, l * 0.55]], bleu); // rétro intérieur, par la lunette
+  for (const c of [-1, 1]) {
+    const mx = 14, my = c * (l + 3), bord = (xx) => my + c * (mx - xx) * 0.42;
+    poly([[mx, my], [mx - P, my + c * P * 0.06], [mx - P, bord(mx - P)]], bleu); // rétro extérieur
+    poly([[8, c * (l + 2)], [8, c * (l + 70)], [-110, c * (l + 70)], [-110, bord(-110)], [mx - 2, bord(mx - 2)]], rouge); // angle mort
+  }
+  poly([[-L - 1, -l], [-L - 26, -l], [-L - 26, l], [-L - 1, l]], rouge); // juste derrière le pare-chocs
+  g.fillStyle = '#b3121a'; g.font = '800 10px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (const c of [-1, 1]) g.fillText('ANGLE MORT', -60, c * (l + 58));
+  g.fillStyle = '#1f5f99'; g.fillText('RÉTRO INTÉRIEUR', -150, 0);
+  g.restore();
+}
 function rendre() {
+  majCirculation();
   const g = vctx;
   g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(couche, 0, 0);
   g.setTransform(S * DPR, 0, 0, S * DPR, OX * DPR, OY * DPR);
@@ -1397,6 +1423,7 @@ function rendre() {
   if (carrefourOuvert) { const c = geo.carrefours.find((k) => k.cle === carrefourOuvert); if (c) anneau(g, c.x, c.y, true); }
   if (test) for (const p of test.pietons) { const [x, y] = posPieton(p); g.save(); g.translate(x, y); g.scale(1.6, 1.6); pieton(0, 0, p.coul); g.restore(); }
   // véhicules
+  if (test && mode === 'seance' && seance.anglesMorts) for (const v of test.vehicules) if (v.easy && !v.pos) { const Q = posVehicule(v); anglesMorts(g, Q.x, Q.y, Q.ang); }
   if (test && scene.depassement) for (const v of test.vehicules) if (v.type === 'velo') { const Q = posVehicule(v); haloVelo(g, Q.x, Q.y, Q.ang); }
   if (test) for (const v of test.vehicules) {
     const P = posVehicule(v); if (v.angAff !== undefined) P.ang = v.angAff;
@@ -2072,6 +2099,7 @@ const CYCLE = 2 * FEU_DEMI;                // cycle des feux (images)
 const DUREE_TRAVERSEE = Math.ceil((LR + 22) / 1.05) + 30;   // temps qu'il faut à un piéton pour traverser, avec une marge
 function basculerTest() {
   if (test) { test = null; $('t-tester').textContent = 'Tester'; $('ico-play').innerHTML = '<path d="M7 4l13 8-13 8z"/>'; sale = true; }
+  else if (!circulationPossible()) toast('La circulation n\'est pas encore disponible pour cette scène');
   else if (!scene.routes.length && !scene.fond) toast('Trace d\'abord une route');
   else {
     test = { frame: 0, vehicules: [], prochain: 0, n: 0, pietons: [], prochainPieton: 60, np: 0 };
@@ -2813,6 +2841,7 @@ function etatFeuSeance(cle, route) {
 function rendreSeance(g) {
   ctx = g;
   const L = test ? [] : usagers();      // pendant la circulation, les véhicules posés à la main s'effacent (ils reviennent à l'arrêt)
+  if (seance.anglesMorts) for (const u of L) if (u.type === 'ecole') anglesMorts(g, u.x, u.y, u.ang);
   if (scene.depassement) for (const u of L) if (u.type === 'velo') haloVelo(g, u.x, u.y, u.ang);
   for (const u of L) dessinerUsager(g, u);
   if (!seance.lecture) for (const u of L) dessinerLaisse(g, u, u === seance.sel);      // la poignée reste visible en plein écran : c'est elle qui fait rouler le véhicule
@@ -2951,6 +2980,7 @@ function majDockSeance() {
   $('so-feux').hidden = !geo.carrefours.some((c) => c.type === 'feux');
   $('so-feux').lastElementChild.textContent = seance.feuxAuto ? 'Feux : passer à la main' : 'Feux : repasser en automatique';
   $('so-num').lastElementChild.textContent = seance.numeros ? 'Retirer les numéros' : 'Numéroter les véhicules';
+  $('so-angles').lastElementChild.textContent = seance.anglesMorts ? 'Masquer les angles morts' : 'Angles morts de la voiture école';
   $('so-effacer').hidden = !seance.traits.length;
 }
 function basculerMode(m) {
@@ -2989,6 +3019,7 @@ function basculerMode(m) {
   $('so-debut').onclick = () => { fermerMenu(); auDepart(); };
   $('so-feux').onclick = () => { fermerMenu(); seance.feuxAuto = !seance.feuxAuto; majDockSeance(); toast(seance.feuxAuto ? 'Feux automatiques' : 'Feux à la main : touche un carrefour pour les changer'); };
   $('so-num').onclick = () => { fermerMenu(); seance.numeros = !seance.numeros; majDockSeance(); sale = true; };
+  $('so-angles').onclick = () => { fermerMenu(); seance.anglesMorts = !seance.anglesMorts; majDockSeance(); sale = true; toast(seance.anglesMorts ? 'En bleu : ce que montrent les rétros. En rouge : les angles morts' : 'Angles morts masqués'); };
   $('so-effacer').onclick = $('chip-dessins').onclick = () => { fermerMenu(); seance.traits = []; sale = true; toast('Dessins effacés'); };
   $('so-circ').onclick = () => { fermerMenu(); basculerTest(); };
   $('so-zero').onclick = () => { fermerMenu(); remettreAZero(); };
@@ -3721,13 +3752,13 @@ const SCENES_COURS = [
    POUR LE MONITEUR — accueil par vignettes, consigne « à montrer », remise à zéro, aide des gestes
    ===================================================================== */
 const NOTES = {
-  cedez: 'Au cédez-le-passage, je ralentis et je regarde : je ne m\'arrête que si quelqu\'un arrive. Lance la circulation et fais dire qui passe en premier.',
+  cedez: 'Au cédez-le-passage, je ralentis et je regarde : je ne m\'arrête que si quelqu\'un arrive. Fais dire qui passe en premier.',
   stop: 'Arrêt complet à la ligne, même s\'il n\'y a personne. Entre voitures arrêtées au STOP, c\'est la priorité à droite qui départage : fais dire l\'ordre (ici la rouge, puis la jaune, puis nous).',
-  depassement: 'Hors agglomération, je laisse au moins 1,5 m entre le vélo et ma voiture : je me déporte franchement, sur l\'autre voie. Contrôles, clignotant, et je ne dépasse que si personne n\'arrive en face. Lance la circulation pour voir.',
+  depassement: 'Hors agglomération, je laisse au moins 1,5 m entre le vélo et ma voiture : je me déporte franchement, sur l\'autre voie. Contrôles, clignotant, et je ne dépasse que si personne n\'arrive en face.',
   depassement_ville: 'En agglomération, au moins 1 m entre le vélo et ma voiture. Si je ne peux pas laisser cette distance sans gêner ceux d\'en face, je reste derrière le vélo.',
   priorite_droite: 'Sans panneau ni feu, je cède le passage à celui qui arrive de ma droite. Fais dire l\'ordre de passage : la jaune, puis nous, puis la verte.',
   exemple: 'Une rue prioritaire, un STOP et un cédez-le-passage : fais nommer le régime de chaque carrefour, puis dire qui passe.',
-  etroit: 'Passage étroit : de notre côté le panneau rond (B15), je cède le passage à celui d\'en face ; lui a le carré bleu (C18), il est prioritaire. Lance la circulation pour voir l\'alternance.',
+  etroit: 'Passage étroit : de notre côté le panneau rond (B15), je cède le passage à celui d\'en face ; lui a le carré bleu (C18), il est prioritaire.',
   briollay1: 'Je m\'arrête à la ligne des feux, avant le sas vélo. Touche le carrefour pour changer la phase, touche un feu pour l\'orange clignotant ou le jaune du bas.',
   sonnettes: 'Grand carrefour à feux : je choisis ma voie selon ma direction avant d\'arriver à la ligne.',
   feux_classique: 'Tourne-à-gauche classique : les deux voitures qui se font face se contournent, chacune passe derrière l\'autre.',
@@ -3737,7 +3768,7 @@ const NOTES = {
   giratoire2: 'Deux voies : voie de droite pour aller à droite ou tout droit, voie de gauche pour aller à gauche. Je me rabats avant de sortir.',
   haricot: 'Giratoire allongé, mêmes règles : je cède en entrant, clignotant à droite dès que j\'ai passé la sortie d\'avant.',
   haricot_velo: 'Giratoire allongé avec bande cyclable : je cède en entrant, et je laisse passer le vélo avant de sortir.',
-  autoroute: 'Voie d\'insertion : celui qui s\'insère cède le passage. Lance la circulation, trois cas s\'enchaînent : voie libre, voiture qui se déporte, deux voies occupées.',
+  autoroute: 'Voie d\'insertion : celui qui s\'insère cède le passage. Trois cas à montrer : voie libre, voiture qui se déporte, deux voies occupées.',
   sortie: 'Sortie : clignotant, je garde ma vitesse tant que je suis sur l\'autoroute. Je ne freine qu\'une fois dans la voie de décélération.',
   manoeuvres: 'Créneau, bataille, épi : tire le point devant le capot de la voiture école pour montrer la trajectoire et les contrôles.',
   parking: 'Tous les stationnements : bataille, épi, créneau, PMR, livraison, recharge. Fais dire où l\'on a le droit de se garer.',
