@@ -2,7 +2,7 @@
    - La page (index.html) : réseau d'abord, copie en cache si pas de connexion
      → les mises à jour arrivent dès qu'il y a du réseau.
    - La police Google (Fredoka) : cache d'abord. */
-const CACHE = 'simu-easy-v1';
+const CACHE = 'simu-easy-v2';
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', './index.html'])).catch(() => {}));
@@ -35,7 +35,7 @@ self.addEventListener('fetch', (e) => {
   // Fichiers du site : réseau d'abord, cache en secours
   if (url.origin === self.location.origin) {
     e.respondWith(
-      fetch(req).then((rep) => {
+      fetch(new Request(req.url, { cache: 'no-cache', credentials: 'same-origin' })).then((rep) => { // on redemande toujours au serveur (pas de copie périmée du navigateur)
         if (rep.ok) { const copie = rep.clone(); caches.open(CACHE).then((c) => c.put(req, copie)); }
         return rep;
       }).catch(() => caches.match(req).then((r) => r || caches.match('./index.html')))
