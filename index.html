@@ -1023,10 +1023,11 @@ function reconstruire() {
         geo.autoPanneaux.push({ type, x: P.q.x + P.rx * (LR / 2 + 26), y: P.q.y + P.ry * (LR / 2 + 26), ang: Math.atan2(P.hy, P.hx) + Math.PI / 2, cle: c.cle, route: b.id, bdir: b.dir });
       };
       const ligne = (style, d) => { const P = pose(d ?? distLigne(c), ''); if (P) geo.lignes.push({ ...P, style, cle: c.cle }); };
-      if (c.type === 'pad') panneau(190, 'priorite_droite');
+      const loin = scene.horsAgglo ? 380 : 0; // hors agglomération, le panneau est bien plus en amont (150 m en vrai), en ville tout près
+      if (c.type === 'pad') panneau(loin || 190, 'priorite_droite');
       else if (c.type === 'stop' || c.type === 'cedez') {
         if (secondaire) { ligne(c.type); panneau(DEGAGE + 22, c.type); }
-        else panneau(230, 'priorite_ponctuelle');
+        else panneau(loin || 230, 'priorite_ponctuelle');
       } else if (c.type === 'feux') {
         ligne('feux'); panneau(D_FEUX - 4, 'feu');
         if (sasDe(c)) {                              // sas vélo : 2e ligne d'effet des feux + vélo au sol
@@ -1115,7 +1116,7 @@ function dessinerRoutes(g) {
   g.lineCap = 'round'; g.lineJoin = 'round';
   const aires = scene.decor.filter((d) => d.type === 'aire' && !(geste && geste.type === 'deplacer' && geste.obj === d && geste.bouge));
   for (const d of aires) aire(g, d, 'bord');
-  for (const gr of geo.routes.values()) { tracerChemin(g, gr.r.pts); g.strokeStyle = TROT; g.lineWidth = (gr.r.larg || LR) + 2 * TR; g.stroke(); }
+  for (const gr of geo.routes.values()) { tracerChemin(g, gr.r.pts); if (gr.r.sansTrottoir) continue; g.strokeStyle = TROT; g.lineWidth = (gr.r.larg || LR) + 2 * TR; g.stroke(); } // route de campagne : l'herbe touche le goudron
   for (const d of aires) aire(g, d, 'goudron');
   for (const gr of geo.routes.values()) { tracerChemin(g, gr.r.pts); g.strokeStyle = ASPH; g.lineWidth = gr.r.larg || LR; g.stroke(); }
   // ligne axiale : discontinue / continue près des carrefours réglés / coupée dans les carrefours
@@ -3613,40 +3614,23 @@ function sceneDepassement(m) {
 }
 /* ---------------- scènes tirées des planches : route hors agglomération, manœuvres, feux ---------------- */
 function courbeBezier(p0, p1, p2, p3, n) { const r = []; for (let i = 0; i <= n; i++) { const t = i / n, u = 1 - t; r.push([u * u * u * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t * t * t * p3[0], u * u * u * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t * t * t * p3[1]]); } return r; }
-function repereSol(texte, x, y, ang, taille) { return { type: 'texte', texte, x, y, ang, taille: taille || 22 }; } // lettres de méthode (C C P A) écrites sur l'accotement, comme sur les planches
+function repereSol(texte, x, y, ang, taille) { return { type: 'texte', texte, x, y, ang, taille: taille || 22 }; } // texte écrit au sol (étapes du demi-tour)
 function sceneRdTourner(cote) { // route départementale, intersection en T ; cote -1 : la route part à gauche, 1 : à droite
-  const { G, D, H, B } = bornes(), X = 640, Y = 470, v = LR / 4, sc = sceneVide();
-  sc.routes = [{ id: 1, pts: [[X, H], [X, B]] }, { id: 2, pts: cote < 0 ? [[G, Y], [X, Y]] : [[X, Y], [D, Y]] }]; sc.id = 3;
+  const { G, D, H, B } = bornes(), X = 640, Y = 380, v = LR / 4, sc = sceneVide();
+  sc.routes = [{ id: 1, pts: [[X, H], [X, B]] }, { id: 2, pts: cote < 0 ? [[G, Y], [X, Y]] : [[X, Y], [D, Y]] }]; sc.id = 3; sc.horsAgglo = true;
   sc.regimes = [{ x: X, y: Y, type: 'cedez', prio: 1 }];
-  const xl = X + LR / 2 + TR + 42;
-  sc.marques = [['C', 870], ['C', 770], ['P', 670], ['A', 585]].map(([t, y]) => repereSol(t, xl, y, -Math.PI / 2));
-  sc.decor = deco([['arbre', 300, 240], ['arbre', 960, 230], ['arbre', 320, 820], ['arbre', 980, 860], ['buisson', 1130, 640], ['buisson', 170, 640], ['maison', 230, 980, 150, 110]]);
-  sc.usagers = [usager(1, 'ecole', X + v, 900, -Math.PI / 2, '#3b82c4'),
-    cote < 0 ? usager(2, 'voiture', X - v, 170, Math.PI / 2, '#e0b43a') : usager(2, 'voiture', X + 230, Y - v, Math.PI, '#e0b43a'),
-    cote < 0 ? usager(3, 'voiture', X - 230, Y + v, 0, '#2f9e6b') : usager(3, 'voiture', X - v, 150, Math.PI / 2, '#2f9e6b')];
+  sc.decor = deco([['arbre', 300, 180], ['arbre', 960, 170], ['arbre', 320, 760], ['arbre', 980, 800], ['buisson', 1130, 580], ['buisson', 170, 580], ['maison', 230, 960, 150, 110]]);
+  sc.usagers = [usager(1, 'ecole', X + v, 845, -Math.PI / 2, '#3b82c4'),
+    cote < 0 ? usager(2, 'voiture', X - v, 120, Math.PI / 2, '#e0b43a') : usager(2, 'voiture', X + 230, Y - v, Math.PI, '#e0b43a'),
+    cote < 0 ? usager(3, 'voiture', X - 230, Y + v, 0, '#2f9e6b') : usager(3, 'voiture', X - v, 100, Math.PI / 2, '#2f9e6b')];
   return sc;
 }
 const SCENES_COURS = [
-  ['rd_virages', 'Route à virages', () => {
-    const { H, B } = bornes(), v = LR / 4, sc = sceneVide();
-    const P0 = [700, 780], P1 = [700, 520], P2 = [460, 560], P3 = [460, 300];
-    sc.routes = [{ id: 1, pts: [[700, B], ...courbeBezier(P0, P1, P2, P3, 28), [460, H]], axe: 'continue' }]; sc.id = 2;
-    const surVoie = (t, texte) => { // texte posé dans la voie de la voiture école, orienté dans son sens
-      const u = 1 - t, x = u * u * u * P0[0] + 3 * u * u * t * P1[0] + 3 * u * t * t * P2[0] + t * t * t * P3[0], y = u * u * u * P0[1] + 3 * u * u * t * P1[1] + 3 * u * t * t * P2[1] + t * t * t * P3[1];
-      const hx = 3 * u * u * (P1[0] - P0[0]) + 6 * u * t * (P2[0] - P1[0]) + 3 * t * t * (P3[0] - P2[0]), hy = 3 * u * u * (P1[1] - P0[1]) + 6 * u * t * (P2[1] - P1[1]) + 3 * t * t * (P3[1] - P2[1]), n = Math.hypot(hx, hy);
-      return repereSol(texte, x - (hy / n) * v, y + (hx / n) * v, Math.atan2(hy, hx), 15);
-    };
-    sc.marques = [repereSol('AVANT', 700 + v, 830, -Math.PI / 2, 15), surVoie(0.27, 'PENDANT'), surVoie(0.5, 'APRÈS')];
-    sc.panneaux = [{ type: 'limite_70', x: 801, y: 960, ang: 0 }, { type: 'virages_gauche', x: 801, y: 880, ang: 0 }, { type: 'virages_gauche', x: 359, y: 210, ang: Math.PI }];
-    sc.decor = deco([['arbre', 950, 620], ['arbre', 1030, 880], ['arbre', 250, 520], ['arbre', 300, 820], ['arbre', 660, 230], ['buisson', 880, 360], ['buisson', 180, 300], ['maison', 1050, 260, 160, 115]]);
-    sc.usagers = [usager(1, 'ecole', 700 + v, 930, -Math.PI / 2, '#3b82c4'), usager(2, 'voiture', 460 - v, 130, Math.PI / 2, '#e0b43a')];
-    return sc;
-  }],
   ['rd_croiser', 'Se croiser sur route étroite', () => {
     const { H, B } = bornes(), X = 640, sc = sceneVide();
-    sc.routes = [{ id: 1, pts: [[X, H], [X, B]], larg: 104, axe: 'aucune' }]; sc.id = 2;
-    const haies = []; for (let y = 40; y <= 1100; y += 62) { haies.push(['buisson', X - 116, y]); if (y < 320 || y > 550) haies.push(['buisson', X + 116, y]); }
-    sc.decor = [{ type: 'aire', x: X + 52 + 32, y: 435, w: 64, h: 170, ang: 0 }, ...deco(haies.concat([['arbre', 330, 300], ['arbre', 960, 760], ['arbre', 950, 240], ['maison', 280, 850, 160, 115]]))]; // zone de croisement : le goudron s'élargit
+    sc.routes = [{ id: 1, pts: [[X, H], [X, B]], larg: 104, axe: 'aucune', sansTrottoir: true }]; sc.id = 2;
+    const haies = []; for (let y = 40; y <= 1100; y += 62) haies.push(['buisson', X - 100, y], ['buisson', X + 100, y]);
+    sc.decor = deco(haies.concat([['arbre', 330, 300], ['arbre', 960, 760], ['arbre', 950, 240], ['maison', 280, 850, 160, 115]]));
     sc.usagers = [usager(1, 'ecole', X + 22, 780, -Math.PI / 2, '#3b82c4'), usager(2, 'camion', X - 12, 200, Math.PI / 2, '#8a93a0')];
     return sc;
   }],
@@ -3656,8 +3640,6 @@ const SCENES_COURS = [
     const { H, B } = bornes(), X = 640, v = LR / 4, sc = sceneVide();
     sc.routes = [{ id: 1, pts: [[X, H], [X, B]] }]; sc.id = 2;
     sc.panneaux = [{ type: 'limite_30', x: X + LR / 2 + 26, y: 430, ang: 0 }]; // le repère vertical : un panneau, un lampadaire, une boîte aux lettres…
-    const xl = X + LR / 2 + TR + 62;
-    sc.marques = [['C', 880], ['C', 760], ['P', 640], ['A', 430]].map(([t, y]) => repereSol(t, xl, y, -Math.PI / 2));
     sc.decor = deco([['maison', 980, 250, 160, 115], ['maison_grise', 990, 700, 170, 120], ['maison', 300, 300, 150, 110], ['maison_grise', 300, 760, 170, 120], ['buisson', 900, 470], ['arbre', 1150, 950]]);
     sc.usagers = [usager(1, 'ecole', X + v, 920, -Math.PI / 2, '#3b82c4'), usager(2, 'voiture', X + v + 6, 230, -Math.PI / 2, '#8a93a0')];
     return sc;
@@ -3811,8 +3793,7 @@ const NOTES = {
   stop: 'Arrêt complet à la ligne, même s\'il n\'y a personne. Entre voitures arrêtées au STOP, c\'est la priorité à droite qui départage : fais dire l\'ordre (ici la rouge, puis la jaune, puis nous).',
   depassement: 'Hors agglomération, je laisse au moins 1,5 m entre le vélo et ma voiture : je me déporte franchement, sur l\'autre voie. Contrôles, clignotant, et je ne dépasse que si personne n\'arrive en face.',
   depassement_ville: 'En agglomération, au moins 1 m entre le vélo et ma voiture. Si je ne peux pas laisser cette distance sans gêner ceux d\'en face, je reste derrière le vélo.',
-  rd_virages: 'Virage : AVANT je ralentis en ligne droite ; PENDANT accélération constante, le regard posé sur la sortie ; APRÈS j\'accélère selon la visibilité. La limitation à 70 vaut jusqu\'au panneau de fin, ou jusqu\'après le virage s\'il n\'y en a pas.',
-  rd_croiser: 'Route étroite : je ralentis en restant sur le goudron, je reste bien droit, je regarde loin devant, puis je relance doucement. Face à un camion ou un tracteur, je m\'arrête : roues de droite sur l\'herbe à allure lente, ou dans une zone de croisement comme ici, que je vise tôt.',
+  rd_croiser: 'Route étroite : je ralentis en restant sur le goudron, je reste bien droit, je regarde loin devant, puis je relance doucement. Face à un camion ou un tracteur, je m\'arrête : roues de droite sur l\'herbe à allure lente, ou dans un élargissement s\'il y en a un, que je vise tôt.',
   rd_droite: 'Tourner à droite : j\'anticipe (environ 150 m). Contrôles, Clignotant en décélérant, je me Place à droite en dosant le frein, puis j\'y vais (Aller) avec un filet de frein. Au moindre doute ou sans visibilité : arrêt.',
   rd_gauche: 'Tourner à gauche : j\'anticipe (environ 150 m). Contrôles, Clignotant en décélérant, je me Place près de l\'axe, puis Arrêt ou j\'y vais. Je cède le passage à ceux d\'en face. Avec une voie de stockage, je ne freine qu\'une fois dedans.',
   arret_precis: 'S\'arrêter le long du trottoir à un repère vertical (panneau, lampadaire, boîte aux lettres…) : Contrôler, Clignoter et décélérer, se Placer près du trottoir en dosant le frein, Arrêt : le milieu de la vitre avant au niveau du repère.',
@@ -3838,7 +3819,7 @@ const NOTES = {
 const THEMES = [
   ['Intersections', ['cedez', 'stop', 'priorite_droite', 'exemple', 'etroit']],
   ['Partage de la route', ['depassement', 'depassement_ville']],
-  ['Route hors agglomération', ['rd_virages', 'rd_croiser', 'rd_droite', 'rd_gauche']],
+  ['Route hors agglomération', ['rd_croiser', 'rd_droite', 'rd_gauche']],
   ['Feux tricolores', ['briollay1', 'sonnettes', 'feux_classique', 'feux_indo', 'feux_camion']],
   ['Giratoires', ['giratoire', 'giratoire_velo', 'giratoire2', 'haricot', 'haricot_velo']],
   ['Autoroute', ['autoroute', 'sortie']],
