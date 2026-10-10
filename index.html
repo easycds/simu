@@ -3320,9 +3320,55 @@ function fondAutoroute(g, miroir) {
   g.lineWidth = 6; g.beginPath(); for (let x = XZ - 120; x < XN + 40; x += 22) { g.moveTo(x, yR + 75); g.lineTo(x + 75, yR - 5); } g.stroke(); g.restore();
   g.restore();
 }
+/* Voie d'entrecroisement : l'entrée et la sortie suivante sont reliées par une voie continue (tirets T2).
+   Ceux qui entrent se rabattent à gauche sur l'autoroute, ceux qui sortent se décalent à droite sur cette voie :
+   ils se croisent. Le portique annonce les deux directions. */
+function fondEntrecroisement(g) {
+  const X0 = -900, X1 = MONDE.W + 900, { yG, yD, yI, XN, XZ, DY } = AR, Y = (y) => y + DY, yR = Y(525), yBI = yI + 37.5, XS = MONDE.W - XN, XZS = MONDE.W - XZ;
+  const chemin = (pts) => { g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); };
+  const tirets = (x0, x1, y, [t, v], ep, phase) => { for (let x = x0 - ((phase || 0) % (t + v)); x < x1; x += t + v) { const a = Math.max(x, x0), b = Math.min(x + t, x1); if (b > a) g.fillRect(a, y - ep / 2, b - a, ep); } };
+  const miroir = (m, f) => { g.save(); if (m) { g.translate(MONDE.W, 0); g.scale(-1, 1); } f(); g.restore(); };
+  g.save();
+  g.fillStyle = '#6d9a66'; g.fillRect(X0, Y(325), X1 - X0, 50);
+  g.fillStyle = '#b9bec6'; g.fillRect(X0, Y(345), X1 - X0, 3); g.fillRect(X0, Y(352), X1 - X0, 3);
+  g.fillStyle = ASPH; g.fillRect(X0, Y(120), X1 - X0, 205); g.fillRect(X0, Y(375), X1 - X0, 205);
+  for (const m of [false, true]) miroir(m, () => {                       // bretelle d'entrée (gauche) et de sortie (droite, en miroir)
+    g.fillStyle = ASPH; g.lineJoin = 'round'; g.lineCap = 'butt'; g.strokeStyle = ASPH; g.lineWidth = 130; chemin(AR.milieuCh); g.stroke();
+    chemin([[XZ, yR], ...AR.gauche.slice(AR.iz), [XN, yR]]); g.closePath(); g.fill();
+  });
+  g.fillStyle = ASPH; g.fillRect(XN - 2, yR, XS - XN + 4, yBI + 40 - yR);                // voie d'entrecroisement + sa bande d'arrêt d'urgence
+  g.fillStyle = PEINT; g.strokeStyle = PEINT;
+  tirets(X0, X1, Y(175), T4, 4.5); tirets(X0, X1, Y(250), T1, 3, 60);
+  g.fillRect(X0, Y(323), X1 - X0, 4); g.fillRect(X0, Y(373), X1 - X0, 4); tirets(X0, X1, Y(450), T1, 3);
+  tirets(X0, XZ, yR, T4, 4.5, 40); g.fillRect(XZ, yR - 2, XN - XZ, 4);                    // avant l'entrée : bande d'arrêt d'urgence, bord du zébra
+  tirets(XN, XS, yR, T2, 7.5);                                                            // ENTRECROISEMENT : tirets larges et rapprochés, d'une pointe à l'autre
+  g.fillRect(XS, yR - 2, XZS - XS, 4); tirets(XZS, X1, yR, T4, 4.5, 40);                  // après la sortie
+  tirets(XN, XS, yBI, T4, 4.5);                                                           // bande d'arrêt d'urgence de la voie d'entrecroisement
+  for (const m of [false, true]) miroir(m, () => {
+    g.fillStyle = PEINT; g.strokeStyle = PEINT; g.lineWidth = 4; chemin(AR.gauche); g.stroke(); chemin([...AR.droite, [XN, yBI]]); g.stroke();
+    g.save(); chemin([[XZ, yR], ...AR.gauche.slice(AR.iz), [XN, yR]]); g.closePath(); g.clip();
+    g.lineWidth = 6; g.beginPath(); for (let x = XZ - 120; x < XN + 40; x += 22) { g.moveTo(x, yR + 75); g.lineTo(x + 75, yR - 5); } g.stroke(); g.restore();
+  });
+  // portique : deux directions possibles
+  const XP = 790, bleu = '#1f4fa0';
+  g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(XP - 3, Y(368) + 6, 12, yBI + 52 - Y(368));
+  g.fillStyle = '#8a929c'; g.fillRect(XP - 6, Y(366), 12, yBI + 50 - Y(366));
+  const panneau = (y0, y1, coul, lignes, fleche) => {
+    const w = 196, x = XP - w / 2;
+    g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.roundRect(x + 4, y0 + 5, w, y1 - y0, 8); g.fill();
+    g.fillStyle = coul; g.strokeStyle = '#ffffff'; g.lineWidth = 3; g.beginPath(); g.roundRect(x, y0, w, y1 - y0, 8); g.fill(); g.stroke();
+    g.fillStyle = '#ffffff'; g.textBaseline = 'middle'; g.textAlign = 'left';
+    lignes.forEach(([txt, taille, y]) => { g.font = '800 ' + taille + 'px system-ui, sans-serif'; g.fillText(txt, x + 54, y); });
+    g.save(); g.translate(x + 28, (y0 + y1) / 2); g.rotate(fleche); g.lineWidth = 6; g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#ffffff';
+    g.beginPath(); g.moveTo(-11, 0); g.lineTo(11, 0); g.moveTo(3, -9); g.lineTo(12, 0); g.lineTo(3, 9); g.stroke(); g.restore();
+  };
+  panneau(yG - 30, yD + 28, bleu, [['PARIS', 22, yG - 4], ['Le Mans', 17, yG + 22], ['A 11', 15, yD + 12]], 0);
+  panneau(yI - 32, yI + 32, bleu, [['SORTIE 14', 12, yI - 18], ['Angers-Centre', 15, yI + 1], ['Saumur', 15, yI + 19]], Math.PI / 5);
+  g.restore();
+}
 function dessinerFond(g) {
   const t = scene.fond && scene.fond.type;
-  if (t === 'autoroute') fondAutoroute(g); else if (t === 'autoroute_sortie') fondAutoroute(g, true); else if (t === 'giratoire') fondGiratoire(g);
+  if (t === 'autoroute') fondAutoroute(g); else if (t === 'autoroute_sortie') fondAutoroute(g, true); else if (t === 'autoroute_entrecroisement') fondEntrecroisement(g); else if (t === 'giratoire') fondGiratoire(g);
 }
 
 /* ---- circulation sur l'autoroute : chacun tient sa voie ; celui de la bretelle cède le passage ---- */
@@ -4155,6 +4201,16 @@ const SCENES_COURS = [
                   usager(4, 'voiture', 520, yG, 0, '#d64545'), usager(5, 'voiture', 900, AR.yO1, Math.PI, '#e8e8e8')];
     return sc;
   }],
+  ['entrecroisement', 'Autoroute – voie d\'entrecroisement', () => {      // entrée et sortie reliées : on se croise
+    const sc = sceneVide(), { yG, yD, yI } = AR, i = 34, a = AR.axe[i], b = AR.axe[i + 1], cap = Math.atan2(b[1] - a[1], b[0] - a[0]);
+    sc.fond = { type: 'autoroute_entrecroisement' };
+    sc.decor = deco([['arbre', 640, 850], ['buisson', 560, 900], ['arbre', 720, 905], ['buisson', 150, 1060], ['arbre', 330, 1040], ['arbre', 1130, 1050]]);
+    sc.usagers = [usager(1, 'ecole', a[0], a[1], cap, '#3b82c4'),                       // entre sur l'autoroute : continuera vers Paris
+                  usager(2, 'voiture', 300, yD, 0, '#d64545'),                            // veut sortir : se décale à droite sur la voie d'entrecroisement
+                  usager(3, 'voiture', 560, yI, 0, '#e0b43a'),                            // vient d'entrer : se rabat à gauche
+                  usager(4, 'camion', 150, yG, 0, '#5b6270'), usager(5, 'voiture', 900, AR.yO1, Math.PI, '#e8e8e8')];
+    return sc;
+  }],
   ['sortie', 'Autoroute – sortie (décélération)', () => {
     const sc = sceneVide(), { yG, yD, yI } = AR, SO = AR.sortie, cap = (s) => { const q = surTrajet(SO, s); return Math.atan2(q.hy, q.hx); }, pt = (s, d) => { const q = surTrajet(SO, s); return [q.x - q.hy * d, q.y + q.hx * d]; };
     sc.fond = { type: 'autoroute_sortie' };
@@ -4199,7 +4255,7 @@ const THEMES = [
   ['Route hors agglomération', ['rd_croiser', 'rd_droite', 'rd_gauche', 'aire_arret']],
   ['Feux tricolores', ['feux_classique', 'feux_indo', 'feux_camion', 'feux_decalees', 'feux_stockage']],
   ['Giratoires', ['giratoire', 'giratoire_velo', 'giratoire2', 'haricot']],
-  ['Autoroute', ['autoroute', 'sortie']],
+  ['Autoroute', ['autoroute', 'sortie', 'entrecroisement']],
   ['Manœuvres', ['creneau', 'creneau_gauche', 'bataille', 'bataille_gauche', 'epi', 'epi_arriere', 'marche_arriere_courbe', 'demi_tour', 'arret_precis']],
 ];
 const sansPrive = (k, v) => (k[0] === '_' ? undefined : v);
