@@ -161,6 +161,20 @@ body.mode-seance #menu-feu.ouvert { display:flex; }
   body.presentation #chip-dessins, body.presentation #consigne, body.presentation #plus-seance { display:none !important; }
   #sortie-pres { width:auto; height:36px; padding:0 12px; left:10px; top:calc(10px + env(safe-area-inset-top, 0px)); border-radius:999px; background:rgba(17,20,24,.38); color:#fff; font:inherit; font-size:12.5px; font-weight:650; opacity:.7; }
   #sortie-pres:hover { opacity:1; }
+  #photo-p { position:fixed; z-index:60; left:50%; top:calc(78px + env(safe-area-inset-top, 0px)); transform:translateX(-50%); width:min(420px, calc(100vw - 24px)); box-sizing:border-box; background:#fff; color:#1c2430; border-radius:18px; padding:14px 16px 16px; box-shadow:0 12px 40px rgba(0,0,0,.35); display:none; }
+  #photo-p.ouvert { display:block; }
+  body.mode-seance #photo-p .ph-ed { display:none !important; }
+  #photo-p .ph-tete { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; } #photo-p .ph-tete b { font-size:17px; }
+  #photo-p .ph-tete button { width:40px; height:40px; border-radius:10px; border:0; background:#f0eeec; font-size:18px; cursor:pointer; }
+  #ph-q { width:100%; box-sizing:border-box; height:46px; border:1px solid #ddd8d3; border-radius:12px; padding:0 14px; font:inherit; font-size:16px; }
+  #ph-res button { display:block; width:100%; text-align:left; border:0; border-bottom:1px solid #eee; background:#fff; padding:11px 6px; min-height:44px; font:inherit; font-size:15px; cursor:pointer; }
+  #photo-p .ph-aide { font-size:13.5px; line-height:1.45; color:#5b6472; margin:10px 0 6px; }
+  #photo-p .ph-reg { display:flex; align-items:center; gap:10px; margin:10px 0; font-size:14px; font-weight:600; } #photo-p .ph-reg input { flex:1; accent-color:#e01f1f; } #ph-op-v { width:42px; text-align:right; }
+  #photo-p .ph-dep { display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; margin:6px 0 12px; } #photo-p .ph-dep span { flex:1; }
+  #photo-p .ph-dep button { width:44px; height:44px; border-radius:10px; border:1px solid #ddd8d3; background:#fff; font-size:18px; cursor:pointer; }
+  #ph-retirer { width:100%; min-height:44px; border-radius:12px; border:1px solid #f3c0c0; background:#fff; color:#b0141a; font:inherit; font-weight:600; cursor:pointer; }
+  #photo-ign { position:fixed; z-index:5; right:8px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:11px; color:#fff; background:rgba(0,0,0,.45); padding:2px 6px; border-radius:6px; display:none; pointer-events:none; }
+  body.avec-photo #photo-ign { display:block; }
   #consigne { position:fixed; left:20px; top:calc(78px + env(safe-area-inset-top, 0px)); max-width:min(470px, calc(100vw - 40px)); display:none; text-align:left; border:0; cursor:pointer;
               background:rgba(255,255,255,.94); color:#1c2430; border-radius:12px; padding:9px 13px 10px; font:inherit; font-size:13.5px; line-height:1.4; box-shadow:0 4px 14px rgba(0,0,0,.2); z-index:4; }
   #consigne b { display:block; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#c8102e; margin-bottom:2px; }
@@ -256,11 +270,11 @@ body.mode-seance #menu-feu.ouvert { display:flex; }
   <div class="sep-h"></div>
   <button class="btn se-seul" id="m-editer"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>Créer ou modifier une scène</button>
   <button class="btn ed-seul" id="m-publier"><svg viewBox="0 0 24 24"><path d="M12 15V4M7 9l5-5 5 5M5 15v4h14v-4"/></svg>Publier cette scène pour tous</button>
+  <button class="btn" id="m-photo"><svg viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>Photo aérienne du lieu…</button>
   <button class="btn ed-seul" id="m-ouvrir-simu"><svg viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"/></svg>Récupérer une scène de l’ancienne version</button>
   <button class="btn ed-seul" id="m-vider"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Tout effacer</button>
   <div class="sep-h"></div>
   <a class="btn" id="m-outils" href="/"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Mes outils</a>
-  <a class="btn" id="m-carte" href="carte.html"><svg viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>Carte réelle (bêta)</a>
 </div>
 <div class="pill" id="modes"><button class="btn on" id="mode-ed"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg><span class="lbl">Éditer</span></button><button class="btn" id="mode-se"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span class="lbl">Séance</span></button></div>
 <div class="pill" id="barre-d" style="right:20px;top:18px">
@@ -319,6 +333,15 @@ body.mode-seance #menu-feu.ouvert { display:flex; }
   <button class="btn" id="ss-suppr" title="Retirer"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button>
 </div>
 <button id="sortie-pres" aria-label="Quitter le plein écran">✕ Retrouver les boutons</button>
+<div id="photo-p" role="dialog" aria-label="Photo aérienne">
+  <div class="ph-tete"><b>Photo aérienne</b><button id="ph-fermer" aria-label="Fermer">✕</button></div>
+  <div class="ph-ed"><input id="ph-q" type="search" placeholder="Adresse, carrefour, ville…" autocomplete="off" aria-label="Chercher un lieu"><div id="ph-res"></div>
+  <p class="ph-aide">La photo se place sous la scène, à la bonne échelle. Trace ensuite tes routes par-dessus : ce sont elles qui font rouler les voitures.</p></div>
+  <div class="ph-reg"><label for="ph-op">Routes dessinées</label><input id="ph-op" type="range" min="0" max="100" step="5"><span id="ph-op-v"></span></div>
+  <div class="ph-ed ph-dep"><span>Décaler la photo</span><button data-dep="0,-2" aria-label="Vers le haut">↑</button><button data-dep="0,2" aria-label="Vers le bas">↓</button><button data-dep="-2,0" aria-label="Vers la gauche">←</button><button data-dep="2,0" aria-label="Vers la droite">→</button></div>
+  <button class="ph-ed" id="ph-retirer">Retirer la photo</button>
+</div>
+<div id="photo-ign">Photo © IGN</div>
 <button id="consigne"><b>À montrer</b><span id="consigne-txt"></span></button>
 
 <div id="regime">
@@ -1323,13 +1346,18 @@ function dessinerDecor(d) {
 let texture = null;
 function dessinerCouche() {
   const g = cctx; ctx = g;
-  g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = HERBE; g.fillRect(0, 0, couche.width, couche.height);
+  g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = scene.photo ? '#3a3f45' : HERBE; g.fillRect(0, 0, couche.width, couche.height);
   g.setTransform(S * DPR, 0, 0, S * DPR, OX * DPR, OY * DPR);
-  // texture d'herbe (reproductible)
-  let gr = 11; const al = () => ((gr = (gr * 1664525 + 1013904223) >>> 0) / 4294967296);
-  for (let i = 0; i < 2200; i++) { g.fillStyle = al() < .5 ? 'rgba(255,255,255,.035)' : 'rgba(0,0,0,.04)'; g.beginPath(); g.arc(-420 + al() * (MONDE.W + 840), -420 + al() * (MONDE.H + 840), 3 + al() * 9, 0, 7); g.fill(); }
+  document.body.classList.toggle('avec-photo', !!scene.photo);
+  if (scene.photo) dessinerPhoto(g);
+  else { // texture d'herbe (reproductible)
+    let gr = 11; const al = () => ((gr = (gr * 1664525 + 1013904223) >>> 0) / 4294967296);
+    for (let i = 0; i < 2200; i++) { g.fillStyle = al() < .5 ? 'rgba(255,255,255,.035)' : 'rgba(0,0,0,.04)'; g.beginPath(); g.arc(-420 + al() * (MONDE.W + 840), -420 + al() * (MONDE.H + 840), 3 + al() * 9, 0, 7); g.fill(); }
+  }
   dessinerFond(g);
+  if (scene.photo) g.globalAlpha = scene.photo.op == null ? 0.45 : scene.photo.op;   // routes plus ou moins transparentes sur la photo
   dessinerRoutes(g);
+  g.globalAlpha = 1;
   const enMain = geste && geste.type === 'deplacer' ? geste.obj : null;
   for (const m of scene.marques) if (m !== enMain) dessinerMarque(g, m);
   for (const d of scene.decor) if (d !== enMain && d.type !== 'aire') dessinerDecor(d);
@@ -1337,6 +1365,84 @@ function dessinerCouche() {
   for (const p of scene.panneaux) if (p !== enMain && p.type !== 'feu') dessinerPanneau(g, p.type, p.x, p.y, p.ang, null, null, p.ech);
   sale = true;
 }
+
+/* ---------------- photo aérienne sous la scène (IGN Géoplateforme, données ouvertes, sans clé) ----------------
+   scene.photo = { lat, lon, op, dx, dy } : le centre du monde est posé sur (lat, lon), à l'échelle des voitures (M1 unités = 1 m).
+   dx, dy : décalage de la photo en mètres. op : opacité des routes dessinées par-dessus. */
+const PHOTO = { cache: new Map(), attente: false };
+const RAD = Math.PI / 180;
+function mondeVersGeo(x, y) { const p = scene.photo, ex = (x - MONDE.W / 2) / M1 - (p.dx || 0), ny = -(y - MONDE.H / 2) / M1 + (p.dy || 0);
+  return [p.lat + ny / 110540, p.lon + ex / (111320 * Math.cos(p.lat * RAD))]; }
+function geoVersMonde(lat, lon) { const p = scene.photo;
+  return [MONDE.W / 2 + ((lon - p.lon) * 111320 * Math.cos(p.lat * RAD) + (p.dx || 0)) * M1, MONDE.H / 2 - ((lat - p.lat) * 110540 - (p.dy || 0)) * M1]; }
+const tuileLon = (x, z) => x / Math.pow(2, z) * 360 - 180;
+const tuileLat = (y, z) => { const n = Math.PI * (1 - 2 * y / Math.pow(2, z)); return Math.atan(Math.sinh(n)) / RAD; };
+const lonTuile = (lon, z) => (lon + 180) / 360 * Math.pow(2, z);
+const latTuile = (lat, z) => (1 - Math.log(Math.tan(lat * RAD) + 1 / Math.cos(lat * RAD)) / Math.PI) / 2 * Math.pow(2, z);
+function redessinerPhoto() { if (PHOTO.attente) return; PHOTO.attente = true; requestAnimationFrame(() => { PHOTO.attente = false; dessinerCouche(); }); }
+function tuile(z, x, y) {
+  const k = z + '/' + x + '/' + y; let t = PHOTO.cache.get(k);
+  if (!t) {
+    t = { img: new Image(), ok: false }; t.img.crossOrigin = 'anonymous';
+    t.img.onload = () => { t.ok = true; redessinerPhoto(); };
+    t.img.src = 'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&FORMAT=image/jpeg&TILEMATRIX=' + z + '&TILEROW=' + y + '&TILECOL=' + x;
+    PHOTO.cache.set(k, t);
+    if (PHOTO.cache.size > 600) PHOTO.cache.delete(PHOTO.cache.keys().next().value);
+  }
+  return t;
+}
+function dessinerPhoto(g) {
+  const p = scene.photo, mpp = 1 / (M1 * S * DPR);                   // mètres par pixel de l'écran
+  const z = Math.max(14, Math.min(19, Math.round(Math.log2(156543.03 * Math.cos(p.lat * RAD) / mpp))));
+  const ax = (0 - OX) / S, ay = (0 - OY) / S, bx = (VW - OX) / S, by = (VH - OY) / S;   // partie du monde à l'écran
+  const [la1, lo1] = mondeVersGeo(ax, ay), [la2, lo2] = mondeVersGeo(bx, by);
+  const x0 = Math.floor(lonTuile(lo1, z)), x1 = Math.floor(lonTuile(lo2, z)), y0 = Math.floor(latTuile(la1, z)), y1 = Math.floor(latTuile(la2, z));
+  if ((x1 - x0 + 1) * (y1 - y0 + 1) > 120) return;
+  g.imageSmoothingEnabled = true;
+  for (let tx = x0; tx <= x1; tx++) for (let ty = y0; ty <= y1; ty++) {
+    const t = tuile(z, tx, ty); if (!t.ok) continue;
+    const [X0, Y0] = geoVersMonde(tuileLat(ty, z), tuileLon(tx, z)), [X1, Y1] = geoVersMonde(tuileLat(ty + 1, z), tuileLon(tx + 1, z));
+    g.drawImage(t.img, X0, Y0, X1 - X0 + 0.6 / S, Y1 - Y0 + 0.6 / S);   // léger recouvrement : pas de fil entre deux tuiles
+  }
+}
+/* panneau « Photo aérienne » */
+function majPanneauPhoto() {
+  const p = scene.photo, op = p ? (p.op == null ? 0.45 : p.op) : 0.45;
+  $('ph-op').value = Math.round(op * 100); $('ph-op-v').textContent = Math.round(op * 100) + ' %';
+  $('photo-p').querySelector('.ph-reg').style.display = p ? '' : 'none';
+  $('photo-p').querySelector('.ph-dep').style.display = p && mode === 'editeur' ? '' : 'none';
+  $('ph-retirer').style.display = p && mode === 'editeur' ? '' : 'none';
+}
+$('m-photo').onclick = () => {
+  fermerMenu();
+  if (mode === 'seance' && !scene.photo) { toast('Cette scène n’a pas de photo : ajoute-la en mode Éditer'); return; }
+  majPanneauPhoto(); $('photo-p').classList.add('ouvert'); if (mode === 'editeur') setTimeout(() => $('ph-q').focus(), 50);
+};
+$('ph-fermer').onclick = () => $('photo-p').classList.remove('ouvert');
+let phMinuteur = null, phDernier = '';
+$('ph-q').addEventListener('input', (e) => {
+  const q = e.target.value.trim(); clearTimeout(phMinuteur);
+  if (q.length < 3) { $('ph-res').innerHTML = ''; return; }
+  phMinuteur = setTimeout(async () => {
+    phDernier = q;
+    try {
+      const r = await fetch('https://data.geopf.fr/geocodage/search?limit=6&index=address,poi&lat=47.47&lon=-0.55&q=' + encodeURIComponent(q));
+      const j = await r.json(); if (q !== phDernier) return;
+      const box = $('ph-res'); box.innerHTML = '';
+      const res = (j.features || []).map((f) => ({ nom: f.properties.label || ([].concat(f.properties.toponym || f.properties.name || [])[0] + (f.properties.city ? ', ' + [].concat(f.properties.city)[0] : '')), lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] }));
+      if (!res.length) box.innerHTML = '<button disabled>Aucun résultat</button>';
+      res.forEach((x) => { const b = document.createElement('button'); b.textContent = x.nom; b.onclick = () => {
+        const op = scene.photo && scene.photo.op != null ? scene.photo.op : 0.45;
+        scene.photo = { lat: +x.lat.toFixed(6), lon: +x.lon.toFixed(6), op }; box.innerHTML = ''; $('ph-q').value = '';
+        VUE.z = 1; VUE.dx = 0; VUE.dy = 0; appliquerVue(); majPanneauPhoto(); valider('Photo posée sous la scène : trace tes routes par-dessus');
+      }; box.appendChild(b); });
+    } catch (er) { toast('Recherche impossible : pas de réseau ?'); }
+  }, 300);
+});
+$('ph-op').addEventListener('input', (e) => { if (!scene.photo) return; scene.photo.op = +e.target.value / 100; $('ph-op-v').textContent = e.target.value + ' %'; dessinerCouche(); });
+$('ph-op').addEventListener('change', () => { if (mode === 'editeur') valider(); else sauverLocal(); });
+$('photo-p').querySelectorAll('[data-dep]').forEach((b) => b.onclick = () => { if (!scene.photo) return; const [dx, dy] = b.dataset.dep.split(',').map(Number); scene.photo.dx = (scene.photo.dx || 0) + dx; scene.photo.dy = (scene.photo.dy || 0) + dy; dessinerCouche(); valider(); });
+$('ph-retirer').onclick = () => { delete scene.photo; majPanneauPhoto(); dessinerCouche(); valider('Photo retirée'); };
 
 /* ---------------- dessin : image affichée ---------------- */
 function etatFeu(cle, route) {
