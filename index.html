@@ -79,6 +79,12 @@
   /* menu scènes */
   #menu { position:fixed; left:20px; top:78px; display:none; flex-direction:column; align-items:stretch; padding:6px; }
   #menu.ouvert { display:flex; }
+  /* menu déroulant du titre : passer vite aux autres scènes du même thème */
+  #saut { position:fixed; left:20px; top:calc(78px + env(safe-area-inset-top, 0px)); display:none; flex-direction:column; align-items:stretch; padding:6px; min-width:250px; max-height:calc(100vh - 180px); overflow-y:auto; z-index:7; }
+  #saut.ouvert { display:flex; }
+  #saut .btn { justify-content:flex-start; white-space:nowrap; }
+  #saut .btn.ici { background:rgba(255,255,255,.16); }
+  #saut .saut-t { font-size:11.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#9aa3b0; padding:8px 12px 4px; }
   #menu .btn { justify-content:flex-start; }
   /* aide */
   #aide { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); background:rgba(17,20,24,.82); color:#fff; border-radius:18px; padding:22px 26px;
@@ -209,6 +215,8 @@ body.mode-seance #menu-feu.ouvert { display:flex; }
     #modes { left:62px; top:calc(10px + env(safe-area-inset-top, 0px)); transform:none; }
     #modes .btn { height:40px; }
     #menu { left:10px; top:calc(60px + env(safe-area-inset-top, 0px)); }
+    #saut { left:10px; top:calc(60px + env(safe-area-inset-top, 0px)); max-width:calc(100vw - 20px); }
+    body.mode-seance #titre { display:block; max-width:44vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; }
     #dock, body.mode-seance #dock-seance { bottom:calc(10px + env(safe-area-inset-bottom, 0px)); max-width:calc(100vw - 16px); overflow-x:auto; scrollbar-width:none; }
     #dock::-webkit-scrollbar, #dock-seance::-webkit-scrollbar { display:none; }
     #tiroir, body.mode-seance #tiroir-usagers.ouvert { bottom:calc(62px + env(safe-area-inset-bottom, 0px)); max-width:calc(100vw - 16px); }
@@ -250,6 +258,7 @@ body.mode-seance #menu-feu.ouvert { display:flex; }
   <button class="btn" id="b-menu" title="Scènes"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   <div id="titre" contenteditable="true" spellcheck="false">Nouvelle scène</div>
 </div>
+<div class="pill" id="saut" role="menu" aria-label="Autres scènes du thème"></div>
 <div class="pill" id="menu">
   <button class="btn" id="m-accueil"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="3" y="13" width="8" height="7" rx="1.5"/><rect x="13" y="13" width="8" height="7" rx="1.5"/></svg>Choisir une scène</button>
   <button class="btn" id="m-aide"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-.9.6-1.5 1.1-1.5 2.2M12 17v.5"/></svg>Aide : les gestes</button>
@@ -2753,15 +2762,34 @@ function demanderMdp(suite) {        // l'édition est protégée, la séance es
 let toastT = 0;
 function toast(t, duree) { const el = $('toast'); el.textContent = t; el.classList.add('vu'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('vu'), duree || 2200); }
 function majAide() { $('aide').style.display = scene.routes.length || scene.marques.length || scene.decor.length || scene.fond ? 'none' : 'block'; }
-function fermerMenu() { $('menu').classList.remove('ouvert'); $('plus-seance').classList.remove('ouvert'); $('menu-feu').classList.remove('ouvert'); }
-$('b-menu').onclick = () => { $('plus-seance').classList.remove('ouvert'); $('menu').classList.toggle('ouvert'); };
+function fermerMenu() { $('saut').classList.remove('ouvert'); $('menu').classList.remove('ouvert'); $('plus-seance').classList.remove('ouvert'); $('menu-feu').classList.remove('ouvert'); }
+$('b-menu').onclick = () => { $('plus-seance').classList.remove('ouvert'); $('saut').classList.remove('ouvert'); $('menu').classList.toggle('ouvert'); };
 $('m-accueil').onclick = () => ouvrirAccueil();
 $('m-publier').onclick = () => { fermerMenu(); publierScene(); };
 $('b-publier').onclick = () => publierScene();
 $('m-aide').onclick = $('b-aide').onclick = () => ouvrirGestes();
 $('m-editer').onclick = () => { fermerMenu(); demanderMdp(() => basculerMode('editeur')); };
 $('aide-ex').onclick = () => ouvrirAccueil();
-$('titre').addEventListener('click', () => { if (mode === 'seance') ouvrirAccueil(); });
+$('titre').addEventListener('click', () => { if (mode === 'seance') ouvrirSaut(); });
+function ouvrirSaut() {      // le titre ouvre la liste des scènes du même thème (ex. Créneau → Bataille, Épi…)
+  const box = $('saut');
+  if (box.classList.contains('ouvert')) { box.classList.remove('ouvert'); return; }
+  const th = THEMES.find((t) => t[1].includes(scene.origine));
+  if (!th) { ouvrirAccueil(); return; }
+  fermerMenu(); box.innerHTML = '';
+  const t = document.createElement('div'); t.className = 'saut-t'; t.textContent = th[0]; box.appendChild(t);
+  for (const cle of th[1]) {
+    const def = SCENES_COURS.find((s) => s[0] === cle); if (!def) continue;
+    const o = surcharge(cle), b = document.createElement('button');
+    b.className = 'btn' + (cle === scene.origine ? ' ici' : ''); b.setAttribute('role', 'menuitem'); b.textContent = (o && o.scene && o.scene.titre) || def[1];
+    b.onclick = () => { box.classList.remove('ouvert'); if (cle !== scene.origine) chargerSceneCours(cle); };
+    box.appendChild(b);
+  }
+  const sep = document.createElement('div'); sep.className = 'sep-h'; box.appendChild(sep);
+  const tout = document.createElement('button'); tout.className = 'btn'; tout.setAttribute('role', 'menuitem'); tout.textContent = 'Toutes les scènes…';
+  tout.onclick = () => { box.classList.remove('ouvert'); ouvrirAccueil(); }; box.appendChild(tout);
+  box.classList.add('ouvert');
+}
 $('m-vider').onclick = () => { const t = scene.titre; scene = sceneVide(); scene.titre = t; selection = null; majSelbar(); fermerRegime(); toutRefaire('Scène vidée — Annuler pour revenir'); fermerMenu(); };
 $('b-annuler').onclick = annuler; $('b-retablir').onclick = retablir; $('b-tester').onclick = basculerTest;
 $('titre').addEventListener('blur', () => { scene.titre = $('titre').textContent.trim() || 'Nouvelle scène'; valider(); });
