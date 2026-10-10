@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script src="/acces.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#1c2430">
+<title>Carte réelle (bêta) · Simulateur Easy</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root { --encre:#1c2430; --rouge:#e01f1f; --fond:rgba(28,36,48,.92); }
+  html,body { margin:0; height:100%; overflow:hidden; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--encre); background:#1c2430; }
+  #carte { position:fixed; inset:0; }
+  .leaflet-container { background:#1c2430; font:inherit; }
+  .barre { position:fixed; z-index:1000; display:flex; gap:6px; padding:6px; background:var(--fond); border-radius:16px; box-shadow:0 6px 20px rgba(0,0,0,.3); }
+  .barre button, .barre a { appearance:none; border:0; background:transparent; color:#fff; min-width:44px; height:44px; border-radius:11px; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:0 10px; font:inherit; font-size:14px; font-weight:600; cursor:pointer; text-decoration:none; white-space:nowrap; }
+  .barre button.on { background:#fff; color:var(--encre); }
+  .barre svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+  #haut-g { left:max(12px, env(safe-area-inset-left)); top:max(12px, env(safe-area-inset-top)); }
+  #haut-d { right:max(12px, env(safe-area-inset-right)); top:max(12px, env(safe-area-inset-top)); }
+  #recherche { position:fixed; z-index:1000; top:max(12px, env(safe-area-inset-top)); left:50%; transform:translateX(-50%); width:min(420px, calc(100vw - 260px)); }
+  #recherche input { width:100%; box-sizing:border-box; height:56px; border:0; border-radius:16px; padding:0 16px 0 44px; font:inherit; font-size:16px; background:#fff; box-shadow:0 6px 20px rgba(0,0,0,.3); outline:none; }
+  #recherche > svg { position:absolute; left:14px; top:17px; width:22px; height:22px; fill:none; stroke:#6b7280; stroke-width:2.2; stroke-linecap:round; }
+  #resultats { margin-top:6px; background:#fff; border-radius:14px; box-shadow:0 6px 20px rgba(0,0,0,.3); overflow:hidden; display:none; }
+  #resultats.vu { display:block; }
+  #resultats button { display:block; width:100%; text-align:left; border:0; background:#fff; padding:12px 16px; min-height:46px; font:inherit; font-size:15px; cursor:pointer; border-top:1px solid #eee; }
+  #resultats button:first-child { border-top:0; } #resultats button:hover { background:#f4f2ef; }
+  #outils { left:50%; bottom:max(12px, env(safe-area-inset-bottom)); transform:translateX(-50%); max-width:calc(100vw - 24px); overflow-x:auto; scrollbar-width:none; }
+  #outils::-webkit-scrollbar { display:none; }
+  #outils .sep { width:1px; background:rgba(255,255,255,.2); margin:6px 2px; flex:none; }
+  .pastille { width:16px; height:16px; border-radius:50%; border:2px solid #fff; flex:none; }
+  #choix { position:fixed; z-index:1001; left:50%; transform:translateX(-50%); bottom:calc(max(12px, env(safe-area-inset-bottom)) + 66px); display:none; align-items:center; gap:10px; padding:10px 12px; background:#fff; border-radius:16px; box-shadow:0 6px 20px rgba(0,0,0,.3); max-width:calc(100vw - 24px); box-sizing:border-box; }
+  #choix.vu { display:flex; }
+  #choix button { min-width:44px; height:44px; border-radius:11px; border:1px solid #ddd8d3; background:#fff; font:inherit; font-size:15px; font-weight:600; cursor:pointer; color:var(--encre); }
+  #choix button.sup { border-color:#f3c0c0; color:#b0141a; }
+  #choix input[type=range] { width:min(220px, 40vw); accent-color:var(--rouge); }
+  #choix .lbl { font-size:13px; font-weight:700; color:#6b7280; }
+  #bulle { position:fixed; z-index:1002; left:50%; top:calc(max(12px, env(safe-area-inset-top)) + 70px); transform:translateX(-50%); background:var(--fond); color:#fff; padding:10px 16px; border-radius:12px; font-size:14px; font-weight:600; opacity:0; transition:opacity .25s; pointer-events:none; max-width:calc(100vw - 40px); text-align:center; }
+  #bulle.vu { opacity:1; }
+  .beta { font-size:11px; font-weight:800; letter-spacing:.06em; background:var(--rouge); color:#fff; padding:2px 6px; border-radius:6px; }
+  .veh { position:relative; transform-origin:50% 50%; pointer-events:none; }
+  .veh svg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+  .leaflet-marker-icon.sel .veh { filter:drop-shadow(0 0 0 #fff) drop-shadow(0 0 3px #ffd400) drop-shadow(0 0 3px #ffd400); }
+  .fleche { pointer-events:none; }
+  body.dessin #carte { cursor:crosshair; }
+  @media (max-width:720px) {
+    #recherche { top:calc(max(12px, env(safe-area-inset-top)) + 62px); width:calc(100vw - 24px); }
+    #recherche input { height:48px; }
+    #recherche > svg { top:13px; }
+    #bulle { top:calc(max(12px, env(safe-area-inset-top)) + 124px); }
+    .barre .txt { display:none; }
+  }
+</style>
+</head>
+<body>
+<div id="carte" aria-label="Carte"></div>
+
+<div class="barre" id="haut-g">
+  <a href="./" title="Revenir au simulateur" aria-label="Revenir au simulateur"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg><span class="txt">Simulateur</span></a>
+  <span style="align-self:center;padding:0 6px 0 2px"><span class="beta">BÊTA</span></span>
+</div>
+
+<div id="recherche">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+  <input id="q" type="search" placeholder="Une adresse, un carrefour, une ville…" autocomplete="off" aria-label="Chercher un lieu">
+  <div id="resultats" role="listbox"></div>
+</div>
+
+<div class="barre" id="haut-d">
+  <button id="b-fond" title="Photo aérienne ou plan" aria-label="Photo aérienne ou plan"><svg viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg><span class="txt" id="t-fond">Plan</span></button>
+  <button id="b-verrou" title="Bloquer la carte pour ne bouger que les véhicules" aria-label="Bloquer la carte" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0"/></svg></button>
+  <button id="b-plein" title="Plein écran" aria-label="Plein écran"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+  <button id="b-vider" title="Tout effacer" aria-label="Tout effacer"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button>
+</div>
+
+<div class="barre" id="outils" role="toolbar" aria-label="Ajouter sur la carte">
+  <button data-ajout="ecole" title="Voiture auto-école"><span class="pastille" style="background:#e01f1f"></span><span>Auto-école</span></button>
+  <button data-ajout="voiture" title="Voiture"><span class="pastille" style="background:#2f6fd1"></span><span>Voiture</span></button>
+  <button data-ajout="camion" title="Camion"><span class="pastille" style="background:#e8e6e1"></span><span>Camion</span></button>
+  <button data-ajout="bus" title="Bus"><span class="pastille" style="background:#f2b84b"></span><span>Bus</span></button>
+  <button data-ajout="moto" title="Moto"><span class="pastille" style="background:#1c2430"></span><span>Moto</span></button>
+  <button data-ajout="velo" title="Vélo"><span class="pastille" style="background:#1f9d55"></span><span>Vélo</span></button>
+  <button data-ajout="pieton" title="Piéton"><span class="pastille" style="background:#7b3fb5"></span><span>Piéton</span></button>
+  <span class="sep"></span>
+  <button id="b-trajet" title="Dessiner une trajectoire au doigt" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M4 19c4-1 5-6 8-9s6-4 8-4"/><path d="M16 4h4v4"/></svg><span>Trajet</span></button>
+  <button id="b-couleur" title="Couleur du trajet" aria-label="Couleur du trajet"><span class="pastille" id="p-couleur" style="background:#1f9d55"></span></button>
+</div>
+
+<div id="choix" role="group" aria-label="Véhicule choisi">
+  <span class="lbl">Tourner</span>
+  <button id="r-moins" aria-label="Tourner à gauche de 15°">↺</button>
+  <input id="r-angle" type="range" min="0" max="359" step="1" aria-label="Angle">
+  <button id="r-plus" aria-label="Tourner à droite de 15°">↻</button>
+  <button id="r-dup" title="Dupliquer">Copier</button>
+  <button id="r-sup" class="sup">Supprimer</button>
+</div>
+<div id="bulle" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* Carte réelle (bêta) : photos aériennes IGN (Géoplateforme, données ouvertes, sans clé) + véhicules à déplacer au doigt.
+   Recherche d'adresse : service de géocodage de la Géoplateforme IGN. Tout est enregistré sur l'appareil (localStorage). */
+const CLE = 'easy-carte-v1';
+const $ = (id) => document.getElementById(id);
+const WMTS = (couche, format) => 'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=' + couche +
+  '&STYLE=normal&TILEMATRIXSET=PM&FORMAT=' + format + '&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}';
+const ATTR = '© <a href="https://www.ign.fr" target="_blank" rel="noopener">IGN</a> – Géoplateforme';
+const FONDS = {
+  photo: L.tileLayer(WMTS('ORTHOIMAGERY.ORTHOPHOTOS', 'image/jpeg'), { maxNativeZoom: 19, maxZoom: 21, attribution: ATTR }),
+  plan: L.tileLayer(WMTS('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2', 'image/png'), { maxNativeZoom: 19, maxZoom: 21, attribution: ATTR })
+};
+
+/* Véhicules : taille réelle en mètres (longueur, largeur), dessin vu du dessus, avant vers le haut */
+const TYPES = {
+  ecole:   { l: 4.3, w: 1.8, min: 16, nom: 'Voiture auto-école', svg: (c) => voitureSVG('#e01f1f', true) },
+  voiture: { l: 4.3, w: 1.8, min: 16, nom: 'Voiture', svg: () => voitureSVG('#2f6fd1', false) },
+  camion:  { l: 10, w: 2.5, min: 26, nom: 'Camion', svg: () => '<svg viewBox="0 0 25 100" preserveAspectRatio="none"><rect x="1" y="22" width="23" height="77" rx="2" fill="#e8e6e1" stroke="#555" stroke-width="1.2"/><rect x="2" y="1" width="21" height="19" rx="4" fill="#d9d6cf" stroke="#555" stroke-width="1.2"/><rect x="4" y="4" width="17" height="6" rx="1.5" fill="#9fc3e6"/></svg>' },
+  bus:     { l: 12, w: 2.55, min: 30, nom: 'Bus', svg: () => '<svg viewBox="0 0 25 100" preserveAspectRatio="none"><rect x="1" y="1" width="23" height="98" rx="4" fill="#f2b84b" stroke="#7a5200" stroke-width="1.2"/><rect x="4" y="3" width="17" height="5" rx="1.5" fill="#9fc3e6"/><rect x="5" y="20" width="15" height="70" rx="2" fill="#e3a530"/></svg>' },
+  moto:    { l: 2.1, w: 0.8, min: 12, nom: 'Moto', svg: () => '<svg viewBox="0 0 8 21" preserveAspectRatio="none"><rect x="3" y="0.5" width="2" height="20" rx="1" fill="#1c2430"/><rect x="0.5" y="5" width="7" height="1.4" rx=".7" fill="#1c2430"/><circle cx="4" cy="11" r="2.6" fill="#e01f1f" stroke="#fff" stroke-width=".6"/></svg>' },
+  velo:    { l: 1.8, w: 0.6, min: 12, nom: 'Vélo', svg: () => '<svg viewBox="0 0 6 18" preserveAspectRatio="none"><rect x="2.4" y="0.5" width="1.2" height="17" rx=".6" fill="#333"/><rect x="0.3" y="4" width="5.4" height="1" rx=".5" fill="#333"/><circle cx="3" cy="8.5" r="2.4" fill="#1f9d55" stroke="#fff" stroke-width=".5"/></svg>' },
+  pieton:  { l: 0.6, w: 0.6, min: 14, nom: 'Piéton', svg: () => '<svg viewBox="0 0 10 10"><ellipse cx="5" cy="5.5" rx="4.6" ry="3" fill="#7b3fb5" stroke="#fff" stroke-width=".7"/><circle cx="5" cy="5" r="2" fill="#f1c9a5" stroke="#5a3a20" stroke-width=".4"/></svg>' }
+};
+function voitureSVG(c, ecole) {
+  return '<svg viewBox="0 0 18 43" preserveAspectRatio="none"><rect x="1" y="1" width="16" height="41" rx="5" fill="' + c + '" stroke="rgba(0,0,0,.55)" stroke-width="1"/>' +
+    '<path d="M3.2 10.5 Q9 7.5 14.8 10.5 L14 16 Q9 14.5 4 16Z" fill="#9fc3e6"/><path d="M4 33 Q9 34.5 14 33 L14.6 37 Q9 39 3.4 37Z" fill="#9fc3e6"/>' +
+    '<rect x="4" y="17" width="10" height="15" rx="2" fill="rgba(0,0,0,.12)"/>' +
+    (ecole ? '<rect x="5.5" y="21" width="7" height="5" rx="1" fill="#fff"/><text x="9" y="25.2" font-size="4" font-weight="700" text-anchor="middle" fill="#e01f1f" font-family="sans-serif">AE</text>' : '') + '</svg>';
+}
+
+/* ---------- carte ---------- */
+let etat = { centre: [47.4712, -0.5518], zoom: 17, fond: 'photo', items: [], trajets: [] };
+try { const s = JSON.parse(localStorage.getItem(CLE) || 'null'); if (s && s.centre) etat = Object.assign(etat, s); } catch (e) {}
+const carte = L.map('carte', { zoomControl: false, attributionControl: true, maxZoom: 21, tap: true }).setView(etat.centre, etat.zoom);
+FONDS[etat.fond].addTo(carte);
+const enregistrer = () => {
+  etat.centre = [carte.getCenter().lat, carte.getCenter().lng]; etat.zoom = carte.getZoom();
+  etat.items = vehicules.map((v) => ({ t: v.t, lat: v.m.getLatLng().lat, lng: v.m.getLatLng().lng, r: v.r }));
+  etat.trajets = trajets.map((t) => ({ c: t.c, pts: t.l.getLatLngs().map((p) => [p.lat, p.lng]) }));
+  try { localStorage.setItem(CLE, JSON.stringify(etat)); } catch (e) {}
+};
+carte.on('moveend', enregistrer);
+function bulle(t) { const b = $('bulle'); b.textContent = t; b.classList.add('vu'); clearTimeout(bulle.t); bulle.t = setTimeout(() => b.classList.remove('vu'), 2200); }
+
+/* ---------- véhicules ---------- */
+const vehicules = []; let choisi = null;
+const metresParPixel = () => 156543.03392 * Math.cos(carte.getCenter().lat * Math.PI / 180) / Math.pow(2, carte.getZoom());
+function icone(v) {
+  const T = TYPES[v.t], mpp = metresParPixel();
+  let l = T.l / mpp, w = T.w / mpp;
+  if (l < T.min) { const k = T.min / l; l *= k; w *= k; }   // reste visible quand on dézoome
+  const boite = Math.ceil(Math.max(l, w)) + 4;
+  return L.divIcon({ className: 'v-ic' + (v === choisi ? ' sel' : ''), iconSize: [boite, boite], iconAnchor: [boite / 2, boite / 2],
+    html: '<div class="veh" style="width:' + w.toFixed(1) + 'px;height:' + l.toFixed(1) + 'px;margin:' + ((boite - l) / 2).toFixed(1) + 'px ' + ((boite - w) / 2).toFixed(1) + 'px;transform:rotate(' + v.r + 'deg)">' + T.svg() + '</div>' });
+}
+function ajouter(t, latlng, r) {
+  const v = { t, r: r || 0 };
+  v.m = L.marker(latlng, { draggable: true, keyboard: false, title: TYPES[t].nom, autoPan: true });
+  v.m.setIcon(icone(v)); v.m.addTo(carte);
+  v.m.on('click', () => choisir(v));
+  v.m.on('dragstart', () => choisir(v));
+  v.m.on('dragend', enregistrer);
+  vehicules.push(v); return v;
+}
+function choisir(v) {
+  const ancien = choisi; choisi = v;
+  if (ancien && ancien !== v) ancien.m.setIcon(icone(ancien));
+  if (v) { v.m.setIcon(icone(v)); $('r-angle').value = v.r; $('choix').classList.add('vu'); } else $('choix').classList.remove('vu');
+}
+function tourner(r) { if (!choisi) return; choisi.r = ((Math.round(r) % 360) + 360) % 360; $('r-angle').value = choisi.r; choisi.m.setIcon(icone(choisi)); enregistrer(); }
+$('r-angle').addEventListener('input', (e) => tourner(+e.target.value));
+$('r-moins').onclick = () => tourner(choisi.r - 15);
+$('r-plus').onclick = () => tourner(choisi.r + 15);
+$('r-sup').onclick = () => { if (!choisi) return; carte.removeLayer(choisi.m); vehicules.splice(vehicules.indexOf(choisi), 1); choisi = null; choisir(null); enregistrer(); };
+$('r-dup').onclick = () => {
+  if (!choisi) return; const p = carte.latLngToContainerPoint(choisi.m.getLatLng());
+  const v = ajouter(choisi.t, carte.containerPointToLatLng([p.x + 24, p.y + 24]), choisi.r); choisir(v); enregistrer();
+};
+carte.on('zoomend', () => vehicules.forEach((v) => v.m.setIcon(icone(v))));
+carte.on('click', () => { if (!dessin) choisir(null); });
+document.querySelectorAll('[data-ajout]').forEach((b) => b.onclick = () => {
+  const v = ajouter(b.dataset.ajout, carte.getCenter(), 0); choisir(v); enregistrer();
+  bulle(TYPES[b.dataset.ajout].nom + ' ajouté au centre : fais-le glisser');
+});
+
+/* ---------- trajets dessinés au doigt ---------- */
+const COULEURS = ['#1f9d55', '#2f6fd1', '#e01f1f', '#f2b84b'];
+let couleur = COULEURS[0], dessin = false, enCours = null;
+const trajets = [];
+function fleche(t) {
+  const pts = t.l.getLatLngs(); if (pts.length < 2) return;
+  const a = carte.latLngToContainerPoint(pts[pts.length - 2]), b = carte.latLngToContainerPoint(pts[pts.length - 1]);
+  const ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI + 90;
+  const ic = L.divIcon({ className: 'fleche', iconSize: [22, 22], iconAnchor: [11, 11], html: '<svg viewBox="0 0 22 22" style="transform:rotate(' + ang.toFixed(0) + 'deg)"><path d="M11 2 L19 18 L11 14 L3 18Z" fill="' + t.c + '" stroke="#fff" stroke-width="1.5"/></svg>' });
+  if (t.f) t.f.setLatLng(pts[pts.length - 1]).setIcon(ic); else t.f = L.marker(pts[pts.length - 1], { icon: ic, interactive: false, keyboard: false }).addTo(carte);
+}
+function ajouterTrajet(c, pts) {
+  const t = { c, l: L.polyline(pts, { color: c, weight: 6, opacity: .95, dashArray: '2 12', lineCap: 'round', lineJoin: 'round' }).addTo(carte) };
+  t.l.on('click', (e) => { L.DomEvent.stopPropagation(e); if (dessin) return; if (confirmerSup(t)) { carte.removeLayer(t.l); if (t.f) carte.removeLayer(t.f); trajets.splice(trajets.indexOf(t), 1); enregistrer(); } });
+  trajets.push(t); fleche(t); return t;
+}
+let supEnAttente = null;
+function confirmerSup(t) { if (supEnAttente === t) { supEnAttente = null; return true; } supEnAttente = t; bulle('Touche encore le trajet pour l’effacer'); setTimeout(() => { if (supEnAttente === t) supEnAttente = null; }, 2500); return false; }
+carte.on('zoomend', () => trajets.forEach(fleche));
+const zone = $('carte');
+function modeDessin(on) {
+  dessin = on; document.body.classList.toggle('dessin', on);
+  $('b-trajet').classList.toggle('on', on); $('b-trajet').setAttribute('aria-pressed', on);
+  if (on) { carte.dragging.disable(); choisir(null); bulle('Trace la trajectoire avec le doigt'); } else if (!verrou) carte.dragging.enable();
+}
+$('b-trajet').onclick = () => modeDessin(!dessin);
+$('b-couleur').onclick = () => { couleur = COULEURS[(COULEURS.indexOf(couleur) + 1) % COULEURS.length]; $('p-couleur').style.background = couleur; };
+zone.addEventListener('pointerdown', (e) => {
+  if (!dessin || enCours || e.target.closest('.leaflet-control')) return;   // un seul doigt trace à la fois
+  zone.setPointerCapture(e.pointerId); doigt = e.pointerId;
+  enCours = ajouterTrajet(couleur, [carte.containerPointToLatLng(carte.mouseEventToContainerPoint(e))]);
+});
+zone.addEventListener('pointermove', (e) => {
+  if (!enCours || e.pointerId !== doigt) return;
+  const p = carte.containerPointToLatLng(carte.mouseEventToContainerPoint(e)), pts = enCours.l.getLatLngs();
+  if (carte.latLngToContainerPoint(pts[pts.length - 1]).distanceTo(carte.latLngToContainerPoint(p)) > 6) { enCours.l.addLatLng(p); fleche(enCours); }
+});
+let doigt = null;
+const finTrajet = (e) => {
+  if (!enCours || (e && e.pointerId !== doigt)) return;
+  if (enCours.l.getLatLngs().length < 3) { carte.removeLayer(enCours.l); if (enCours.f) carte.removeLayer(enCours.f); trajets.splice(trajets.indexOf(enCours), 1); }
+  else enregistrer();
+  enCours = null;
+};
+zone.addEventListener('pointerup', finTrajet); zone.addEventListener('pointercancel', finTrajet);
+
+/* ---------- boutons du haut ---------- */
+let verrou = false;
+$('b-verrou').onclick = () => {
+  verrou = !verrou; $('b-verrou').classList.toggle('on', verrou); $('b-verrou').setAttribute('aria-pressed', verrou);
+  if (verrou) { carte.dragging.disable(); carte.touchZoom.disable(); carte.doubleClickZoom.disable(); carte.scrollWheelZoom.disable(); bulle('Carte bloquée : seuls les véhicules bougent'); }
+  else { if (!dessin) carte.dragging.enable(); carte.touchZoom.enable(); carte.doubleClickZoom.enable(); carte.scrollWheelZoom.enable(); bulle('Carte débloquée'); }
+};
+function majFond() { $('t-fond').textContent = etat.fond === 'photo' ? 'Plan' : 'Photo'; }
+$('b-fond').onclick = () => { carte.removeLayer(FONDS[etat.fond]); etat.fond = etat.fond === 'photo' ? 'plan' : 'photo'; FONDS[etat.fond].addTo(carte); majFond(); enregistrer(); };
+majFond();
+$('b-plein').onclick = () => { const d = document.documentElement; if (document.fullscreenElement) document.exitFullscreen(); else if (d.requestFullscreen) d.requestFullscreen().catch(() => {}); };
+let viderEnAttente = false;
+$('b-vider').onclick = () => {
+  if (!viderEnAttente) { viderEnAttente = true; bulle('Touche encore la poubelle pour tout effacer'); setTimeout(() => viderEnAttente = false, 2500); return; }
+  viderEnAttente = false;
+  vehicules.forEach((v) => carte.removeLayer(v.m)); vehicules.length = 0;
+  trajets.forEach((t) => { carte.removeLayer(t.l); if (t.f) carte.removeLayer(t.f); }); trajets.length = 0;
+  choisir(null); enregistrer(); bulle('Carte vidée');
+};
+
+/* ---------- recherche d'adresse (Géoplateforme IGN) ---------- */
+let minuteur = null, dernier = '';
+$('q').addEventListener('input', (e) => {
+  const q = e.target.value.trim(); clearTimeout(minuteur);
+  if (q.length < 3) { $('resultats').classList.remove('vu'); return; }
+  minuteur = setTimeout(async () => {
+    dernier = q;
+    try {
+      const c = carte.getCenter();
+      const r = await fetch('https://data.geopf.fr/geocodage/search?limit=6&index=address,poi&lat=' + c.lat.toFixed(4) + '&lon=' + c.lng.toFixed(4) + '&q=' + encodeURIComponent(q));
+      const j = await r.json(); if (q !== dernier) return;
+      const L2 = (j.features || []).map((f) => ({ nom: f.properties.label || [].concat(f.properties.toponym || f.properties.name || [])[0] + (f.properties.city ? ', ' + [].concat(f.properties.city)[0] : ''), ll: [f.geometry.coordinates[1], f.geometry.coordinates[0]] }));
+      const box = $('resultats'); box.innerHTML = '';
+      if (!L2.length) { box.innerHTML = '<button disabled>Aucun résultat</button>'; }
+      L2.forEach((x) => { const b = document.createElement('button'); b.textContent = x.nom; b.onclick = () => { carte.setView(x.ll, 19); box.classList.remove('vu'); $('q').blur(); }; box.appendChild(b); });
+      box.classList.add('vu');
+    } catch (er) { bulle('Recherche impossible : pas de réseau ?'); }
+  }, 300);
+});
+$('q').addEventListener('keydown', (e) => { if (e.key === 'Enter') { const b = $('resultats').querySelector('button:not([disabled])'); if (b) b.click(); } });
+document.addEventListener('pointerdown', (e) => { if (!e.target.closest('#recherche')) $('resultats').classList.remove('vu'); });
+
+/* ---------- reprise de la dernière carte ---------- */
+etat.items.forEach((x) => ajouter(x.t, [x.lat, x.lng], x.r));
+etat.trajets.forEach((t) => ajouterTrajet(t.c, t.pts));
+if (!etat.items.length && !etat.trajets.length) bulle('Cherche un lieu, puis ajoute des véhicules en bas');
+addEventListener('resize', () => setTimeout(() => carte.invalidateSize(), 250));
+</script>
+</body>
+</html>
