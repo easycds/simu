@@ -257,12 +257,10 @@ body.mode-seance #menu-feu.ouvert { display:flex; }
   <button class="btn se-seul" id="m-editer"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>Créer ou modifier une scène</button>
   <button class="btn ed-seul" id="m-publier"><svg viewBox="0 0 24 24"><path d="M12 15V4M7 9l5-5 5 5M5 15v4h14v-4"/></svg>Publier cette scène pour tous</button>
 <button class="btn ed-seul" id="m-note"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H10l-5 4z"/></svg>Consigne pour le moniteur…</button>
-  <button class="btn ed-seul" id="m-ouvrir-simu"><svg viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"/></svg>Ouvrir une scène du simulateur</button>
-  <button class="btn ed-seul" id="m-envoyer"><svg viewBox="0 0 24 24"><path d="M5 12h12M13 6l6 6-6 6"/></svg>Ouvrir dans l'ancienne version</button>
+  <button class="btn ed-seul" id="m-ouvrir-simu"><svg viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"/></svg>Récupérer une scène de l’ancienne version</button>
   <button class="btn ed-seul" id="m-vider"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Tout effacer</button>
   <div class="sep-h"></div>
   <a class="btn" id="m-outils" href="/"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Mes outils</a>
-  <a class="btn" id="m-retour" href="ancien.html"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Ancienne version du simulateur</a>
 </div>
 <div class="pill" id="modes"><button class="btn on" id="mode-ed"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg><span class="lbl">Éditer</span></button><button class="btn" id="mode-se"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span class="lbl">Séance</span></button></div>
 <div class="pill" id="barre-d" style="right:20px;top:18px">
@@ -2644,51 +2642,6 @@ function chargerDemoIndo() { chargerSceneCours('feux_indo'); basculerTest(); }
 const CLE_SIMU = 'easy-simu-scenes', CLE_OUVRIR = 'easy-simu-ouvrir';
 const nrm = (x, y) => ({ x: +(x / MONDE.W).toFixed(5), y: +(y / MONDE.H).toFixed(5) });
 function lireScenesSimu() { try { return JSON.parse(localStorage.getItem(CLE_SIMU)) || {}; } catch (e) { return {}; } }
-function versFormatSimu() {
-  const routes = [], marquages = [], panneaux = [], batiments = [];
-  for (const gr of geo.routes.values()) {
-    routes.push({ pts: gr.r.pts.map(([x, y]) => nrm(x, y)), largeur: gr.r.larg || LR, trottoir: false, arrondi: false, boutsDroits: true });
-    for (const sg of segmentsAxe(gr)) {                     // ligne du milieu, tronçon par tronçon
-      const pts = [], a = surRoute(gr, sg.s0); pts.push(nrm(a.x, a.y));
-      for (let i = 1; i < gr.cum.length - 1; i++) if (gr.cum[i] > sg.s0 && gr.cum[i] < sg.s1) pts.push(nrm(...gr.r.pts[i]));
-      const b = surRoute(gr, sg.s1); pts.push(nrm(b.x, b.y));
-      marquages.push({ type: sg.cls === 1 ? 'ligne_discontinue' : 'ligne_continue', pts, arrondi: false, jaune: false });
-    }
-  }
-  const ligne2 = (type, x1, y1, x2, y2) => marquages.push({ type, pts: [nrm(x1, y1), nrm(x2, y2)], arrondi: false, jaune: false });
-  for (const L of geo.lignes) ligne2(L.style === 'stop' ? 'stop' : L.style === 'cedez' ? 'cedez' : 'ligne_effet', L.q.x, L.q.y, L.q.x + L.rx * LR / 2, L.q.y + L.ry * LR / 2);
-  const passage = (p) => { const n = [-Math.sin(p.ang), Math.cos(p.ang)], h = (p.larg || LR) / 2; ligne2('passage_pieton', p.x - n[0] * h, p.y - n[1] * h, p.x + n[0] * h, p.y + n[1] * h); };
-  const velo = (v) => ligne2('velo', v.x, v.y, v.x + Math.cos(v.ang) * 54, v.y + Math.sin(v.ang) * 54);
-  geo.passages.forEach(passage); geo.velos.forEach(velo);
-  for (const pts of [...(geo.guides || []), ...(scene.courbes || [])]) marquages.push({ type: 'ligne_discontinue', pts: pts.map(([x, y]) => nrm(x, y)), arrondi: true, jaune: false });
-  let ignores = 0;
-  for (const m of scene.marques) {
-    if (m.type === 'passage_pieton') passage(m);
-    else if (m.type === 'velo') velo(m);
-    else if (m.type.startsWith('fleche_')) { const hx = Math.cos(m.ang), hy = Math.sin(m.ang); ligne2(m.type, m.x - hx * 44, m.y - hy * 44, m.x + hx * 44, m.y + hy * 44); }
-    else if (LIGNES.has(m.type)) { ligne2({ ligne_stop: 'stop', ligne_cedez: 'cedez', ligne_feux: 'ligne_effet', ligne_bus: 'voie_bus', ligne_zigzag: 'zigzag_bus', ligne_jaune: 'ligne_continue', ligne_jaune_disc: 'ligne_discontinue' }[m.type] || m.type, m.x1, m.y1, m.x2, m.y2); if (m.type.startsWith('ligne_jaune')) marquages[marquages.length - 1].jaune = true; }
-    else if (m.type === 'zone_zebra') { const c = Math.cos(m.ang || 0), sn = Math.sin(m.ang || 0); marquages.push({ type: 'zebra', pts: m.pts.map(([x, y]) => nrm(m.x + x * c - y * sn, m.y + x * sn + y * c)), arrondi: false, jaune: false }); }
-    else if (m.type === 'texte') { const hx = Math.cos(m.ang), hy = Math.sin(m.ang); marquages.push({ type: 'texte_sol', texte: m.texte, pts: [nrm(m.x - hx * 10, m.y - hy * 10), nrm(m.x + hx * 10, m.y + hy * 10)], arrondi: false, jaune: false }); }
-    else ignores++;
-  }
-  for (const p of [...geo.autoPanneaux, ...scene.panneaux]) panneaux.push({ type: p.type, ...nrm(p.x, p.y), taille: Math.round(T_PAN * (p.ech || 1)), etatFeu: 'rouge', angle: +(p.ang || 0).toFixed(4) });
-  for (const d of scene.decor) {
-    if (d.type === 'terreplein') { batiments.push({ type: 'terreplein', ...nrm(d.x, d.y), w: +((d.w || 110) / MONDE.W).toFixed(5), h: +((d.h || 28) / MONDE.H).toFixed(5), ...(d.ang ? { angle: d.ang } : {}) }); continue; }
-    const arbre = d.type === 'arbre' || d.type === 'buisson', t = d.type === 'arbre' ? 68 : 40;
-    batiments.push({ type: arbre ? 'buisson' : d.type === 'maison_grise' ? 'immeuble' : 'maison', ...nrm(d.x, d.y), w: +((arbre ? t : d.w || 170) / MONDE.W).toFixed(5), h: +((arbre ? t : d.h || 130) / MONDE.H).toFixed(5), ...(d.ang ? { angle: d.ang } : {}) });
-  }
-  return { scene: { routes, marquages, panneaux, pinceau: [], batiments }, ignores };
-}
-function envoyerVersSimulation() {
-  const nom = (scene.titre || 'Scène').trim();
-  const { scene: s, ignores } = versFormatSimu();
-  try {
-    const toutes = lireScenesSimu(); toutes[nom] = s;
-    localStorage.setItem(CLE_SIMU, JSON.stringify(toutes)); localStorage.setItem(CLE_OUVRIR, nom);
-  } catch (e) { toast('Impossible d\'enregistrer (mémoire pleine ou navigation privée)'); return; }
-  toast('« ' + nom + ' » envoyée dans Mes scènes' + (ignores ? ' (' + ignores + ' marquage(s) non repris)' : ''));
-  setTimeout(() => { location.href = 'ancien.html'; }, 700);
-}
 function depuisFormatSimu(s, nom) {
   const W = MONDE.W, H = MONDE.H, P = (p) => [p.x * W, p.y * H];
   const sc = sceneVide(); sc.titre = nom;
@@ -2752,7 +2705,6 @@ function ouvrirListeSimu() {
   box.classList.add('ouvert'); fermerMenu();
 }
 $('m-ouvrir-simu').onclick = ouvrirListeSimu;
-$('m-envoyer').onclick = () => { fermerMenu(); envoyerVersSimulation(); };
 $('ls-fermer').onclick = () => $('liste-scenes').classList.remove('ouvert');
 
 /* ---------------- verrou : même mot de passe que l'éditeur du simulateur ---------------- */
