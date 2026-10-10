@@ -520,6 +520,13 @@ function dessinerPictogrammeV2(ctx, type, t, etatFeu) {
       v2Reflet(ctx, () => carre(0.84), r);
       break;
     }
+    case 'feu_fleche': {          // feu à flèche orange clignotante vers la droite : on peut tourner au rouge en cédant le passage
+      ctx.fillStyle = '#1b1d21'; ctx.beginPath(); ctx.roundRect(-r * 0.42, -r * 0.62, r * 0.84, r * 1.24, r * 0.16); ctx.fill();
+      ctx.fillStyle = '#3a3d42'; ctx.beginPath(); ctx.arc(0, -r * 0.27, r * 0.27, 0, 7); ctx.fill();
+      ctx.fillStyle = '#ffb000'; ctx.beginPath(); ctx.arc(0, r * 0.27, r * 0.29, 0, 7); ctx.fill();
+      ctx.fillStyle = '#1b1d21'; v2Poly(ctx, [[-r * 0.17, r * 0.21], [r * 0.02, r * 0.21], [r * 0.02, r * 0.11], [r * 0.2, r * 0.27], [r * 0.02, r * 0.43], [r * 0.02, r * 0.33], [-r * 0.17, r * 0.33]]); ctx.fill();
+      break;
+    }
     case 'c1a': case 'c1a_250': {   // C1a : lieu aménagé pour le stationnement ; avec panonceau M1 « 250 m »
       const pano = type === 'c1a_250';
       ctx.save(); if (pano) { ctx.translate(0, -r * 0.24); ctx.scale(0.74, 0.74); }
@@ -2141,7 +2148,7 @@ function tournerMarque(o, da) {
 const TIROIRS = {
   panneau: [['stop', 'STOP'], ['cedez', 'Cédez'], ['priorite_droite', 'Priorité à droite'], ['priorite_ponctuelle', 'Priorité ponctuelle'], ['route_prioritaire', 'Route prio.'],
             ['sens_interdit', 'Sens interdit'], ['passage_pieton', 'Passage piéton'], ['giratoire', 'Giratoire'], ['virage_droite', 'Virage à droite'], ['virage_gauche', 'Virage à gauche'], ['virages_droite', 'Virages (1er à droite)'], ['virages_gauche', 'Virages (1er à gauche)'], ['obligation_droit', 'Tout droit'],
-            ['obligation_droite', 'À droite'], ['obligation_gauche', 'À gauche'], ['b15', 'Cédez sens inverse'], ['c18', 'Prio. sens inverse'], ['autoroute', 'Autoroute'], ['limite_30', '30'], ['limite_50', '50'], ['limite_70', '70'], ['limite_90', '90'], ['limite_110', '110'], ['limite_130', '130'], ['c1a', 'Parking (C1a)'], ['c1a_250', 'Parking à 250 m'], ['feu', 'Feu']],
+            ['obligation_droite', 'À droite'], ['obligation_gauche', 'À gauche'], ['b15', 'Cédez sens inverse'], ['c18', 'Prio. sens inverse'], ['autoroute', 'Autoroute'], ['limite_30', '30'], ['limite_50', '50'], ['limite_70', '70'], ['limite_90', '90'], ['limite_110', '110'], ['limite_130', '130'], ['c1a', 'Parking (C1a)'], ['c1a_250', 'Parking à 250 m'], ['feu_fleche', 'Flèche orange (feu)'], ['feu', 'Feu']],
   sol: [['ligne_stop', 'Ligne STOP'], ['ligne_cedez', 'Ligne cédez'], ['ligne_feux', 'Ligne des feux'], ['ligne_continue', 'Ligne continue'], ['ligne_discontinue', 'Ligne discontinue'],
         ['ligne_guidage', 'Guidage'], ['axe', 'Axe de la route'],
         ['fleche_droit', 'Tout droit'], ['fleche_gauche', 'Gauche'], ['fleche_droite', 'Droite'], ['fleche_td_gauche', 'Droit + gauche'], ['fleche_td_droite', 'Droit + droite'],
@@ -3832,6 +3839,72 @@ function sceneDunantVue() {
   sc.marques = M; sc.decor = DEC; sc.panneaux = PAN; sc.usagers = US;
   return sc;
 }
+/* ---------- Tourner à droite aux feux : une scène par situation de la planche ----------
+   La voiture école arrive par le bas et tourne à droite (vers l'est). Carrefour à feux, passages piétons et feux piétons automatiques. */
+function sceneTAD(n) {
+  const { G, D, H, B } = bornes(), X = 640, Y = 560, v = LR / 4, sc = sceneVide();
+  if (n === 6 || n === 7) return sceneTADLarge(n);
+  const vD = v;
+  sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }, { id: 2, pts: [[X, H], [X, B]] }]; sc.id = 3;
+  sc.regimes = [{ x: X, y: Y, type: 'feux', prio: n === 3 ? 1 : 2 }];                     // 3 : feu rouge pour nous, la flèche orange clignote
+  sc.decor = deco([['maison', 300, 300, 160, 115], ['maison_grise', 980, 300, 170, 120], ['maison_grise', 300, 830, 170, 120], ['maison', 985, 830, 160, 115]]);
+  const ecole = (x, y, ang) => usager(1, 'ecole', x, y, ang, '#3b82c4'), xP = X + PP_FEUX;   // passage piéton de la rue où l'on tourne
+  const M = [], U = [], PAN = [];
+  if (n === 1) U.push(ecole(X + vD + 8, 830, -Math.PI / 2), usager(2, 'voiture', 200, Y + v, 0, '#e0b43a'));
+  if (n === 2) {                                                                          // bande cyclable sur notre droite : le vélo qui va tout droit passe d'abord
+    const xb = X + LR / 2 - 17;
+    M.push({ type: 'ligne_bus', x1: X + LR / 2 - 34, y1: Y + 330, x2: X + LR / 2 - 34, y2: B }, { type: 'velo', x: xb, y: Y + 420, ang: -Math.PI / 2 }, { type: 'velo', x: xb, y: Y + 640, ang: -Math.PI / 2 });
+    U.push(ecole(X + v - 12, 800, -Math.PI / 2), usager(2, 'velo', xb, 700, -Math.PI / 2, '#2f9e6b'));
+  }
+  if (n === 3) {                                                                          // rouge + flèche orange clignotante à droite : je peux tourner en cédant le passage
+    PAN.push({ type: 'feu_fleche', x: X + LR / 2 + 58, y: Y + D_FEUX + 30, ang: 0 });
+    U.push(ecole(X + v, Y + D_FEUX + SAS + 70, -Math.PI / 2), usager(2, 'voiture', 250, Y + v, 0, '#e0b43a'), usager(3, 'pieton', xP, Y + LR / 2 + 20, -Math.PI / 2, '#8e5bd6'));
+  }
+  if (n === 4) U.push(ecole(X + v + 20, Y + 60, -Math.PI / 4), usager(2, 'pieton', xP, Y + 10, -Math.PI / 2, '#8e5bd6'));                       // piéton déjà engagé
+  if (n === 5) U.push(ecole(X + v, Y + D_FEUX + SAS + 70, -Math.PI / 2), usager(2, 'pieton', xP, Y + LR / 2 + 22, -Math.PI / 2, '#8e5bd6'));            // piéton qui s'apprête à traverser
+  M.forEach((m) => { if (m.x1 != null) milieu(m); });
+  sc.marques = M; sc.usagers = U; sc.panneaux = PAN;
+  return sc;
+}
+function sceneTADLarge(n) {
+  const C = [640, 560], cle = C.join(','), sc = sceneVide();
+  const BR = [   // passage piéton, direction vers l'extérieur, largeur, voies entrantes / sortantes, flèches (de la voie de gauche à celle de droite), phase des feux
+    { nom: 'w', P: [C[0] - 205, C[1]], d: [-1, 0], larg: 150, nin: 1, nout: 1, fl: [], feu: 1 },
+    { nom: 'e', P: [C[0] + 205, C[1]], d: [1, 0], larg: 150, nin: 1, nout: 1, fl: [], feu: 1 },
+    { nom: 'n', P: [C[0], C[1] - 130], d: [0, -1], larg: 300, nin: 2, nout: 2, fl: n === 6 ? ['fleche_gauche', 'fleche_droit'] : ['fleche_td_gauche', 'fleche_td_droite'], feu: 2 },
+    { nom: 's', P: [C[0], C[1] + 130], d: [0, 1], larg: 300, nin: 2, nout: 2, fl: n === 6 ? ['fleche_droit', 'fleche_droite'] : ['fleche_td_droite'], feu: 2, bus: n === 7 }
+  ];
+  const loin = (b) => [b.P[0] + b.d[0] * 900, b.P[1] + b.d[1] * 900];
+  sc.routes = [{ id: 1, pts: [loin(BR[0]), C, loin(BR[1])], larg: 150, axe: 'aucune' }, { id: 2, pts: [loin(BR[2]), C, loin(BR[3])], larg: 300, axe: 'aucune' }]; sc.id = 3;
+  sc.regimes = [{ x: C[0], y: C[1], type: 'feux', prio: 2, manuel: true, sas: false }];
+  const M = [], PAN = [], US = [];
+  for (const b of BR) {
+    const [dx, dy] = b.d, nv = [dy, -dx], hw = b.larg / 2, a = Math.atan2(dy, dx), ain = a + Math.PI, vi = hw / b.nin, vo = hw / b.nout;
+    const pt = (s, o) => [b.P[0] + dx * s + nv[0] * o, b.P[1] + dy * s + nv[1] * o];   // o > 0 : côté voies entrantes
+    const ligne = (type, s1, s2, o1) => { const [x1, y1] = pt(s1, o1), [x2, y2] = pt(s2, o1); return { type, x1, y1, x2, y2, x: (x1 + x2) / 2, y: (y1 + y2) / 2 }; };
+    M.push({ type: 'passage_pieton', x: b.P[0], y: b.P[1], ang: a, larg: b.larg - 12 });
+    M.push({ ...ligne('ligne_feux', 46, 46, 4), x2: pt(46, hw - 4)[0], y2: pt(46, hw - 4)[1] });
+    for (let k = 1; k < b.nin; k++) M.push(ligne(b.bus ? 'ligne_bus' : 'ligne_discontinue', b.bus ? 185 : 70, 900, vi * k));   // couloir bus : la ligne s'arrête au damier
+    for (let k = 1; k < b.nout; k++) M.push(ligne('ligne_discontinue', 70, 900, -vo * k));
+    M.push(ligne('ligne_continue', 30, 900, 0));
+    b.fl.forEach((t, k) => { const [x, y] = pt(150, vi * (k + 0.5)); M.push({ type: t, x, y, ang: ain }); });
+    if (b.bus) {                                                         // couloir bus et vélos (voie de droite) ; damier là où les voitures le traversent pour tourner
+      const [bx, by] = pt(300, vi * 1.5), [vx, vy] = pt(440, vi * 1.5), [dmx, dmy] = pt(115, vi * 1.5);
+      M.push({ type: 'texte_bus', x: bx, y: by, ang: ain }, { type: 'velo', x: vx, y: vy, ang: ain }, { type: 'damier_bus', x: dmx, y: dmy, ang: ain });
+    }
+    const [fx, fy] = pt(38, hw + 20); PAN.push({ type: 'feu', x: fx, y: fy, ang: ain + Math.PI / 2, route: b.feu, cle });
+  }
+  M.forEach((m) => { if (m.x1 != null) milieu(m); });
+  const S = BR[3], Nn = BR[2], at = (b, s, o) => [b.P[0] + b.d[0] * s + b.d[1] * o, b.P[1] + b.d[1] * s - b.d[0] * o];
+  if (n === 6) {     // je suis sur la voie de tourne-à-droite ; en face, une voiture tourne à gauche vers la même rue : elle me laisse passer
+    US.push(usager(1, 'ecole', ...at(S, 210, 112.5), -Math.PI / 2, '#3b82c4'), usager(2, 'voiture', ...at(S, 330, 37.5), -Math.PI / 2, '#e0b43a'), usager(3, 'voiture', ...at(Nn, 110, 37.5), Math.PI / 2 - 0.5, '#d64545'));
+  } else {           // couloir bus à ma droite : bus et vélos prioritaires, je ne m'arrête jamais sur le damier
+    US.push(usager(1, 'ecole', ...at(S, 150, 37.5), -Math.PI / 2, '#3b82c4'), usager(2, 'camion', ...at(S, 330, 112.5), -Math.PI / 2, '#e0b43a'), usager(3, 'velo', ...at(S, 150, 112.5), -Math.PI / 2, '#2f9e6b'));
+  }
+  sc.marques = M; sc.panneaux = PAN; sc.usagers = US;
+  sc.decor = deco([['maison', 300, 300, 160, 115], ['maison_grise', 1000, 300, 170, 120], ['maison_grise', 290, 830, 170, 120], ['maison', 1010, 830, 160, 115]]);
+  return sc;
+}
 const SCENES_COURS = [
   ['dunant_vue', 'Henri Dunant × Copernic – vue aérienne', () => sceneDunantVue()],
   ['sonnettes_vue', 'Les 7 Sonnettes – vue aérienne', () => sceneSonnettesVue()],
@@ -3886,6 +3959,13 @@ const SCENES_COURS = [
     sc.usagers = [usager(1, 'ecole', X + v, 770, -Math.PI / 2, '#3b82c4'), usager(2, 'camion', X - v, 320, Math.PI / 2, '#8a93a0')];
     return sc;
   }],
+  ['tad1', 'À droite aux feux · 1 Serrer à droite', () => sceneTAD(1)],
+  ['tad2', 'À droite aux feux · 2 Vélo sur la bande cyclable', () => sceneTAD(2)],
+  ['tad3', 'À droite aux feux · 3 Flèche orange clignotante', () => sceneTAD(3)],
+  ['tad4', 'À droite aux feux · 4 Piéton engagé', () => sceneTAD(4)],
+  ['tad5', 'À droite aux feux · 5 Piéton qui va traverser', () => sceneTAD(5)],
+  ['tad6', 'À droite aux feux · 6 Voie de tourne-à-droite', () => sceneTAD(6)],
+  ['tad7', 'À droite aux feux · 7 Couloir bus et vélos', () => sceneTAD(7)],
   ['depassement', 'Dépasser un cycliste – hors agglo (1,5 m)', () => sceneDepassement(1.5)],
   ['depassement_ville', 'Dépasser un cycliste – en ville (1 m)', () => sceneDepassement(1)],
   ['cedez', 'Cédez-le-passage', () => {
@@ -4019,6 +4099,7 @@ const THEMES = [
   ['Partage de la route', ['depassement', 'depassement_ville']],
   ['Route hors agglomération', ['rd_croiser', 'rd_droite', 'rd_gauche', 'aire_arret']],
   ['Feux tricolores', ['briollay1', 'sonnettes_vue', 'dunant_vue', 'feux_classique', 'feux_indo', 'feux_camion']],
+  ['Tourner à droite aux feux', ['tad1', 'tad2', 'tad3', 'tad4', 'tad5', 'tad6', 'tad7']],
   ['Giratoires', ['giratoire', 'giratoire_velo', 'giratoire2', 'haricot', 'haricot_velo']],
   ['Autoroute', ['autoroute', 'sortie']],
   ['Manœuvres', ['arret_precis', 'demi_tour']],
