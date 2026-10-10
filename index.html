@@ -2785,8 +2785,8 @@ let dernierSens = innerWidth > innerHeight, minuteursTaille = [];
 function surTaille() {
   const fais = () => {
     const sens = (cv.clientWidth || innerWidth) > (cv.clientHeight || innerHeight);
-    if (sens !== dernierSens) { dernierSens = sens; VUE.z = 1; VUE.dx = 0; VUE.dy = 0; }
-    redimensionner(); majSelbar(); if (carrefourOuvert) { const c = geo.carrefours.find((k) => k.cle === carrefourOuvert); if (c) ouvrirRegime(c); }
+    const tourne = sens !== dernierSens; if (tourne) { dernierSens = sens; VUE.z = 1; VUE.dx = 0; VUE.dy = 0; }
+    redimensionner(); if (tourne && scene.vue) vueScene(); majSelbar(); if (carrefourOuvert) { const c = geo.carrefours.find((k) => k.cle === carrefourOuvert); if (c) ouvrirRegime(c); }
   };
   minuteursTaille.forEach(clearTimeout);
   requestAnimationFrame(fais);
@@ -3208,7 +3208,7 @@ cv.addEventListener('wheel', (e) => {
   else { VUE.dx -= e.deltaX; VUE.dy -= e.deltaY; }
   appliquerVue(); apresVue();
 }, { passive: false });
-$('recentrer').onclick = () => { VUE.z = 1; VUE.dx = 0; VUE.dy = 0; appliquerVue(); apresVue(); };
+$('recentrer').onclick = () => vueScene();
 
 /* ---------------- boucle ---------------- */
 /* La circulation avance à 60 pas par seconde, quel que soit l'écran : sur un écran 120, 144 ou 240 Hz,
@@ -3938,6 +3938,7 @@ const SCENES_COURS = [
     sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]], axe: 'aucune' }]; sc.id = 2; // rue sans ligne au milieu
     sc.decor = deco([['maison', 300, 330, 160, 115], ['maison_grise', 640, 325, 170, 120], ['maison', 980, 330, 150, 110], ['maison_grise', 300, 800, 170, 120], ['maison', 640, 805, 160, 115], ['maison', 980, 800, 150, 110]]);
     sc.usagers = [usager(1, 'ecole', 330, Y + 48, 0, '#3b82c4'), usager(2, 'voiture', 1150, Y - v, Math.PI, '#e0b43a')];
+    sc.vue = { x: 470, y: Y, z: 1.6, w: 560 };
     return sc;
   }],
   ['feux_camion', 'Feux · tourner à gauche face à un camion', () => {
@@ -3995,6 +3996,39 @@ const SCENES_COURS = [
     sc.routes = [{ id: 1, pts: [[597, H], [597, B]], larg: 264, axe: 'aucune' }, { id: 2, pts: [[G, 579], [D, 579]], larg: 228, axe: 'aucune' }]; sc.id = 3;
     sc.regimes = [{ x: 597, y: 579, type: 'feux', prio: 2, manuel: true, sas: false }];     // grand carrefour : marquage posé à la main
     sc.usagers = [usager(1, 'ecole', 680, 860, -Math.PI / 2, '#3b82c4')];
+    return sc;
+  }],
+  ['creneau', 'Créneau', () => {          // une seule place libre entre deux voitures ; la voiture école s'arrête à hauteur de celle de devant
+    const { G, D } = bornes(), Y = 600, v = LR / 4, L = 112, yP = Y - 100, sc = sceneVide();
+    sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }]; sc.id = 2;
+    const xs = [-2, -1, 0, 1, 2].map((k) => 640 + k * L), coul = ['#5b6270', '#d64545', null, '#e0b43a', '#e8e8e8'];
+    sc.decor = [{ type: 'aire', x: 640, y: yP, w: 5 * L + 40, h: 50, ang: 0 }, ...deco([['maison', 420, 330, 170, 120], ['maison_grise', 860, 330, 170, 120], ['arbre', 1090, 430], ['arbre', 190, 440]])];
+    sc.marques = xs.map((x) => ({ type: 'place_creneau', x, y: yP, ang: 0 }));
+    sc.usagers = [usager(1, 'ecole', 640 - L, Y - v, Math.PI, '#3b82c4')];
+    xs.forEach((x, i) => { if (coul[i]) sc.usagers.push(usager(2 + i, 'voiture', x, yP, Math.PI, coul[i])); });
+    sc.vue = { x: 600, y: Y - 55, z: 1.9, w: 380 };
+    return sc;
+  }],
+  ['bataille', 'Bataille', () => {        // une place libre au milieu d'une rangée en bataille, le long de la rue
+    const { G, D } = bornes(), Y = 600, v = LR / 4, W = 54, yP = Y - LR / 2 - 50, sc = sceneVide();
+    sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }]; sc.id = 2;
+    const ks = [-4, -3, -2, -1, 0, 1, 2, 3, 4], coul = ['#5b6270', '#e8e8e8', '#d64545', '#2f9e6b', null, '#e0b43a', '#5b6270', '#3b82c4', '#e8e8e8'];
+    sc.decor = [{ type: 'aire', x: 640, y: yP, w: 9 * W + 40, h: 100, ang: 0 }, ...deco([['maison', 330, 300, 170, 120], ['maison_grise', 950, 300, 170, 120], ['arbre', 640, 330], ['arbre', 1150, 760], ['buisson', 160, 770]])];
+    sc.marques = ks.map((k) => ({ type: 'place_bataille', x: 640 + k * W, y: yP, ang: 0 }));
+    sc.usagers = [usager(1, 'ecole', 640 + 190, Y - v, Math.PI, '#3b82c4')];
+    ks.forEach((k, i) => { if (coul[i]) sc.usagers.push(usager(2 + i, 'voiture', 640 + k * W, yP - 2, i % 2 ? Math.PI / 2 : -Math.PI / 2, coul[i])); });
+    sc.vue = { x: 720, y: Y - 85, z: 1.9, w: 440 };
+    return sc;
+  }],
+  ['epi', 'Épi', () => {                  // une place libre dans une rangée en épi : on y entre en marche avant
+    const { G, D } = bornes(), Y = 600, v = LR / 4, W = 60, yP = Y + LR / 2 + 50, sc = sceneVide(), epi = Math.atan2(100, 56);
+    sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }]; sc.id = 2;
+    const ks = [-4, -3, -2, -1, 0, 1, 2, 3, 4], coul = ['#e8e8e8', '#5b6270', '#e0b43a', '#d64545', null, '#2f9e6b', '#e8e8e8', '#5b6270', '#3b82c4'];
+    sc.decor = [{ type: 'aire', x: 640, y: yP, w: 9 * W + 40, h: 100, ang: 0 }, ...deco([['maison', 330, 880, 170, 120], ['maison_grise', 950, 880, 170, 120], ['arbre', 640, 860], ['arbre', 1150, 420], ['buisson', 160, 430]])];
+    sc.marques = ks.map((k) => ({ type: 'place_epi', x: 640 + k * W, y: yP, ang: Math.PI, miroir: true }));
+    sc.usagers = [usager(1, 'ecole', 640 - 170, Y + v, 0, '#3b82c4')];
+    ks.forEach((k, i) => { if (coul[i]) sc.usagers.push(usager(2 + i, 'voiture', 640 + k * W, yP - 2, epi, coul[i])); });
+    sc.vue = { x: 570, y: Y + 85, z: 1.9, w: 400 };
     return sc;
   }],
   ['manoeuvres', 'Manœuvres (créneau, bataille, épi)', () => {
@@ -4081,10 +4115,9 @@ const THEMES = [
   ['Partage de la route', ['depassement', 'depassement_ville']],
   ['Route hors agglomération', ['rd_croiser', 'rd_droite', 'rd_gauche', 'aire_arret']],
   ['Feux tricolores', ['feux_classique', 'feux_indo', 'feux_camion', 'feux_decalees', 'feux_stockage']],
-  ['Giratoires', ['giratoire', 'giratoire_velo', 'giratoire2', 'haricot', 'haricot_velo']],
+  ['Giratoires', ['giratoire', 'giratoire_velo', 'giratoire2', 'haricot']],
   ['Autoroute', ['autoroute', 'sortie']],
-  ['Manœuvres', ['arret_precis', 'demi_tour']],
-  ['Stationnement', ['manoeuvres', 'parking']],
+  ['Manœuvres', ['creneau', 'bataille', 'epi', 'demi_tour', 'arret_precis']],
 ];
 const sansPrive = (k, v) => (k[0] === '_' ? undefined : v);
 /* scènes modifiées par les moniteurs : publiées dans le dossier scenes/ du dépôt (une scène = un fichier <clé>.json),
@@ -4145,19 +4178,25 @@ function rangerScene() {
 let departSeance = null;
 function noterDepart() { departSeance = JSON.stringify(scene, sansPrive); }
 function razSeance() { seance.sel = null; seance.traits = []; seance.feux = {}; seance.feuxAuto = true; seance.lecture = false; seance.enreg = false; seance.t = 0; }
+function vueScene() {        // scènes de manœuvre : la vue s'approche de la place (scene.vue = { x, y, z, w }) ; sur téléphone, assez large pour voir w
+  VUE.z = 1; VUE.dx = 0; VUE.dy = 0; appliquerVue();
+  const v = scene.vue;
+  if (v) { const z = Math.max(1, Math.min(v.z, v.w ? VW / (S0 * v.w) : v.z)), [ex, ey] = versEcran(v.x, v.y); zoomAutour(ex, ey, z); VUE.dx += VW / 2 - ex; VUE.dy += VH / 2 - ey; appliquerVue(); }
+  if (typeof apresVue === 'function') apresVue();
+}
 function poserScene(sc, msg) {
   if (test) basculerTest();
   rangerScene();
   scene = sc; selection = null; groupe = null; majSelbar(); fermerRegime(); $('titre').textContent = scene.titre;
   razSeance();
   pose = true; toutRefaire(msg); pose = false; marquerModele();
-  seance.dureeRec = dureeEnreg(); noterDepart(); majSelSeance(); majDockSeance(); majConsigne(true);
+  seance.dureeRec = dureeEnreg(); noterDepart(); majSelSeance(); majDockSeance(); majConsigne(true); vueScene();
 }
 function chargerSceneCours(cle) { const sc = construireScene(cle); if (sc) poserScene(sc, '« ' + sc.titre + ' » chargée'); }
 function remettreAZero() {
   if (test) basculerTest();
   seance.traits = []; seance.sel = null; seance.feux = {}; seance.feuxAuto = true; seance.numeros = false;
-  VUE.z = 1; VUE.dx = 0; VUE.dy = 0; appliquerVue();
+  vueScene();
   if (seance.dureeRec && !seance.enreg) {      // un déplacement est enregistré : on revient à son début, sans le perdre
     auDepart(); choisirOutilSeance(null); majSelSeance(); toast('Retour au début de ton enregistrement'); return;
   }
@@ -4166,7 +4205,7 @@ function remettreAZero() {
   scene = sc; selection = null; groupe = null; $('titre').textContent = scene.titre || 'Nouvelle scène';
   razSeance();
   pose = true; toutRefaire('Scène remise à zéro — ↶ pour revenir'); pose = false;
-  seance.dureeRec = dureeEnreg(); choisirOutilSeance(null); majSelSeance(); majDockSeance(); majConsigne();
+  seance.dureeRec = dureeEnreg(); choisirOutilSeance(null); majSelSeance(); majDockSeance(); majConsigne(); vueScene();
 }
 
 /* ---------- consigne : ce qu'il faut montrer avec la scène ---------- */
@@ -4188,7 +4227,8 @@ function vignetteScene(sc) {
   g.fillStyle = HERBE; g.fillRect(0, 0, c.width, c.height);
   try {
     scene = sc; test = null; geste = null; reconstruire();
-    g.setTransform(k * d, 0, 0, k * d, (lw / 2 - MONDE.W / 2 * k) * d, (lh / 2 - MONDE.H / 2 * k) * d); ctx = g;
+    const cv0 = sc.vue || { x: MONDE.W / 2, y: MONDE.H / 2, z: 1 }, kz = k * cv0.z;
+    g.setTransform(kz * d, 0, 0, kz * d, (lw / 2 - cv0.x * kz) * d, (lh / 2 - cv0.y * kz) * d); ctx = g;
     dessinerFond(g); dessinerRoutes(g);
     for (const m of sc.marques) dessinerMarque(g, m);
     for (const o of sc.decor) if (o.type !== 'aire') dessinerDecor(o);
@@ -4314,6 +4354,7 @@ if (SUR_SITE) {                      // sur le site : on arrive en Séance, sur 
     window.addEventListener('hashchange', ouvrirDepuisLien);
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 }
+if (scene.vue) vueScene();
 demarrage = false;
 
 </script>
