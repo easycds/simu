@@ -545,6 +545,14 @@ function dessinerPictogrammeV2(ctx, type, t, etatFeu) {
       }
       break;
     }
+    case 'sens_unique': {        // C12 : circulation à sens unique
+      ctx.fillStyle = V2.bleuF; carre(0.96); ctx.fill();
+      ctx.fillStyle = V2.blanc; carre(0.9); ctx.fill();
+      ctx.fillStyle = V2.bleu; carre(0.84); ctx.fill();
+      v2Fleche(ctx, 0, r * 0.6, 0, -r * 0.6, t * 0.16, t * 0.24, V2.blanc);
+      v2Reflet(ctx, () => carre(0.84), r);
+      break;
+    }
     case 'c18': {
       ctx.fillStyle = V2.bleuF; carre(0.96); ctx.fill();
       ctx.fillStyle = V2.blanc; carre(0.9); ctx.fill();
@@ -2149,7 +2157,7 @@ function tournerMarque(o, da) {
 /* ---------------- outils + tiroir ---------------- */
 const TIROIRS = {
   panneau: [['stop', 'STOP'], ['cedez', 'Cédez'], ['priorite_droite', 'Priorité à droite'], ['priorite_ponctuelle', 'Priorité ponctuelle'], ['route_prioritaire', 'Route prio.'],
-            ['sens_interdit', 'Sens interdit'], ['passage_pieton', 'Passage piéton'], ['giratoire', 'Giratoire'], ['virage_droite', 'Virage à droite'], ['virage_gauche', 'Virage à gauche'], ['virages_droite', 'Virages (1er à droite)'], ['virages_gauche', 'Virages (1er à gauche)'], ['obligation_droit', 'Tout droit'],
+            ['sens_interdit', 'Sens interdit'], ['sens_unique', 'Sens unique'], ['passage_pieton', 'Passage piéton'], ['giratoire', 'Giratoire'], ['virage_droite', 'Virage à droite'], ['virage_gauche', 'Virage à gauche'], ['virages_droite', 'Virages (1er à droite)'], ['virages_gauche', 'Virages (1er à gauche)'], ['obligation_droit', 'Tout droit'],
             ['obligation_droite', 'À droite'], ['obligation_gauche', 'À gauche'], ['b15', 'Cédez sens inverse'], ['c18', 'Prio. sens inverse'], ['autoroute', 'Autoroute'], ['limite_30', '30'], ['limite_50', '50'], ['limite_70', '70'], ['limite_90', '90'], ['limite_110', '110'], ['limite_130', '130'], ['c1a', 'Parking (C1a)'], ['c1a_250', 'Parking à 250 m'], ['feu', 'Feu']],
   sol: [['ligne_stop', 'Ligne STOP'], ['ligne_cedez', 'Ligne cédez'], ['ligne_feux', 'Ligne des feux'], ['ligne_continue', 'Ligne continue'], ['ligne_discontinue', 'Ligne discontinue'],
         ['ligne_guidage', 'Guidage'], ['axe', 'Axe de la route'],
@@ -4059,6 +4067,53 @@ const SCENES_COURS = [
     sc.vue = { x: 570, y: Y + 85, z: 1.9, w: 400 };
     return sc;
   }],
+  ['creneau_gauche', 'Créneau à gauche (sens unique)', () => {      // rue à sens unique : on se gare à gauche
+    const { G, D } = bornes(), Y = 600, v = LR / 4, L = 112, yP = Y + 100, sc = sceneVide(), M = [];
+    sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]], axe: 'aucune' }]; sc.id = 2;
+    const xs = [-2, -1, 0, 1, 2].map((k) => 640 + k * L), coul = ['#e8e8e8', '#2f9e6b', null, '#d64545', '#5b6270'];
+    sc.decor = [{ type: 'aire', x: 640, y: yP, w: 5 * L + 40, h: 50, ang: 0 }, ...deco([['maison', 420, 860, 170, 120], ['maison_grise', 880, 860, 170, 120], ['maison', 640, 330, 200, 120], ['arbre', 1090, 420], ['arbre', 190, 420]])];
+    xs.forEach((x) => M.push({ type: 'place_creneau', x, y: yP, ang: Math.PI }));
+    for (const x of [260, 1020]) M.push({ type: 'fleche_droit', x, y: Y, ang: Math.PI });            // flèches du sens unique
+    sc.marques = M;
+    sc.panneaux = [{ type: 'sens_unique', x: 1120, y: Y - LR / 2 - 24, ang: Math.PI + Math.PI / 2 }, { type: 'sens_interdit', x: 160, y: Y + LR / 2 + 70, ang: Math.PI / 2 }];
+    sc.usagers = [usager(1, 'ecole', 640 - L, Y + v, Math.PI, '#3b82c4')];
+    xs.forEach((x, i) => { if (coul[i]) sc.usagers.push(usager(2 + i, 'voiture', x, yP, Math.PI, coul[i])); });
+    sc.vue = { x: 610, y: Y + 55, z: 1.9, w: 400 };
+    return sc;
+  }],
+  ['bataille_gauche', 'Bataille arrière à gauche (sens unique)', () => {      // on dépasse la place, puis on recule dedans par la gauche
+    const { G, D } = bornes(), Y = 600, v = LR / 4, W = 54, yP = Y + LR / 2 + 50, sc = sceneVide(), M = [];
+    sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]], axe: 'aucune' }]; sc.id = 2;
+    const ks = [-4, -3, -2, -1, 0, 1, 2, 3, 4], coul = ['#3b82c4', '#e8e8e8', '#5b6270', '#e0b43a', null, '#d64545', '#2f9e6b', '#e8e8e8', '#5b6270'];
+    sc.decor = [{ type: 'aire', x: 640, y: yP, w: 9 * W + 40, h: 100, ang: 0 }, ...deco([['maison', 330, 880, 170, 120], ['maison_grise', 950, 880, 170, 120], ['maison', 640, 330, 200, 120], ['arbre', 1150, 420], ['buisson', 160, 430]])];
+    ks.forEach((k) => M.push({ type: 'place_bataille', x: 640 + k * W, y: yP, ang: Math.PI }));
+    for (const x of [200, 1080]) M.push({ type: 'fleche_droit', x, y: Y, ang: Math.PI });
+    sc.marques = M;
+    sc.panneaux = [{ type: 'sens_unique', x: 1150, y: Y - LR / 2 - 24, ang: Math.PI + Math.PI / 2 }, { type: 'sens_interdit', x: 130, y: Y + LR / 2 + 120, ang: Math.PI / 2 }];
+    sc.usagers = [usager(1, 'ecole', 640 - 150, Y + v, Math.PI, '#3b82c4')];
+    ks.forEach((k, i) => { if (coul[i]) sc.usagers.push(usager(2 + i, 'voiture', 640 + k * W, yP + 2, i % 3 ? -Math.PI / 2 : Math.PI / 2, coul[i])); });   // garées en marche arrière : nez vers la rue
+    sc.vue = { x: 600, y: Y + 85, z: 1.9, w: 440 };
+    return sc;
+  }],
+  ['epi_arriere', 'Épi en marche arrière', () => {      // épi inversé : on dépasse la place et on recule dedans ; on ressort en marche avant dans le sens de la rue
+    const { G, D } = bornes(), Y = 600, v = LR / 4, W = 60, yP = Y + LR / 2 + 50, sc = sceneVide(), epi = Math.atan2(100, 56);
+    sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }]; sc.id = 2;
+    const ks = [-4, -3, -2, -1, 0, 1, 2, 3, 4], coul = ['#5b6270', '#e8e8e8', '#d64545', '#3b82c4', null, '#e0b43a', '#5b6270', '#2f9e6b', '#e8e8e8'];
+    sc.decor = [{ type: 'aire', x: 640, y: yP, w: 9 * W + 40, h: 100, ang: 0 }, ...deco([['maison', 330, 880, 170, 120], ['maison_grise', 950, 880, 170, 120], ['arbre', 640, 860], ['arbre', 1150, 420], ['buisson', 160, 430]])];
+    sc.marques = ks.map((k) => ({ type: 'place_epi', x: 640 + k * W, y: yP, ang: Math.PI }));
+    sc.usagers = [usager(1, 'ecole', 640 + 130, Y + v, 0, '#3b82c4')];
+    ks.forEach((k, i) => { if (coul[i]) sc.usagers.push(usager(2 + i, 'voiture', 640 + k * W, yP - 2, -epi, coul[i])); });
+    sc.vue = { x: 690, y: Y + 85, z: 1.9, w: 400 };
+    return sc;
+  }],
+  ['marche_arriere_courbe', 'Marche arrière en courbe', () => {      // reculer en tournant à droite le long du trottoir, dans la rue perpendiculaire
+    const { G, D, B } = bornes(), Y = 480, X = 600, v = LR / 4, sc = sceneVide();
+    sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]] }, { id: 2, pts: [[X, Y], [X, B]] }]; sc.id = 3;
+    sc.decor = deco([['maison', 330, 760, 200, 140], ['maison_grise', 900, 760, 200, 140], ['maison', 640, 250, 220, 120], ['arbre', 780, 620], ['buisson', 430, 620]]);
+    sc.usagers = [usager(1, 'ecole', X + LR / 2 + 170, Y + v + 8, 0, '#3b82c4')];
+    sc.vue = { x: X + 150, y: Y + 100, z: 1.7, w: 460 };
+    return sc;
+  }],
   ['manoeuvres', 'Manœuvres (créneau, bataille, épi)', () => {
     const { sc } = depuisFormatSimu(ANCIENNES.s_manoeuvres1, ''), { G, D } = bornes();
     sc.routes = [{ id: 1, pts: [[G, 559], [D, 559]], larg: 276, axe: 'aucune' }]; sc.id = 2;
@@ -4145,7 +4200,7 @@ const THEMES = [
   ['Feux tricolores', ['feux_classique', 'feux_indo', 'feux_camion', 'feux_decalees', 'feux_stockage']],
   ['Giratoires', ['giratoire', 'giratoire_velo', 'giratoire2', 'haricot']],
   ['Autoroute', ['autoroute', 'sortie']],
-  ['Manœuvres', ['creneau', 'bataille', 'epi', 'demi_tour', 'arret_precis']],
+  ['Manœuvres', ['creneau', 'creneau_gauche', 'bataille', 'bataille_gauche', 'epi', 'epi_arriere', 'marche_arriere_courbe', 'demi_tour', 'arret_precis']],
 ];
 const sansPrive = (k, v) => (k[0] === '_' ? undefined : v);
 /* scènes modifiées par les moniteurs : publiées dans le dossier scenes/ du dépôt (une scène = un fichier <clé>.json),
