@@ -213,17 +213,18 @@ function modeDessin(on) {
 $('b-trajet').onclick = () => modeDessin(!dessin);
 $('b-couleur').onclick = () => { couleur = COULEURS[(COULEURS.indexOf(couleur) + 1) % COULEURS.length]; $('p-couleur').style.background = couleur; };
 zone.addEventListener('pointerdown', (e) => {
-  if (!dessin || e.target.closest('.leaflet-control')) return;
-  zone.setPointerCapture(e.pointerId);
+  if (!dessin || enCours || e.target.closest('.leaflet-control')) return;   // un seul doigt trace à la fois
+  zone.setPointerCapture(e.pointerId); doigt = e.pointerId;
   enCours = ajouterTrajet(couleur, [carte.containerPointToLatLng(carte.mouseEventToContainerPoint(e))]);
 });
 zone.addEventListener('pointermove', (e) => {
-  if (!enCours) return;
+  if (!enCours || e.pointerId !== doigt) return;
   const p = carte.containerPointToLatLng(carte.mouseEventToContainerPoint(e)), pts = enCours.l.getLatLngs();
   if (carte.latLngToContainerPoint(pts[pts.length - 1]).distanceTo(carte.latLngToContainerPoint(p)) > 6) { enCours.l.addLatLng(p); fleche(enCours); }
 });
-const finTrajet = () => {
-  if (!enCours) return;
+let doigt = null;
+const finTrajet = (e) => {
+  if (!enCours || (e && e.pointerId !== doigt)) return;
   if (enCours.l.getLatLngs().length < 3) { carte.removeLayer(enCours.l); if (enCours.f) carte.removeLayer(enCours.f); trajets.splice(trajets.indexOf(enCours), 1); }
   else enregistrer();
   enCours = null;
