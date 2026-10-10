@@ -3322,7 +3322,7 @@ function fondAutoroute(g, miroir) {
 }
 /* Voie d'entrecroisement : l'entrée et la sortie suivante sont reliées par une voie continue (tirets T2).
    Ceux qui entrent se rabattent à gauche sur l'autoroute, ceux qui sortent se décalent à droite sur cette voie :
-   ils se croisent. Le portique annonce les deux directions. */
+   ils se croisent. */
 function fondEntrecroisement(g) {
   const X0 = -900, X1 = MONDE.W + 900, { yG, yD, yI, XN, XZ, DY } = AR, Y = (y) => y + DY, yR = Y(525), yBI = yI + 37.5, XS = MONDE.W - XN, XZS = MONDE.W - XZ;
   const chemin = (pts) => { g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); };
@@ -3349,21 +3349,6 @@ function fondEntrecroisement(g) {
     g.save(); chemin([[XZ, yR], ...AR.gauche.slice(AR.iz), [XN, yR]]); g.closePath(); g.clip();
     g.lineWidth = 6; g.beginPath(); for (let x = XZ - 120; x < XN + 40; x += 22) { g.moveTo(x, yR + 75); g.lineTo(x + 75, yR - 5); } g.stroke(); g.restore();
   });
-  // portique : deux directions possibles
-  const XP = 790, bleu = '#1f4fa0';
-  g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(XP - 3, Y(368) + 6, 12, yBI + 52 - Y(368));
-  g.fillStyle = '#8a929c'; g.fillRect(XP - 6, Y(366), 12, yBI + 50 - Y(366));
-  const panneau = (y0, y1, coul, lignes, fleche) => {
-    const w = 196, x = XP - w / 2;
-    g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.roundRect(x + 4, y0 + 5, w, y1 - y0, 8); g.fill();
-    g.fillStyle = coul; g.strokeStyle = '#ffffff'; g.lineWidth = 3; g.beginPath(); g.roundRect(x, y0, w, y1 - y0, 8); g.fill(); g.stroke();
-    g.fillStyle = '#ffffff'; g.textBaseline = 'middle'; g.textAlign = 'left';
-    lignes.forEach(([txt, taille, y]) => { g.font = '800 ' + taille + 'px system-ui, sans-serif'; g.fillText(txt, x + 54, y); });
-    g.save(); g.translate(x + 28, (y0 + y1) / 2); g.rotate(fleche); g.lineWidth = 6; g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#ffffff';
-    g.beginPath(); g.moveTo(-11, 0); g.lineTo(11, 0); g.moveTo(3, -9); g.lineTo(12, 0); g.lineTo(3, 9); g.stroke(); g.restore();
-  };
-  panneau(yG - 30, yD + 28, bleu, [['PARIS', 22, yG - 4], ['Le Mans', 17, yG + 22], ['A 11', 15, yD + 12]], 0);
-  panneau(yI - 32, yI + 32, bleu, [['SORTIE 14', 12, yI - 18], ['Angers-Centre', 15, yI + 1], ['Saumur', 15, yI + 19]], Math.PI / 5);
   g.restore();
 }
 function dessinerFond(g) {
