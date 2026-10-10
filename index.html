@@ -520,6 +520,22 @@ function dessinerPictogrammeV2(ctx, type, t, etatFeu) {
       v2Reflet(ctx, () => carre(0.84), r);
       break;
     }
+    case 'c1a': case 'c1a_250': {   // C1a : lieu aménagé pour le stationnement ; avec panonceau M1 « 250 m »
+      const pano = type === 'c1a_250';
+      ctx.save(); if (pano) { ctx.translate(0, -r * 0.24); ctx.scale(0.74, 0.74); }
+      ctx.fillStyle = V2.bleuF; carre(0.96); ctx.fill();
+      ctx.fillStyle = V2.blanc; carre(0.9); ctx.fill();
+      ctx.fillStyle = V2.bleu; carre(0.84); ctx.fill();
+      ctx.fillStyle = V2.blanc; ctx.font = `800 ${t * 0.62}px Arial, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('P', 0, t * 0.04);
+      v2Reflet(ctx, () => carre(0.84), r);
+      ctx.restore();
+      if (pano) {
+        ctx.fillStyle = V2.noir; ctx.beginPath(); ctx.roundRect(-r * 0.66, r * 0.48, r * 1.32, r * 0.5, t * 0.04); ctx.fill();
+        ctx.fillStyle = V2.blanc; ctx.beginPath(); ctx.roundRect(-r * 0.62, r * 0.52, r * 1.24, r * 0.42, t * 0.03); ctx.fill();
+        ctx.fillStyle = V2.noir; ctx.font = `800 ${t * 0.2}px "Arial Narrow", Arial, sans-serif`; ctx.fillText('250 m', 0, r * 0.74);
+      }
+      break;
+    }
     case 'c18': {
       ctx.fillStyle = V2.bleuF; carre(0.96); ctx.fill();
       ctx.fillStyle = V2.blanc; carre(0.9); ctx.fill();
@@ -1254,6 +1270,10 @@ function placeSol(g, type) {             // repère local : x le long de la file
 function aire(g, d, partie) {            // surface goudronnée (parking, cour) : bordure de trottoir puis goudron
   const [w, h] = dimRect(d);
   g.save(); g.translate(d.x, d.y); g.rotate(d.ang || 0);
+  if (d.biseau) {                        // aire d'arrêt en encoche : pas de bordure, les deux bouts en biseau (côté -h/2 collé à la route)
+    if (partie !== 'bord') { const b = d.biseau; g.fillStyle = ASPH; g.beginPath(); g.moveTo(-w / 2, -h / 2 - 2); g.lineTo(w / 2, -h / 2 - 2); g.lineTo(w / 2 - b, h / 2); g.lineTo(-w / 2 + b, h / 2); g.closePath(); g.fill(); }
+    g.restore(); return;
+  }
   if (partie !== 'goudron') { g.fillStyle = TROT; g.beginPath(); g.roundRect(-w / 2 - TR, -h / 2 - TR, w + 2 * TR, h + 2 * TR, 14); g.fill(); }
   if (partie !== 'bord') { g.fillStyle = ASPH; g.fillRect(-w / 2, -h / 2, w, h); }
   g.restore();
@@ -1403,7 +1423,7 @@ function ajusterEcluse(T, route, dir) {
   return T;
 }
 function auFeuRouge(v) { return v.T.evts.some((e) => e.c.type === 'feux' && !v.passes.has('L' + e.c.cle + e.i) && e.sLigne - v.s < 400 && ['rouge', 'orange'].includes(etatFeu(e.c.cle, e.route))); }
-const CIRCULATION_OK = ['giratoire', 'giratoire_velo', 'giratoire2', 'haricot', 'haricot_velo', 'feux_classique', 'feux_indo']; // les autres scènes ne sont pas encore prêtes
+const CIRCULATION_OK = ['giratoire', 'giratoire_velo', 'giratoire_holl', 'giratoire2', 'haricot', 'haricot_velo', 'feux_classique', 'feux_indo']; // les autres scènes ne sont pas encore prêtes
 function circulationPossible() { return CIRCULATION_OK.includes(scene.origine); }
 let circVue = null;
 function majCirculation() { // les boutons Circulation / Tester n'apparaissent que là où la circulation est au point
@@ -2121,7 +2141,7 @@ function tournerMarque(o, da) {
 const TIROIRS = {
   panneau: [['stop', 'STOP'], ['cedez', 'Cédez'], ['priorite_droite', 'Priorité à droite'], ['priorite_ponctuelle', 'Priorité ponctuelle'], ['route_prioritaire', 'Route prio.'],
             ['sens_interdit', 'Sens interdit'], ['passage_pieton', 'Passage piéton'], ['giratoire', 'Giratoire'], ['virage_droite', 'Virage à droite'], ['virage_gauche', 'Virage à gauche'], ['virages_droite', 'Virages (1er à droite)'], ['virages_gauche', 'Virages (1er à gauche)'], ['obligation_droit', 'Tout droit'],
-            ['obligation_droite', 'À droite'], ['obligation_gauche', 'À gauche'], ['b15', 'Cédez sens inverse'], ['c18', 'Prio. sens inverse'], ['autoroute', 'Autoroute'], ['limite_30', '30'], ['limite_50', '50'], ['limite_70', '70'], ['limite_90', '90'], ['limite_110', '110'], ['limite_130', '130'], ['feu', 'Feu']],
+            ['obligation_droite', 'À droite'], ['obligation_gauche', 'À gauche'], ['b15', 'Cédez sens inverse'], ['c18', 'Prio. sens inverse'], ['autoroute', 'Autoroute'], ['limite_30', '30'], ['limite_50', '50'], ['limite_70', '70'], ['limite_90', '90'], ['limite_110', '110'], ['limite_130', '130'], ['c1a', 'Parking (C1a)'], ['c1a_250', 'Parking à 250 m'], ['feu', 'Feu']],
   sol: [['ligne_stop', 'Ligne STOP'], ['ligne_cedez', 'Ligne cédez'], ['ligne_feux', 'Ligne des feux'], ['ligne_continue', 'Ligne continue'], ['ligne_discontinue', 'Ligne discontinue'],
         ['ligne_guidage', 'Guidage'], ['axe', 'Axe de la route'],
         ['fleche_droit', 'Tout droit'], ['fleche_gauche', 'Gauche'], ['fleche_droite', 'Droite'], ['fleche_td_gauche', 'Droit + gauche'], ['fleche_td_droite', 'Droit + droite'],
@@ -3401,7 +3421,7 @@ function avancerAutoroute() {
    ===================================================================== */
 const GIRA = {};
 function gira(fond) {
-  const deux = fond.voies === 2, cle = (fond.forme || 'rond') + (fond.velo ? '+v' : '') + (deux ? '+2' : '');
+  const deux = fond.voies === 2, cle = (fond.forme || 'rond') + (fond.velo ? '+v' : '') + (deux ? '+2' : '') + (fond.hollandais ? '+h' : '');
   if (GIRA[cle]) return GIRA[cle];
   const rond = fond.forme !== 'haricot', velo = !!fond.velo && !deux, C = [640, 590], LANE = deux ? 64 : 52, BAND = velo ? 30 : 0, DV = 32;   // DV : demi-écart entre les deux voies de l'anneau
   const r0 = deux ? 200 : rond ? (velo ? 172 : 186) : 142, Rs = 520, a = rond ? 0 : 0.36, cS = [C[0], C[1] - Rs];
@@ -3478,6 +3498,32 @@ function gira(fond) {
     }
     return { entrees, sortie, bouche, demi, ...extra };
   });
+  /* giratoire à la hollandaise : piste cyclable en anneau, séparée de la chaussée par une bande de pelouse,
+     et traversées des branches reculées d'une longueur de voiture (≈ 5 m) : la voiture qui sort s'arrête entre l'anneau et la piste. */
+  if (fond.hollandais) {
+    const RV = G.ROUT + 120, LATB = LR / 2 + TR + 34, RAC = 0.12;
+    G.holl = true; G.RV = RV; G.LATB = LATB; G.LB = 32;
+    const angB = (b) => Math.atan2(b.n[1], b.n[0]), surCercle = (f) => [C[0] + RV * Math.cos(f), C[1] + RV * Math.sin(f)], tanC = (f) => [Math.sin(f), -Math.cos(f)];   // sens de rotation : angle qui diminue
+    G.trajetVelo = (de, vers) => {
+      const A = G.branches[de], B = G.branches[vers], fIn = angB(A) - Math.asin(LATB / RV) - RAC, fOut = angB(B) + Math.asin(LATB / RV) + RAC;
+      const pts = [A.pt(G.D0 + 900, LATB)], dJ = RV + 70, P0 = A.pt(dJ, LATB), Q0 = surCercle(fIn), T0 = tanC(fIn);
+      pts.push(P0);
+      for (const q of bez([P0, [P0[0] - A.n[0] * 45, P0[1] - A.n[1] * 45], [Q0[0] - T0[0] * 45, Q0[1] - T0[1] * 45], Q0], 10)) pts.push(q);
+      const delta = (((fIn - fOut) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI), n = Math.max(2, Math.ceil(delta * RV / PAS));
+      for (let i = 1; i <= n; i++) pts.push(surCercle(fIn - delta * i / n));
+      const Q1 = surCercle(fOut), T1 = tanC(fOut), P1 = B.pt(dJ, -LATB);
+      for (const q of bez([Q1, [Q1[0] + T1[0] * 45, Q1[1] + T1[1] * 45], [P1[0] - B.n[0] * 45, P1[1] - B.n[1] * 45], P1], 10)) pts.push(q);
+      pts.push(B.pt(G.D0 + 900, -LATB));
+      const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+      return { pts, cum, len: cum[cum.length - 1] };
+    };
+    // là où la trajectoire d'une voiture coupe la piste (en entrant puis en sortant)
+    G.traversees = (T) => {
+      const o = [], d = (q) => Math.hypot(q[0] - C[0], q[1] - C[1]) - RV;
+      for (let i = 1; i < T.pts.length; i++) { const a = d(T.pts[i - 1]), b2 = d(T.pts[i]); if ((a > 0) !== (b2 > 0)) { const t = a / (a - b2); o.push({ s: T.cum[i - 1] + (T.cum[i] - T.cum[i - 1]) * t, x: T.pts[i - 1][0] + (T.pts[i][0] - T.pts[i - 1][0]) * t, y: T.pts[i - 1][1] + (T.pts[i][1] - T.pts[i - 1][1]) * t }); } }
+      return o;
+    };
+  }
   return (GIRA[cle] = G);
 }
 function fondGiratoire(g) {
@@ -3505,6 +3551,13 @@ function fondGiratoire(g) {
     for (const d of G.dessin) { for (const c of d.entrees) { ligne(c); g.lineWidth = 2 * d.demi + plus; g.stroke(); } ligne(d.sortie); g.lineWidth = 84 + plus; g.stroke(); }
     ferme(G.milieu); g.lineWidth = 2 * G.LANE + G.BAND + plus; g.stroke();
   }
+  if (G.holl) {                                                            // piste cyclable rouge : anneau + pistes le long des branches + raccords
+    const ROUGE = '#a8473f';
+    g.strokeStyle = ROUGE; g.lineCap = 'round'; g.lineWidth = G.LB;
+    g.beginPath(); g.arc(G.C[0], G.C[1], G.RV, 0, 7); g.stroke();
+    G.branches.forEach((b, k) => { const T = G.trajetVelo(k, (k + 1) % 4); ligne(T.pts); g.stroke(); const T2 = G.trajetVelo((k + 3) % 4, k); ligne(T2.pts); g.stroke(); });
+    g.lineCap = 'butt';
+  }
   // îlot central : bordure, pelouse, massif
   ferme(G.ilot); g.fillStyle = TROT; g.fill();
   ferme(G.ctr.map((p, i) => G.pt(i, -(G.LANE + 14)))); g.fillStyle = '#7aa870'; g.fill();
@@ -3512,14 +3565,14 @@ function fondGiratoire(g) {
   else for (const dx of [-150, -75, 0, 75, 150]) arbre(G.C[0] + dx, G.C[1] - 22 * (dx / 150) ** 2 * 1.2 - 2, dx % 150 === 0 ? 22 : 17);
   // îlots séparateurs : entre l'entrée et la sortie de chaque branche
   g.fillStyle = TROT; g.strokeStyle = TROT; g.lineWidth = 7; g.lineJoin = 'round';
-  const LI = G.deux ? 104 : 84, WI = G.deux ? 20 : 15;
+  const LI = G.deux ? 104 : G.holl ? G.RV - G.ROUT - G.LB / 2 - 10 : 84, WI = G.deux ? 20 : G.holl ? 17 : 15;   // à la hollandaise : l'îlot sert de refuge jusqu'après la piste
   for (const b of G.branches) { ferme([b.pt(G.ROUT + LI, 0), b.pt(G.ROUT + 16, WI), b.pt(G.ROUT + 16, -WI)]); g.fill(); g.stroke(); }
   g.fillStyle = '#7aa870'; for (const b of G.branches) { ferme([b.pt(G.ROUT + LI - 22, 0), b.pt(G.ROUT + 22, WI - 7), b.pt(G.ROUT + 22, 7 - WI)]); g.fill(); }
   // marquage
   g.fillStyle = PEINT; g.strokeStyle = PEINT; g.lineCap = 'butt';
   G.branches.forEach((b, k) => {
     const ang = Math.atan2(b.n[1], b.n[0]), d0 = G.ROUT + (G.deux ? 172 : 150), cap = Math.atan2(-b.n[1], -b.n[0]);
-    const pp = b.pt(G.ROUT + (G.deux ? 138 : 112), 0);
+    const pp = b.pt(G.holl ? G.RV + 92 : G.ROUT + (G.deux ? 138 : 112), 0);
     dessinerMarque(g, { type: 'passage_pieton', x: pp[0], y: pp[1], ang, ...(G.deux ? { larg: 256 } : {}) });
     g.save(); g.translate(...b.pt(d0)); g.rotate(ang);                       // axe de la branche
     if (G.deux) g.fillRect(0, -2, 1300, 4);                                  // deux fois deux voies : ligne continue entre les deux sens
@@ -3546,6 +3599,14 @@ function fondGiratoire(g) {
       g.save(); g.translate(f1[0], f1[1]); g.rotate(cap + Math.PI / 2); g.fillStyle = PEINT; flecheSol(g, 'fleche_td_droite', 70); g.restore();
       g.save(); g.translate(f2[0], f2[1]); g.rotate(cap + Math.PI / 2); g.fillStyle = PEINT; flecheSol(g, 'fleche_gauche', 70); g.restore();
     }
+    if (G.holl) {                                                          // traversée cyclable (blocs blancs de chaque côté) + « dents de requin » : les voitures cèdent le passage aux vélos
+      g.fillStyle = PEINT;
+      for (const R of [G.RV - G.LB / 2 - 4, G.RV + G.LB / 2 + 4]) for (let lat = -LR / 2 + 6; lat <= LR / 2 - 6; lat += 21) { const q = b.pt(Math.sqrt(R * R - lat * lat), lat); g.save(); g.translate(q[0], q[1]); g.rotate(ang); g.fillRect(-5, -5, 10, 10); g.restore(); }
+      for (const [cote, R, sens] of [[1, G.RV + G.LB / 2 + 18, 0], [-1, G.RV - G.LB / 2 - 18, Math.PI]]) for (let lat = 10; lat <= LR / 2 - 8; lat += 19) {   // en entrant et en sortant, la pointe vers la voiture qui arrive
+        const q = b.pt(Math.sqrt(R * R - lat * lat), cote * lat);
+        g.save(); g.translate(q[0], q[1]); g.rotate(ang + sens); g.beginPath(); g.moveTo(-7, -7); g.lineTo(-7, 7); g.lineTo(9, 0); g.closePath(); g.fill(); g.restore();
+      }
+    }
     // ligne du cédez-le-passage : au bout de la route, le long du bord de l'anneau, sur toute la largeur de l'entrée
     g.strokeStyle = PEINT; g.lineWidth = 10.5; g.setLineDash([10.5, 10.5]); ligne(G.dessin[k].bouche); g.stroke(); g.setLineDash([]);
   });
@@ -3561,6 +3622,13 @@ function fondGiratoire(g) {
 }
 
 /* ---- circulation dans le giratoire ---- */
+const w0v = (V, b) => { let m = b.vmax; for (const w of V) if (w !== b && w.hv && w.s > b.s) m = Math.min(m, w.v); return m; };
+function lancerVeloHoll(de, vers) {
+  const G = gira(scene.fond), T = G.trajetVelo(de, vers), p0 = surTrajet(T, 380);
+  if (test.vehicules.some((w) => { const q = posVehicule(w); return Math.hypot(q.x - p0.x, q.y - p0.y) < 80; })) return null;
+  const v = { hv: true, T, s: 380, v: 1.1, vmax: 1.1, type: 'velo', coul: '#2f9e6b', cligno: null };
+  test.vehicules.push(v); test.n++; return v;
+}
 function lancerGira(de, vers, opt) {
   const G = gira(scene.fond), o = opt || {}, estVelo = o.type === 'velo', T = G.trajet(de, vers, estVelo);
   const p0 = surTrajet(T, o.s || 0);
@@ -3577,6 +3645,7 @@ function scriptGiratoire() {
   if (f === 500) { lancerGira(e0, (e0 + 2) % 4, { easy: true, s: 600 }); toast(D ? 'Tout droit : voie de droite, pas de clignotant en entrant ; clignotant à droite après la sortie d\'avant' : 'Tout droit : pas de clignotant en entrant ; clignotant à droite dès que j\'ai passé la sortie d\'avant', 7000); }
   if (f === 1000) { lancerGira(e0, (e0 + 3) % 4, { easy: true, s: 600 }); toast(D ? 'À gauche : voie de gauche, clignotant à gauche, voie intérieure ; après la sortie d\'avant je contrôle, clignotant à droite, je me rabats et je sors' : 'À gauche : clignotant à gauche en entrant, puis à droite après la sortie d\'avant', 8500); }
   if (test.frame % 105 === 40 && test.vehicules.length < 9) { const de = (e0 + 1 + alea(3)) % 4; lancerGira(de, (de + 1 + alea(3)) % 4, { s: 380 }); }      // les autres arrivent par les trois autres branches
+  if (G.holl && test.frame % 230 === 60) { const de = alea(4); lancerVeloHoll(de, (de + 1 + alea(3)) % 4); }      // des vélos sur la piste
   if (G.velo && test.frame % 330 === 90) { const de = [3, 2, 1][alea(3)]; lancerGira(de, (de + 2 + alea(2)) % 4, { type: 'velo', s: 560 }); }     // des vélos qui traversent l'anneau
 }
 function avancerGiratoire() {
@@ -3611,6 +3680,21 @@ function avancerGiratoire() {
         else if (reste < 8) v.entre = true;
       }
     }
+    // à la hollandaise : avant chaque traversée de la piste (en entrant comme en sortant), le vélo qui arrive passe d'abord
+    if (G.holl && !velo) {
+      if (!T.trav) T.trav = G.traversees(T);
+      for (const X of T.trav) {
+        const arret = X.s - 64 - v.s;                                       // l'avant de la voiture s'arrête juste avant la piste
+        if (arret < -26 || arret > 150) continue;
+        const vient = V.some((b) => {
+          if (!b.hv) return false;
+          const q = posVehicule(b); if (Math.hypot(q.x - X.x, q.y - X.y) > 170) return false;
+          for (let ds = 0; ds <= 150; ds += 10) { const r = surTrajet(b.T, b.s + ds); if (Math.hypot(r.x - X.x, r.y - X.y) < 28) return true; }
+          return false;
+        });
+        if (vient && arret > -26) { cible = arret <= 1 ? 0 : Math.min(cible, Math.max(0.2, arret / 25)); if (v.easy && !v['ditH' + Math.round(X.s)] && arret < 60) { v['ditH' + Math.round(X.s)] = true; toast('Un cycliste arrive sur la piste : je m\'arrête avant la traversée, il est prioritaire', 5000); } }
+      }
+    }
     // 2) à la sortie : le vélo qui continue sur la bande cyclable passe d'abord
     else if (!velo && G.velo && v.s < T.sOut + 30 && T.sOut - v.s < 150) {
       const moi = arcDe(v), sortie = (T.sOut - v.s) * T.echelle + 30;
@@ -3640,20 +3724,32 @@ function avancerGiratoire() {
     v.v += (cible - v.v) * (cible < v.v ? 0.3 : 0.05); if (cible === 0 && v.v < 0.05) v.v = 0;
     v.s += v.v; if (v.s >= T.len - 2) v.fini = true;
   });
+  if (G.holl) V.forEach((b, ib) => {                                      // vélos de la piste : prioritaires, ils n'attendent que si une voiture est déjà sur la traversée
+    if (!b.hv) return;
+    let cible = b.vmax;
+    for (let ds = 22; ds <= 70; ds += 12) {
+      const r = surTrajet(b.T, b.s + ds);
+      if (V.some((w, iw) => w !== b && !w.hv && Math.hypot(P[iw].x - r.x, P[iw].y - r.y) < 46)) { cible = 0; break; }
+      if (V.some((w, iw) => w !== b && w.hv && w.s > b.s && Math.hypot(P[iw].x - r.x, P[iw].y - r.y) < 30)) { cible = Math.min(cible, w0v(V, b)); }
+    }
+    b.v += (cible - b.v) * (cible < b.v ? 0.3 : 0.05); if (cible === 0 && b.v < 0.05) b.v = 0;
+    b.s += b.v; if (b.s >= b.T.len - 2) b.fini = true;
+  });
   test.vehicules = V.filter((v) => !v.fini);
   test.gel = test.vehicules.length >= 3 && test.vehicules.every((v) => v.v < 0.05) ? (test.gel || 0) + 1 : 0;
   if (test.gel > 420) { test.vehicules = []; test.gel = 0; }
   sale = true;
 }
-function sceneGiratoire(forme, velo, voies) {
-  const sc = sceneVide(), fond = { type: 'giratoire', forme, velo, ...(voies === 2 ? { voies: 2 } : {}) }, G = gira(fond);
+function sceneGiratoire(forme, velo, voies, hollandais) {
+  const sc = sceneVide(), fond = { type: 'giratoire', forme, velo, ...(voies === 2 ? { voies: 2 } : {}), ...(hollandais ? { hollandais: true } : {}) }, G = gira(fond);
   sc.fond = fond;
   G.branches.forEach((b) => {
-    const ang = Math.atan2(-b.n[1], -b.n[0]) + Math.PI / 2, l1 = G.deux ? 170 : 118, l2 = G.deux ? 170 : 105;
+    const ang = Math.atan2(-b.n[1], -b.n[0]) + Math.PI / 2, l1 = G.deux ? 170 : 118, l2 = G.deux ? 170 : G.holl ? 178 : 105;
     sc.panneaux.push({ type: 'cedez', x: b.pt(G.ROUT + 38, l1)[0], y: b.pt(G.ROUT + 38, l1)[1], ang }, { type: 'giratoire', x: b.pt(G.ROUT + 215, l2)[0], y: b.pt(G.ROUT + 215, l2)[1], ang });
   });
   const e0 = G.deux ? 3 : 0, T = G.trajet(e0, (e0 + 3) % 4, false), q = surTrajet(T, T.sLigne - 170), T2 = G.trajet((e0 + 1) % 4, (e0 + 3) % 4, false), q2 = surTrajet(T2, (T2.sIn + T2.sOut) / 2);
   sc.usagers = [usager(1, 'ecole', q.x, q.y, Math.atan2(q.hy, q.hx), '#3b82c4'), usager(2, 'voiture', q2.x, q2.y, Math.atan2(q2.hy, q2.hx), '#e0b43a')];
+  if (G.holl) { const T3 = G.trajetVelo(3, 1), q3 = surTrajet(T3, 700); sc.usagers.push(usager(3, 'velo', q3.x, q3.y, Math.atan2(q3.hy, q3.hx), '#2f9e6b')); }
   if (velo) { const T3 = G.trajet(3, 1, true), q3 = surTrajet(T3, T3.sIn + 120); sc.usagers.push(usager(3, 'velo', q3.x, q3.y, Math.atan2(q3.hy, q3.hx), '#2f9e6b')); }
   sc.decor = deco(forme === 'haricot' ? [['maison', 180, 250, 150, 110], ['maison_grise', 1090, 240, 160, 110], ['arbre', 250, 880], ['arbre', 1040, 890], ['buisson', 420, 950]]
                                       : [['maison', 250, 280, 150, 110], ['maison_grise', 1030, 280, 160, 110], ['arbre', 230, 870], ['arbre', 1050, 880], ['buisson', 380, 960], ['buisson', 930, 250]]);
@@ -3825,6 +3921,24 @@ const SCENES_COURS = [
   }],
   ['rd_droite', 'Tourner à droite hors agglo', () => sceneRdTourner(1)],
   ['rd_gauche', 'Tourner à gauche hors agglo', () => sceneRdTourner(-1)],
+  ['aire_arret', 'S\'arrêter sur une aire (route départementale)', () => {
+    const { G, D } = bornes(), Y = 560, v = LR / 4, P = LR / 2, sc = sceneVide();
+    sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]], sansTrottoir: true }]; sc.id = 2;
+    // deux encoches de 18 m sur 3 m, décalées : au nord pour ceux qui vont vers l'ouest, au sud pour ceux qui vont vers l'est
+    const LA = 18 * M1, PA = 3 * M1, BI = 4 * M1, xN = 430, xS = 870;
+    sc.decor = [{ type: 'aire', biseau: BI, x: xN, y: Y - P - PA / 2, w: LA, h: PA, ang: Math.PI }, { type: 'aire', biseau: BI, x: xS, y: Y + P + PA / 2, w: LA, h: PA, ang: 0 }]
+      .concat(deco([['arbre', 150, 330], ['arbre', 260, 300], ['buisson', 700, 330], ['arbre', 1120, 280], ['arbre', 260, 860], ['arbre', 420, 840], ['buisson', 600, 900], ['arbre', 1150, 830], ['maison_grise', 1040, 960, 170, 110]]));
+    // ligne de rive discontinue le long de chaque aire (là où l'on sort de la chaussée)
+    sc.marques = [{ type: 'ligne_discontinue', x1: xN - LA / 2, y1: Y - P + 2, x2: xN + LA / 2, y2: Y - P + 2 }, { type: 'ligne_discontinue', x1: xS - LA / 2, y1: Y + P - 2, x2: xS + LA / 2, y2: Y + P - 2 }];
+    sc.marques.forEach(milieu);
+    // C1a juste avant l'entrée de l'aire, et le même avec « 250 m » plus en amont (au bord de l'image)
+    sc.panneaux = [
+      { type: 'c1a', x: xS - LA / 2 - 40, y: Y + P + 34, ang: Math.PI / 2 }, { type: 'c1a_250', x: 70, y: Y + P + 44, ang: Math.PI / 2, ech: 1.35 },
+      { type: 'c1a', x: xN + LA / 2 + 40, y: Y - P - 34, ang: -Math.PI / 2 }, { type: 'c1a_250', x: MONDE.W - 70, y: Y - P - 44, ang: -Math.PI / 2, ech: 1.35 }
+    ];
+    sc.usagers = [usager(1, 'ecole', 250, Y + v, 0, '#3b82c4'), usager(2, 'camion', 1100, Y - v, Math.PI, '#8a93a0'), usager(3, 'voiture', xN - 40, Y - P - PA / 2, Math.PI, '#e0b43a')];
+    return sc;
+  }],
   ['arret_precis', 'Arrêt précis à un repère', () => {
     const { H, B } = bornes(), X = 640, v = LR / 4, sc = sceneVide();
     sc.routes = [{ id: 1, pts: [[X, H], [X, B]] }]; sc.id = 2;
@@ -3950,6 +4064,7 @@ const SCENES_COURS = [
   }],
   ['giratoire', 'Giratoire', () => sceneGiratoire('rond', false)],
   ['giratoire_velo', 'Giratoire avec bande cyclable', () => sceneGiratoire('rond', true)],
+  ['giratoire_holl', 'Giratoire à la hollandaise', () => sceneGiratoire('rond', false, 1, true)],
   ['giratoire2', 'Giratoire à deux voies', () => sceneGiratoire('rond', false, 2)],
   ['haricot', 'Giratoire en haricot', () => sceneGiratoire('haricot', false)],
   ['haricot_velo', 'Giratoire en haricot avec bande cyclable', () => sceneGiratoire('haricot', true)],
@@ -3979,9 +4094,9 @@ const SCENES_COURS = [
 const THEMES = [
   ['Intersections', ['cedez', 'stop', 'priorite_droite', 'exemple', 'etroit']],
   ['Partage de la route', ['depassement', 'depassement_ville']],
-  ['Route hors agglomération', ['rd_croiser', 'rd_droite', 'rd_gauche']],
+  ['Route hors agglomération', ['rd_croiser', 'rd_droite', 'rd_gauche', 'aire_arret']],
   ['Feux tricolores', ['briollay1', 'sonnettes_vue', 'dunant_vue', 'feux_classique', 'feux_indo', 'feux_camion']],
-  ['Giratoires', ['giratoire', 'giratoire_velo', 'giratoire2', 'haricot', 'haricot_velo']],
+  ['Giratoires', ['giratoire', 'giratoire_velo', 'giratoire_holl', 'giratoire2', 'haricot', 'haricot_velo']],
   ['Autoroute', ['autoroute', 'sortie']],
   ['Manœuvres', ['arret_precis', 'demi_tour']],
   ['Stationnement', ['manoeuvres', 'parking']],
