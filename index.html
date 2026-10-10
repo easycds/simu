@@ -3832,7 +3832,69 @@ function sceneDunantVue() {
   sc.marques = M; sc.decor = DEC; sc.panneaux = PAN; sc.usagers = US;
   return sc;
 }
+/* Exceptions aux feux (planche « Les exceptions ») :
+   1 · rues décalées : deux carrefours à feux qui ne font qu'un. Les feux ne sont qu'aux 4 entrées ; entre les deux rues,
+       pas de feu : priorité à droite (AB1). En face de chaque rue, pas de rue (arbre) : on ne peut pas aller tout droit.
+   2 · voie de stockage : grand carrefour (2 × 2 voies) ; pour tourner à gauche, on avance au milieu du carrefour
+       et on y attend que ceux d'en face soient passés (les deux qui tournent à gauche passent l'un devant l'autre). */
+function sceneExceptionFeux(n) {
+  const { G, D, H, B } = bornes(), Y = 560, h = LR / 2, v = LR / 4, sc = sceneVide();
+  const M = [], PAN = [];
+  const lg = (type, x1, y1, x2, y2) => { const o = { type, x1, y1, x2, y2 }; milieu(o); M.push(o); };
+  const feu = (x, y, cap, route, cle) => PAN.push({ type: 'feu', x, y, ang: cap + Math.PI / 2, route, cle });
+  if (n === 1) {
+    const X1 = 470, X2 = 810, J1 = X1 + ',' + Y, J2 = X2 + ',' + Y, L = h + 14;      // L : ligne d'effet des feux, au bord du carrefour
+    sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]], axe: 'aucune' }, { id: 2, pts: [[X1, H], [X1, Y]], axe: 'aucune' }, { id: 3, pts: [[X2, Y], [X2, B]], axe: 'aucune' }]; sc.id = 4;
+    sc.regimes = [{ x: X1, y: Y, type: 'feux', prio: 2, manuel: true, sas: false }, { x: X2, y: Y, type: 'feux', prio: 3, manuel: true, sas: false }];
+    // lignes des feux, aux quatre entrées seulement
+    lg('ligne_feux', X1 - L, Y, X1 - L, Y + h);        // ouest (vers l'est)
+    lg('ligne_feux', X2 + L, Y - h, X2 + L, Y);        // est (vers l'ouest)
+    lg('ligne_feux', X1 - h, Y - L, X1, Y - L);        // rue du haut (vers le bas)
+    lg('ligne_feux', X2, Y + L, X2 + h, Y + L);        // rue du bas (vers le haut)
+    // axes : continus à l'approche des feux, discontinus ailleurs ; rien entre les deux rues
+    lg('ligne_continue', X1 - L - 140, Y, X1 - L, Y); lg('ligne_discontinue', G, Y, X1 - L - 140, Y);
+    lg('ligne_continue', X2 + L, Y, X2 + L + 140, Y); lg('ligne_discontinue', X2 + L + 140, Y, D, Y);
+    lg('ligne_continue', X1, Y - L - 140, X1, Y - L); lg('ligne_discontinue', X1, H, X1, Y - L - 140);
+    lg('ligne_continue', X2, Y + L, X2, Y + L + 140); lg('ligne_discontinue', X2, Y + L + 140, X2, B);
+    feu(X1 - L - 8, Y + h + 22, 0, 1, J1);             // feux à droite de chaque entrée
+    feu(X2 + L + 8, Y - h - 22, Math.PI, 1, J2);
+    feu(X1 - h - 22, Y - L - 8, Math.PI / 2, 2, J1);
+    feu(X2 + h + 22, Y + L + 8, -Math.PI / 2, 3, J2);
+    // entre les deux rues : priorité à droite
+    PAN.push({ type: 'priorite_droite', x: X1 + h + 62, y: Y - h - 24, ang: Math.PI + Math.PI / 2 }, { type: 'priorite_droite', x: X2 - h - 62, y: Y + h + 24, ang: Math.PI / 2 });
+    sc.decor = deco([['arbre', X2, Y - h - 95], ['arbre', X2 + 70, Y - h - 70], ['arbre', X1, Y + h + 95], ['arbre', X1 - 70, Y + h + 72],
+      ['maison', 230, 330, 170, 120], ['maison_grise', 650, 330, 120, 110], ['maison', 1060, 320, 180, 120], ['maison_grise', 240, 820, 180, 120], ['maison', 620, 820, 120, 110], ['maison_grise', 1060, 830, 180, 120]]);
+    sc.usagers = [usager(1, 'ecole', X2 + v, Y + L + 75, -Math.PI / 2, '#3b82c4'), usager(2, 'voiture', X1 - v, Y - L - 75, Math.PI / 2, '#2f9e6b'), usager(3, 'voiture', 690, Y + v, 0, '#2b2f36')];
+  } else {
+    const X = 640, Hh = 150, J = X + ',' + Y, Lh = Hh + 14, Lv = h + 14;           // route horizontale : 2 × 2 voies (300 de large)
+    sc.routes = [{ id: 1, pts: [[G, Y], [D, Y]], larg: 2 * Hh, axe: 'aucune' }, { id: 2, pts: [[X, H], [X, B]], axe: 'aucune' }]; sc.id = 3;
+    sc.regimes = [{ x: X, y: Y, type: 'feux', prio: 2, manuel: true, sas: false }];
+    lg('ligne_feux', X - h, Y - Lh, X, Y - Lh);        // rue du haut (vers le bas)
+    lg('ligne_feux', X, Y + Lh, X + h, Y + Lh);        // rue du bas (vers le haut)
+    lg('ligne_feux', X - Lv, Y, X - Lv, Y + Hh);       // ouest (vers l'est)
+    lg('ligne_feux', X + Lv, Y - Hh, X + Lv, Y);       // est (vers l'ouest)
+    lg('ligne_continue', X, Y - Lh - 200, X, Y - Lh); lg('ligne_discontinue', X, H, X, Y - Lh - 200);
+    lg('ligne_continue', X, Y + Lh, X, Y + Lh + 200); lg('ligne_discontinue', X, Y + Lh + 200, X, B);
+    lg('ligne_continue', G, Y, X - Lv, Y); lg('ligne_continue', X + Lv, Y, D, Y);                       // terre-plein peint entre les deux sens
+    lg('ligne_discontinue', G, Y - v * 2, X - Lv - 60, Y - v * 2); lg('ligne_discontinue', X + Lv + 60, Y - v * 2, D, Y - v * 2);
+    lg('ligne_discontinue', G, Y + v * 2, X - Lv - 60, Y + v * 2); lg('ligne_discontinue', X + Lv + 60, Y + v * 2, D, Y + v * 2);
+    lg('ligne_continue', X - Lv - 60, Y - v * 2, X - Lv, Y - v * 2); lg('ligne_continue', X + Lv, Y - v * 2, X + Lv + 60, Y - v * 2);
+    lg('ligne_continue', X - Lv - 60, Y + v * 2, X - Lv, Y + v * 2); lg('ligne_continue', X + Lv, Y + v * 2, X + Lv + 60, Y + v * 2);
+    for (const k of [1, 3]) M.push({ type: 'fleche_droit', x: 250, y: Y - Hh + 37.5 * k, ang: Math.PI }, { type: 'fleche_droit', x: 1030, y: Y + Hh - 37.5 * k, ang: 0 });
+    feu(X - h - 22, Y - Lh - 8, Math.PI / 2, 2, J); feu(X + h + 22, Y + Lh + 8, -Math.PI / 2, 2, J);
+    feu(X - Lv - 8, Y + Hh + 22, 0, 1, J); feu(X + Lv + 8, Y - Hh - 22, Math.PI, 1, J);
+    sc.decor = deco([['maison', 290, 260, 200, 120], ['maison_grise', 990, 260, 200, 120], ['maison_grise', 290, 870, 200, 120], ['maison', 990, 870, 200, 120], ['arbre', 470, 300], ['arbre', 810, 830]]);
+    sc.usagers = [usager(1, 'ecole', X + v - 18, Y + Lh + 90, -Math.PI / 2, '#3b82c4'),            // serré à gauche dans sa voie
+                  usager(2, 'voiture', X - v, Y - Lh - 40, Math.PI / 2, '#2b2f36'),                   // en face, va tout droit
+                  usager(3, 'voiture', X - v + 10, Y - Lh - 150, Math.PI / 2, '#5b6fd6')];             // derrière, va tourner à gauche
+  }
+  M.forEach((m) => { if (m.x1 != null) milieu(m); });
+  sc.marques = M; sc.panneaux = PAN;
+  return sc;
+}
 const SCENES_COURS = [
+  ['feux_decalees', 'Feux · exception 1 Rues décalées', () => sceneExceptionFeux(1)],
+  ['feux_stockage', 'Feux · exception 2 Voie de stockage', () => sceneExceptionFeux(2)],
   ['dunant_vue', 'Henri Dunant × Copernic – vue aérienne', () => sceneDunantVue()],
   ['sonnettes_vue', 'Les 7 Sonnettes – vue aérienne', () => sceneSonnettesVue()],
   ['rd_croiser', 'Se croiser sur route étroite', () => {
@@ -4018,7 +4080,7 @@ const THEMES = [
   ['Intersections', ['cedez', 'stop', 'priorite_droite', 'exemple', 'etroit']],
   ['Partage de la route', ['depassement', 'depassement_ville']],
   ['Route hors agglomération', ['rd_croiser', 'rd_droite', 'rd_gauche', 'aire_arret']],
-  ['Feux tricolores', ['briollay1', 'sonnettes_vue', 'dunant_vue', 'feux_classique', 'feux_indo', 'feux_camion']],
+  ['Feux tricolores', ['briollay1', 'sonnettes_vue', 'dunant_vue', 'feux_classique', 'feux_indo', 'feux_camion', 'feux_decalees', 'feux_stockage']],
   ['Giratoires', ['giratoire', 'giratoire_velo', 'giratoire2', 'haricot', 'haricot_velo']],
   ['Autoroute', ['autoroute', 'sortie']],
   ['Manœuvres', ['arret_precis', 'demi_tour']],
