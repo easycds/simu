@@ -3857,8 +3857,8 @@ const SCENES_COURS = [
     sc.marques.forEach(milieu);
     // C1a juste avant l'entrée de l'aire, et le même avec « 250 m » plus en amont (au bord de l'image)
     sc.panneaux = [
-      { type: 'c1a', x: xS - LA / 2 - 40, y: Y + P + 34, ang: 0 }, { type: 'c1a_250', x: 70, y: Y + P + 52, ang: 0, ech: 1.35 },
-      { type: 'c1a', x: xN + LA / 2 + 40, y: Y - P - 34, ang: 0 }, { type: 'c1a_250', x: MONDE.W - 70, y: Y - P - 52, ang: 0, ech: 1.35 }
+      { type: 'c1a', x: xS - LA / 2 - 40, y: Y + P + 34, ang: Math.PI / 2 }, { type: 'c1a_250', x: 80, y: Y + P + 38, ang: Math.PI / 2, ech: 1.35 },
+      { type: 'c1a', x: xN + LA / 2 + 40, y: Y - P - 34, ang: -Math.PI / 2 }, { type: 'c1a_250', x: MONDE.W - 80, y: Y - P - 38, ang: -Math.PI / 2, ech: 1.35 }
     ];
     sc.usagers = [usager(1, 'ecole', 250, Y + v, 0, '#3b82c4'), usager(2, 'camion', 1100, Y - v, Math.PI, '#8a93a0'), usager(3, 'voiture', xN - 40, Y - P - PA / 2, Math.PI, '#e0b43a')];
     return sc;
