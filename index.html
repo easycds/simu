@@ -25,7 +25,7 @@
   :root { --rouge:#ff3131; --encre:#1c2430; --gris:#5b6270; --verre:rgba(17,20,24,.88); }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { margin:0; height:100%; overflow:hidden; background:#8ab583; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--encre); user-select:none; -webkit-user-select:none; }
-  canvas#vue { position:fixed; inset:0; width:100vw; height:100vh; touch-action:none; display:block; }
+  canvas#vue { position:fixed; inset:0; width:100%; height:100%; touch-action:none; display:block; }
   .pill { position:fixed; display:flex; align-items:center; gap:4px; background:var(--verre); color:#fff; border-radius:14px; padding:6px;
           backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); box-shadow:0 6px 18px rgba(0,0,0,.25); z-index:5; }
   .btn { height:44px; min-width:44px; padding:0 14px; border-radius:10px; display:flex; align-items:center; justify-content:center; gap:8px;
@@ -85,7 +85,7 @@
           text-align:center; z-index:3; max-width:360px; pointer-events:none; }
   #aide b { display:block; font-size:19px; margin-bottom:6px; }
   #aide span { font-size:14px; color:#c9ced6; line-height:1.45; }
-  #aide button { pointer-events:auto; margin-top:14px; height:38px; padding:0 16px; border-radius:10px; border:0; background:#fff; color:#111; font:inherit; font-weight:650; cursor:pointer; }
+  #aide button { pointer-events:auto; margin-top:14px; min-height:44px; padding:8px 16px; line-height:1.25; border-radius:10px; border:0; background:#fff; color:#111; font:inherit; font-weight:650; cursor:pointer; }
   #menu a.btn { text-decoration:none; }
   .sep-h { height:1px; background:rgba(255,255,255,.15); margin:4px 6px; }
   #liste-scenes { position:fixed; inset:0; background:rgba(10,12,16,.45); display:none; align-items:center; justify-content:center; z-index:9; padding:16px; }
@@ -256,7 +256,6 @@ body.mode-seance #menu-feu.ouvert { display:flex; }
   <div class="sep-h"></div>
   <button class="btn se-seul" id="m-editer"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>Créer ou modifier une scène</button>
   <button class="btn ed-seul" id="m-publier"><svg viewBox="0 0 24 24"><path d="M12 15V4M7 9l5-5 5 5M5 15v4h14v-4"/></svg>Publier cette scène pour tous</button>
-<button class="btn ed-seul" id="m-note"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H10l-5 4z"/></svg>Consigne pour le moniteur…</button>
   <button class="btn ed-seul" id="m-ouvrir-simu"><svg viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"/></svg>Récupérer une scène de l’ancienne version</button>
   <button class="btn ed-seul" id="m-vider"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Tout effacer</button>
   <div class="sep-h"></div>
@@ -1078,7 +1077,7 @@ function reconstruire() {
 /* ---------------- transformations écran ---------------- */
 function redimensionner() {
   DPR = Math.min(window.devicePixelRatio || 1, 2);
-  VW = innerWidth; VH = innerHeight;
+  VW = cv.clientWidth || document.documentElement.clientWidth || innerWidth; VH = cv.clientHeight || document.documentElement.clientHeight || innerHeight;   // la taille réelle du dessin, pas celle annoncée pendant la rotation
   cv.width = couche.width = Math.round(VW * DPR); cv.height = couche.height = Math.round(VH * DPR);
   S0 = Math.max(VW / MONDE.W, VH / MONDE.H); OX0 = (VW - MONDE.W * S0) / 2; OY0 = (VH - MONDE.H * S0) / 2;
   VIS.x0 = -OX0 / S0; VIS.y0 = -OY0 / S0; VIS.x1 = (VW - OX0) / S0; VIS.y1 = (VH - OY0) / S0;   // cadre « vue classe »
@@ -2741,8 +2740,6 @@ $('m-publier').onclick = () => { fermerMenu(); publierScene(); };
 $('b-publier').onclick = () => publierScene();
 $('m-aide').onclick = $('b-aide').onclick = () => ouvrirGestes();
 $('m-editer').onclick = () => { fermerMenu(); demanderMdp(() => basculerMode('editeur')); };
-$('m-note').onclick = () => { fermerMenu(); demanderTexte(scene.note, (t) => { if (t) scene.note = t; else delete scene.note; valider(t ? 'Consigne enregistrée : elle s\'affiche en Séance' : 'Consigne retirée'); majConsigne(true); },
-  { titre: 'Consigne pour le moniteur', aide: 'Une phrase : ce qu\'il faut montrer avec cette scène. Elle s\'affiche en Séance, sous le titre.', max: 240, brut: true }); };
 $('aide-ex').onclick = () => ouvrirAccueil();
 $('titre').addEventListener('click', () => { if (mode === 'seance') ouvrirAccueil(); });
 $('m-vider').onclick = () => { const t = scene.titre; scene = sceneVide(); scene.titre = t; selection = null; majSelbar(); fermerRegime(); toutRefaire('Scène vidée — Annuler pour revenir'); fermerMenu(); };
@@ -2761,7 +2758,23 @@ addEventListener('keydown', (e) => {
   else if (e.key === 'Escape') { selection = null; groupe = null; majSelbar(); fermerRegime(); fermerMenu(); }
   else if (e.key === ' ') { e.preventDefault(); basculerTest(); }
 });
-addEventListener('resize', () => { redimensionner(); majSelbar(); if (carrefourOuvert) { const c = geo.carrefours.find((k) => k.cle === carrefourOuvert); if (c) ouvrirRegime(c); } });
+/* Changement de taille ou rotation du téléphone : le navigateur donne la nouvelle taille en plusieurs fois,
+   on recalcule donc tout de suite, puis encore un peu après. Si l'écran passe de portrait à paysage (ou l'inverse),
+   on revient à la vue classe pour ne pas garder un zoom fait pour l'autre sens. */
+let dernierSens = innerWidth > innerHeight, minuteursTaille = [];
+function surTaille() {
+  const fais = () => {
+    const sens = (cv.clientWidth || innerWidth) > (cv.clientHeight || innerHeight);
+    if (sens !== dernierSens) { dernierSens = sens; VUE.z = 1; VUE.dx = 0; VUE.dy = 0; }
+    redimensionner(); majSelbar(); if (carrefourOuvert) { const c = geo.carrefours.find((k) => k.cle === carrefourOuvert); if (c) ouvrirRegime(c); }
+  };
+  minuteursTaille.forEach(clearTimeout);
+  requestAnimationFrame(fais);
+  minuteursTaille = [setTimeout(fais, 250), setTimeout(fais, 700)];
+}
+addEventListener('resize', surTaille);
+addEventListener('orientationchange', surTaille);
+if (window.visualViewport) visualViewport.addEventListener('resize', surTaille);
 
 function sceneExemple() {
   // Agglomération : rue principale prioritaire, un carrefour STOP et une rue en T avec cédez-le-passage
@@ -3961,38 +3974,8 @@ const SCENES_COURS = [
   ['feux_indo', 'Feux · à l\'indonésienne', () => sceneDemoIndo()],
 ];
 /* =====================================================================
-   POUR LE MONITEUR — accueil par vignettes, consigne « à montrer », remise à zéro, aide des gestes
+   POUR LE MONITEUR — accueil par vignettes, remise à zéro, aide des gestes
    ===================================================================== */
-const NOTES = {
-  cedez: 'Au cédez-le-passage, je ralentis et je regarde : je ne m\'arrête que si quelqu\'un arrive. Fais dire qui passe en premier.',
-  stop: 'Arrêt complet à la ligne, même s\'il n\'y a personne. Entre voitures arrêtées au STOP, c\'est la priorité à droite qui départage : fais dire l\'ordre (ici la rouge, puis la jaune, puis nous).',
-  depassement: 'Hors agglomération, je laisse au moins 1,5 m entre le vélo et ma voiture : je me déporte franchement, sur l\'autre voie. Contrôles, clignotant, et je ne dépasse que si personne n\'arrive en face.',
-  depassement_ville: 'En agglomération, au moins 1 m entre le vélo et ma voiture. Si je ne peux pas laisser cette distance sans gêner ceux d\'en face, je reste derrière le vélo.',
-  rd_croiser: 'Route étroite : je ralentis en restant sur le goudron, je reste bien droit, je regarde loin devant, puis je relance doucement. Face à un camion ou un tracteur, je m\'arrête : roues de droite sur l\'herbe à allure lente, ou dans un élargissement s\'il y en a un, que je vise tôt.',
-  rd_droite: 'Tourner à droite : j\'anticipe (environ 150 m). Contrôles, Clignotant en décélérant, je me Place à droite en dosant le frein, puis j\'y vais (Aller) avec un filet de frein. Au moindre doute ou sans visibilité : arrêt.',
-  rd_gauche: 'Tourner à gauche : j\'anticipe (environ 150 m). Contrôles, Clignotant en décélérant, je me Place près de l\'axe, puis Arrêt ou j\'y vais. Je cède le passage à ceux d\'en face. Avec une voie de stockage, je ne freine qu\'une fois dedans.',
-  arret_precis: 'S\'arrêter le long du trottoir à un repère vertical (panneau, lampadaire, boîte aux lettres…) : Contrôler, Clignoter et décélérer, se Placer près du trottoir en dosant le frein, Arrêt : le milieu de la vitre avant au niveau du repère.',
-  demi_tour: 'Je ne suis pas prioritaire et je ne cède pas à la pression des autres. Arrêt en sécurité, puis 3 étapes de trottoir à trottoir : 1 marche avant, 2 marche arrière, 3 marche avant. Tourner les roues à l\'arrêt n\'est pas interdit. Jamais sur le trottoir, sauf si on y est autorisé.',
-  feux_camion: 'Le croisement à l\'indonésienne (face à face, par devant) ne marche pas avec un bus ou un camion, trop longs : on se croise à l\'équerre, par derrière, et je le laisse passer. En tournant à gauche on n\'est jamais prioritaire ; piétons, bus et vélos le sont.',
-  sonnettes_vue: 'Les Sept Sonnettes, d\'après la vue aérienne : grand carrefour à feux en biais, avec terre-pleins et îlots. Avant d\'arriver, je choisis ma voie selon ma direction et je repère par où je vais sortir.',
-  dunant_vue: 'Carrefour à feux à plusieurs voies, d\'après la vue aérienne. Je choisis ma voie tôt selon ma direction (flèches au sol), je ne roule pas dans la voie bus, et je repère par où je vais sortir.',
-  priorite_droite: 'Sans panneau ni feu, je cède le passage à celui qui arrive de ma droite. Fais dire l\'ordre de passage : la jaune, puis nous, puis la verte.',
-  exemple: 'Une rue prioritaire, un STOP et un cédez-le-passage : fais nommer le régime de chaque carrefour, puis dire qui passe.',
-  etroit: 'Passage étroit : de notre côté le panneau rond (B15), je cède le passage à celui d\'en face ; lui a le carré bleu (C18), il est prioritaire.',
-  briollay1: 'Je m\'arrête à la ligne des feux, avant le sas vélo. Touche le carrefour pour changer la phase, touche un feu pour l\'orange clignotant (au milieu ou en bas).',
-  sonnettes: 'Grand carrefour à feux : je choisis ma voie selon ma direction avant d\'arriver à la ligne.',
-  feux_classique: 'Tourne-à-gauche classique : les deux voitures qui se font face se contournent, chacune passe derrière l\'autre.',
-  feux_indo: 'Tourne-à-gauche à l\'indonésienne : les deux voitures tournent en passant l\'une devant l\'autre, sans se contourner.',
-  giratoire: 'Je cède le passage à ceux qui sont sur l\'anneau. Lance la circulation : la voiture école sort à droite, puis tout droit, puis à gauche, avec les bons clignotants.',
-  giratoire_velo: 'Avec une bande cyclable : avant de sortir, je contrôle à droite et je laisse passer le vélo qui continue sur l\'anneau.',
-  giratoire2: 'Deux voies : voie de droite pour aller à droite ou tout droit, voie de gauche pour aller à gauche. Je me rabats avant de sortir.',
-  haricot: 'Giratoire allongé, mêmes règles : je cède en entrant, clignotant à droite dès que j\'ai passé la sortie d\'avant.',
-  haricot_velo: 'Giratoire allongé avec bande cyclable : je cède en entrant, et je laisse passer le vélo avant de sortir.',
-  autoroute: 'Voie d\'insertion : celui qui s\'insère cède le passage. Trois cas à montrer : voie libre, voiture qui se déporte, deux voies occupées.',
-  sortie: 'Sortie : clignotant, je garde ma vitesse tant que je suis sur l\'autoroute. Je ne freine qu\'une fois dans la voie de décélération.',
-  manoeuvres: 'Créneau, bataille, épi : tire le point devant le capot de la voiture école pour montrer la trajectoire et les contrôles.',
-  parking: 'Tous les stationnements : bataille, épi, créneau, PMR, livraison, recharge. Fais dire où l\'on a le droit de se garer.',
-};
 const THEMES = [
   ['Intersections', ['cedez', 'stop', 'priorite_droite', 'exemple', 'etroit']],
   ['Partage de la route', ['depassement', 'depassement_ville']],
@@ -4024,7 +4007,6 @@ function construireScene(cle) {
   const def = SCENES_COURS.find((s) => s[0] === cle); if (!def) return null;
   const o = surcharge(cle), sc = o ? JSON.parse(JSON.stringify(o.scene)) : def[2]();
   sc.titre = (o && o.scene.titre) || def[1]; sc.origine = cle; delete sc.edition; delete sc.modele;
-  if (!(o && o.scene.note) && NOTES[cle]) sc.note = NOTES[cle];
   return sc;
 }
 function editerSceneCours(cle) { // depuis l'accueil : mot de passe, puis la scène s'ouvre dans l'éditeur
@@ -4092,7 +4074,7 @@ let consignePliee = false;
 function majConsigne(ouvrir) {
   if (ouvrir) consignePliee = false;
   const el = $('consigne');
-  el.classList.toggle('vu', !!scene.note); el.classList.toggle('plie', consignePliee);
+  el.classList.remove('vu'); el.classList.toggle('plie', consignePliee);   // plus de consigne écrite : le moniteur explique lui-même
   $('consigne-txt').textContent = scene.note || '';
 }
 $('consigne').onclick = () => { consignePliee = !consignePliee; majConsigne(); };
@@ -4158,7 +4140,7 @@ function ouvrirAccueil() {
   }
   for (const [nom, cles] of THEMES) {
     const gr = section(nom);
-    for (const cle of cles) { const def = SCENES_COURS.find((s) => s[0] === cle); if (def) carte(gr, def[1], NOTES[cle], cle, () => construireScene(cle), () => chargerSceneCours(cle)); }
+    for (const cle of cles) { const def = SCENES_COURS.find((s) => s[0] === cle); if (def) carte(gr, def[1], '', cle, () => construireScene(cle), () => chargerSceneCours(cle)); }
   }
   const pied = document.createElement('div'); pied.className = 'ac-pied';
   if (!ed) {
@@ -4226,7 +4208,6 @@ if (scene.modele && !scene.origine) {      // scène enregistrée par une versio
   const d = SCENES_COURS.find((s) => s[1] === scene.titre), ref = d && d[2](), n = (s) => [s.routes.length, s.marques.length, s.panneaux.length, s.regimes.length, s.decor.length].join();
   if (ref && n(ref) === n(scene)) scene.origine = d[0]; else delete scene.modele;      // une scène retouchée reste personnelle, jamais écrasée
 }
-if (scene.origine && !scene.note && NOTES[scene.origine]) scene.note = NOTES[scene.origine];
 if (SUR_SITE) {                      // sur le site : on arrive en Séance, sur le choix des scènes
   if (!initial) chargerExemple();
   if (location.hash === '#editer') demanderMdp(() => basculerMode('editeur')); else { basculerMode('seance'); if (!ouvrirDepuisLien()) ouvrirAccueil(); }
